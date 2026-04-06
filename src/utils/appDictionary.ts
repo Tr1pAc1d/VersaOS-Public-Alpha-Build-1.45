@@ -1,0 +1,31 @@
+import { Folder, Globe, Terminal, Activity, MessageSquare, Settings, Cpu, HardDrive, Monitor, Store, Ghost, FileText, Package, Mail, HelpCircle, Music, PenTool, Gamepad2, Wrench, Phone, ShieldCheck, Search, Disc3, Tv } from 'lucide-react';
+
+export const APP_DICTIONARY: Record<string, { icon: any, color: string, defaultTitle: string, isSystem?: boolean }> = {
+  'files': { icon: Folder, color: 'text-yellow-400', defaultTitle: 'File Manager', isSystem: true },
+  'browser': { icon: Globe, color: 'text-blue-300', defaultTitle: 'Vespera Navigator', isSystem: true },
+  'workbench': { icon: Terminal, color: 'text-blue-400', defaultTitle: 'AETHERIS Workbench Pro', isSystem: true },
+  'analyzer': { icon: Activity, color: 'text-green-400', defaultTitle: 'Data Analyzer', isSystem: true },
+  'chat': { icon: MessageSquare, color: 'text-purple-400', defaultTitle: 'Vespera Assistant', isSystem: true },
+  'control_panel': { icon: Settings, color: 'text-gray-300', defaultTitle: 'Control Panel', isSystem: true },
+  'xtype': { icon: Cpu, color: 'text-red-500', defaultTitle: 'X-Type Control Panel', isSystem: true },
+  'netmon': { icon: Terminal, color: 'text-green-400', defaultTitle: 'AETHERIS Network Monitor' },
+  'rhid': { icon: Terminal, color: 'text-red-400', defaultTitle: 'RHID Terminal' },
+  'about': { icon: Monitor, color: 'text-blue-600', defaultTitle: 'System Information', isSystem: true },
+  'defrag': { icon: HardDrive, color: 'text-gray-500', defaultTitle: 'Disk Defragmenter', isSystem: true },
+  'scandisk': { icon: ShieldCheck, color: 'text-blue-700', defaultTitle: 'Disk Checker', isSystem: true },
+  'findfiles': { icon: Search, color: 'text-gray-700', defaultTitle: 'Find Files', isSystem: true },
+  'media_player': { icon: Disc3, color: 'text-purple-400', defaultTitle: 'VERSA Media Agent 2.0', isSystem: true },
+  'dialup': { icon: Phone, color: 'text-teal-600', defaultTitle: 'VesperaNET Dial-Up', isSystem: true },
+  'vstore': { icon: Store, color: 'text-green-500', defaultTitle: 'VStore Software Exchange', isSystem: true },
+  'v_messenger': { icon: MessageSquare, color: 'text-blue-400', defaultTitle: 'Vespera Messenger (BETA)' },
+  'v_sonic': { icon: Music, color: 'text-orange-400', defaultTitle: 'Vespera Sonic' },
+  'axis_paint': { icon: PenTool, color: 'text-red-500', defaultTitle: 'Axis Paint 2.0' },
+  'neural_solitaire': { icon: Gamepad2, color: 'text-green-600', defaultTitle: 'Neural Solitaire' },
+  'stock_ticker': { icon: Activity, color: 'text-green-400', defaultTitle: 'AETHERIS Stock Ticker' },
+  'xtype_bios': { icon: Cpu, color: 'text-red-600', defaultTitle: 'X-Type BIOS Configurator' },
+  'disk_physician': { icon: Wrench, color: 'text-gray-600', defaultTitle: 'Disk Physician v3.1' },
+  'aura_gallery': { icon: Monitor, color: 'text-purple-500', defaultTitle: 'Aura Screen Saver Gallery' },
+  'packman_setup': { icon: Ghost, color: 'text-yellow-500', defaultTitle: 'Pac-Man (x86) Setup' },
+  'retrotv': { icon: Tv, color: 'text-purple-600', defaultTitle: 'RetroTV Cable Simulator', isSystem: true },
+  'default': { icon: Package, color: 'text-gray-400', defaultTitle: 'Application' }
+};

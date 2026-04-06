@@ -1,0 +1,96 @@
+import React, { useState, useEffect } from 'react';
+import { useVFS } from '../hooks/useVFS';
+
+interface VesperaWriteProps {
+  vfs: ReturnType<typeof useVFS>;
+  fileId: string | null;
+  onSave: (content: string) => void;
+  onClose: () => void;
+}
+
+export const VesperaWrite: React.FC<VesperaWriteProps> = ({ vfs, fileId, onSave, onClose }) => {
+  const [content, setContent] = useState('');
+  const [fileName, setFileName] = useState('Untitled');
+  
+  useEffect(() => {
+    if (fileId) {
+      const node = vfs.getNode(fileId);
+      if (node && node.type === 'file') {
+        setContent(node.content || '');
+        setFileName(node.name);
+      }
+    } else {
+      setContent('');
+      setFileName('Untitled');
+    }
+  }, [fileId, vfs]);
+
+  const handleSave = () => {
+    onSave(content);
+  };
+
+  const handleOpen = () => {
+    alert("Open module LOAD_FILE.DLL not found in this version.");
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-[#c0c0c0] text-black font-sans text-sm select-text">
+      {/* Menu Bar */}
+      <div className="flex gap-4 px-2 py-0.5 border-b border-white select-none">
+        <div className="relative group cursor-pointer">
+          <span className="px-2 hover:bg-[#000080] hover:text-white">File</span>
+          <div className="absolute left-0 top-full hidden group-hover:block bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-lg z-[100] min-w-[120px] py-1">
+            <div onClick={handleOpen} className="px-4 py-1 hover:bg-[#000080] hover:text-white text-black">Open...</div>
+            <div onClick={handleSave} className="px-4 py-1 hover:bg-[#000080] hover:text-white text-black">Save</div>
+            <div className="h-[1px] bg-gray-600 my-1 mx-1" />
+            <div onClick={onClose} className="px-4 py-1 hover:bg-[#000080] hover:text-white text-black">Exit</div>
+          </div>
+        </div>
+        <div className="relative group cursor-pointer">
+          <span className="px-2 hover:bg-[#000080] hover:text-white">Edit</span>
+          <div className="absolute left-0 top-full hidden group-hover:block bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-lg z-[100] min-w-[120px] py-1">
+            <div className="px-4 py-1 hover:bg-[#000080] hover:text-white text-black opacity-50 cursor-default">Cut</div>
+            <div className="px-4 py-1 hover:bg-[#000080] hover:text-white text-black opacity-50 cursor-default">Copy</div>
+            <div className="px-4 py-1 hover:bg-[#000080] hover:text-white text-black opacity-50 cursor-default">Paste</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Editor Area */}
+      <div className="flex-1 p-1 bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white m-1 relative overflow-hidden">
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          className="w-full h-full resize-none bg-white p-2 font-mono text-xs focus:outline-none overflow-y-scroll custom-scrollbar"
+          spellCheck={false}
+          autoFocus
+        />
+        
+        <style dangerouslySetInnerHTML={{ __html: `
+          .custom-scrollbar::-webkit-scrollbar {
+            width: 16px;
+            background: #c0c0c0;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #c0c0c0;
+            border: 2px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            box-shadow: inset 1px 1px 0px #c0c0c0;
+          }
+          .custom-scrollbar::-webkit-scrollbar-button {
+            background: #c0c0c0;
+            border: 2px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            height: 16px;
+          }
+        `}} />
+      </div>
+      
+      {/* Status Bar */}
+      <div className="px-2 py-0.5 text-[10px] border-t border-gray-600 flex justify-between bg-[#c0c0c0]">
+        <span>File: {fileName}</span>
+        <span>Row: 1, Col: 1</span>
+      </div>
+    </div>
+  );
+};
