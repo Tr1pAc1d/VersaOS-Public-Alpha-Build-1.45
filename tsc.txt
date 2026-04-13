@@ -1,0 +1,9 @@
+src/components/VesperaSystemsSite.tsx(184,100): error TS1127: Invalid character.
+src/components/VesperaSystemsSite.tsx(184,129): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/components/VesperaSystemsSite.tsx(184,130): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/components/VesperaSystemsSite.tsx(184,131): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/components/VesperaSystemsSite.tsx(187,13): error TS1005: ')' expected.
+src/components/VesperaSystemsSite.tsx(188,12): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/components/VesperaSystemsSite.tsx(192,5): error TS1005: ')' expected.
+src/components/VesperaSystemsSite.tsx(193,3): error TS1109: Expression expected.
+src/components/VesperaSystemsSite.tsx(194,1): error TS1128: Declaration or statement expected.

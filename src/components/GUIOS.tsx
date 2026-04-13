@@ -1749,7 +1749,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 </div>
               </div>
               {/* Window Content */}
-              <div className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white m-1 overflow-hidden bg-white">
+              <div className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white m-1 overflow-hidden flex flex-col bg-[#c0c0c0]">
                 {renderWindowContent(win.id)}
               </div>
             </motion.div>

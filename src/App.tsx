@@ -9,6 +9,7 @@ import { GUILogin } from "./components/GUILogin";
 import { KernelPanic } from "./components/KernelPanic";
 import { ShutdownScreen } from "./components/ShutdownScreen";
 import { NetworkLinkProvider } from "./contexts/NetworkLinkContext";
+import { VMailProvider } from "./contexts/VMailContext";
 
 type AppState = "OFF" | "SPLASH" | "BIOS" | "KERNEL_BOOT" | "TERMINAL" | "GUI_BOOT_SPLASH" | "GUI_KERNEL_BOOT" | "GUI_LOADING_SCREEN" | "GUI_LOGIN" | "GUI_OS" | "KERNEL_PANIC" | "SHUTDOWN";
 
@@ -228,25 +229,27 @@ export default function App() {
       case "GUI_OS":
         return (
           <NetworkLinkProvider key={`net-${rebootKey}`}>
-            <GUIOS 
-              key={`gui-os-${rebootKey}`}
-              onExit={() => {
-                setNeuralBridgeActive(false);
-                setAppState("BIOS");
-              }} 
-              onReboot={triggerInternalReboot}
-              neuralBridgeActive={neuralBridgeActive} 
-              neuralBridgeEnabled={neuralBridgeEnabled} 
-              neuralBoostEnabled={neuralBoostEnabled} 
-              unrestrictedPollingEnabled={unrestrictedPollingEnabled} 
-              setUnrestrictedPollingEnabled={setUnrestrictedPollingEnabled} 
-              onShutDown={() => setAppState("SHUTDOWN")}
-              onSignOut={handleSignOut}
-              onSignOutToTerminal={handleSignOutToTerminal}
-              screenMode={screenMode}
-              setScreenMode={setScreenMode}
-              currentUser={currentUser || 'thorne'}
-            />
+            <VMailProvider>
+              <GUIOS 
+                key={`gui-os-${rebootKey}`}
+                onExit={() => {
+                  setNeuralBridgeActive(false);
+                  setAppState("BIOS");
+                }} 
+                onReboot={triggerInternalReboot}
+                neuralBridgeActive={neuralBridgeActive} 
+                neuralBridgeEnabled={neuralBridgeEnabled} 
+                neuralBoostEnabled={neuralBoostEnabled} 
+                unrestrictedPollingEnabled={unrestrictedPollingEnabled} 
+                setUnrestrictedPollingEnabled={setUnrestrictedPollingEnabled} 
+                onShutDown={() => setAppState("SHUTDOWN")}
+                onSignOut={handleSignOut}
+                onSignOutToTerminal={handleSignOutToTerminal}
+                screenMode={screenMode}
+                setScreenMode={setScreenMode}
+                currentUser={currentUser || 'thorne'}
+              />
+            </VMailProvider>
           </NetworkLinkProvider>
         );
       case "KERNEL_PANIC":
