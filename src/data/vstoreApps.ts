@@ -1367,6 +1367,21 @@ export const VSTORE_APPS: VStoreApp[] = [
     screenshotUrl: 'https://placehold.co/400x300/000000/8800FF/png?text=Neural+Maze+Module',
     functional: true,
     rating: 4.1
+  },
+  {
+    id: 'remote_desktop',
+    name: 'VesperaConnect',
+    developer: 'Vespera Systems',
+    version: '2.1.0',
+    size: '3.6 MB',
+    icon: Monitor,
+    color: 'text-blue-600',
+    category: ['System Utilities', 'Networking'],
+    description: 'Connect to remote VesperaSystems server desktops via the enterprise Remote Desktop Protocol (RDP v4.0). Access a fully functional remote Vespera Workspace with its own file system, applications, and session state. Authorized personnel only — requires VESPERANET domain credentials.',
+    requirements: 'Vespera OS 1.0+, Active Network Connection, VESPERANET Domain Account',
+    screenshotUrl: 'https://placehold.co/400x300/000080/00CCFF/png?text=VesperaConnect+RDP',
+    functional: true,
+    rating: 4.5
   }
 ];
 

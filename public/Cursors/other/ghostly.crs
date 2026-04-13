@@ -1,0 +1,12 @@
+﻿[Wait]
+Path=GhostlyBusy.ani
+
+[Arrow]
+Path=GhostlyArrow.cur
+
+[AppStarting]
+Path=GhostlyArrowBloody.ani
+
+[IBeam]
+Path=GhostlyStake.ani
+

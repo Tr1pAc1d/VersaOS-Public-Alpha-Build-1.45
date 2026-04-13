@@ -17,7 +17,13 @@ import {
   stopGuiAmbientHum,
   playUIClickSound,
   playErrorSound,
+  playNewMailSound,
+  startPlusAmbient,
+  stopPlusAmbient,
+  setPlusAmbientMuted,
 } from "../utils/audio";
+import { PLUS_THEMES } from "../utils/plusThemes";
+import { useVMail } from "../contexts/VMailContext";
 import { APP_DICTIONARY } from "../utils/appDictionary";
 import { useVFS, VFSNode, WorkspaceMenuItem, DEFAULT_WORKSPACE_MENU, WORKSPACE_MENU_THEME_COLORS } from "../hooks/useVFS";
 import { VersaFileManager } from "./VersaFileManager";
@@ -39,6 +45,7 @@ import { GenericSetupWizard } from "./GenericSetupWizard";
 import { GenericAppPlaceholder } from "./GenericAppPlaceholder";
 import { AxisPaintSetup } from "./AxisPaintSetup";
 import { AxisPaint } from "./AxisPaint";
+import { WelcomeTour } from "./WelcomeTour";
 import { VSTORE_APPS } from "../data/vstoreApps";
 
 import { HelpViewer } from "./HelpViewer";
@@ -49,6 +56,14 @@ import { RunDialog, findVfsFileLoose } from "./RunDialog";
 import { FindFiles } from "./FindFiles";
 import { VersaMediaPlayer } from "./VersaMediaPlayer";
 import { RetroTV } from "./RetroTV";
+import { RemoteDesktop } from "./RemoteDesktop";
+import { ScreensaverOverlay, useScreensaverIdle, type ScreensaverType } from "./Screensavers";
+import { VesperaAssistant } from "./VesperaAssistant";
+import { AgentVPlusSetupWizard } from "./AgentVPlusSetupWizard";
+import { VSweeper } from "./VSweeper";
+import { VesperaChat } from "./VesperaChat";
+import { ReleaseRadarSetup } from "./ReleaseRadarSetup";
+import { ReleaseRadar } from "./ReleaseRadar";
 import { useNetworkLink } from "../contexts/NetworkLinkContext";
 import { parseRunLine, RUN_COMMAND_ALIASES } from "../utils/runCommands";
 import {
@@ -139,12 +154,27 @@ const ICON_MAP: Record<string, React.FC<{ size?: number; className?: string }>> 
 
 export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActive, neuralBridgeEnabled, neuralBoostEnabled, unrestrictedPollingEnabled, setUnrestrictedPollingEnabled, onShutDown, onSignOut, onSignOutToTerminal, screenMode, setScreenMode, currentUser }) => {
   const { strictDialUp, linkStatus, isLinkUp } = useNetworkLink();
-  const [windows, setWindows] = useState<{ id: string; title: string; isOpen: boolean; isMinimized?: boolean; isMaximized?: boolean; x: number; y: number; width?: number; height?: number; type?: string; target?: string; nodeId?: string }[]>([
-    { id: "about", title: "System Information", x: 40, y: 40, width: 450, height: 500, isOpen: false },
-    { id: "control_panel", title: "CRT Control Panel", x: 100, y: 100, width: 400, height: 420, isOpen: false },
-    { id: "files", title: "File Manager", x: 80, y: 80, width: 450, height: 350, isOpen: false },
-    { id: "analyzer", title: "Data Stream Analyzer", x: 120, y: 60, width: 600, height: 400, isOpen: false },
-    { id: "browser", title: "Vespera Navigator", x: 100, y: 50, width: 800, height: 600, isOpen: false },
+  const [windows, setWindows] = useState<{ 
+    id: string; 
+    title: string; 
+    isOpen: boolean; 
+    isMinimized?: boolean; 
+    isMaximized?: boolean; 
+    x: number; 
+    y: number; 
+    width?: number; 
+    height?: number; 
+    minWidth?: number;
+    minHeight?: number;
+    type?: string; 
+    target?: string; 
+    nodeId?: string 
+  }[]>([
+    { id: "about", title: "System Information", x: 40, y: 40, width: 450, height: 500, minWidth: 300, minHeight: 400, isOpen: false },
+    { id: "control_panel", title: "CRT Control Panel", x: 100, y: 100, width: 500, height: 420, minWidth: 500, minHeight: 420, isOpen: false },
+    { id: "files", title: "File Manager", x: 80, y: 80, width: 450, height: 350, minWidth: 400, minHeight: 300, isOpen: false },
+    { id: "analyzer", title: "Data Stream Analyzer", x: 120, y: 60, width: 600, height: 400, minWidth: 400, minHeight: 300, isOpen: false },
+    { id: "browser", title: "Vespera Navigator", x: 100, y: 50, width: 800, height: 600, minWidth: 600, minHeight: 400, isOpen: false },
     { id: "chat", title: "Vespera Assistant", x: 150, y: 100, width: 400, height: 500, isOpen: false },
     { id: "xtype", title: "X-Type Control Panel", x: 200, y: 150, width: 550, height: 450, isOpen: false },
     { id: "netmon", title: "AETHERIS Network Monitor", x: 250, y: 100, width: 600, height: 500, isOpen: false },
@@ -167,7 +197,12 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     { id: "media_player", title: "VERSA Media Agent 2.0", x: 130, y: 60, width: 440, height: 520, isOpen: false },
     { id: "axis_paint_setup", title: "Axis Paint 2.0 Setup", x: 180, y: 100, width: 620, height: 460, isOpen: false },
     { id: "axis_paint", title: "Axis Paint 2.0", x: 100, y: 60, width: 720, height: 560, isOpen: false },
-    { id: "retrotv", title: "RetroTV Cable Simulator", x: 150, y: 80, width: 800, height: 600, isOpen: false }
+    { id: "retrotv", title: "RetroTV Cable Simulator", x: 150, y: 80, width: 800, height: 600, isOpen: false },
+    { id: "remote_desktop", title: "VesperaConnect Remote Desktop", x: 60, y: 30, width: 780, height: 560, isOpen: false },
+    { id: "welcome_tour", title: "Vespera OS Tour", x: 140, y: 100, width: 700, height: 500, isOpen: false },
+    { id: "agentv_plus_setup", title: "VAgent PLUS! Character Expansion Setup", x: 200, y: 100, width: 560, height: 440, isOpen: false },
+    { id: "aw_release_radar_setup", title: "AW Release Radar Setup", x: 220, y: 120, width: 500, height: 400, isOpen: false },
+    { id: "aw_release_radar", title: "AW Release Radar", x: 120, y: 90, width: 400, height: 500, isOpen: false }
   ]);
 
   const vfs = useVFS();
@@ -210,9 +245,12 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   const [glitchText, setGlitchText] = useState("");
   const [isLaunchingBrowser, setIsLaunchingBrowser] = useState(false);
   const [needsRecovery, setNeedsRecovery] = useState(false);
+  const [remoteDesktopCloseWarning, setRemoteDesktopCloseWarning] = useState(false);
   const [showShortcutWizard, setShowShortcutWizard] = useState(false);
   const [signingOut, setSigningOut] = useState<null | "login" | "terminal">(null);
   const [propertiesModal, setPropertiesModal] = useState<{ id: string, name: string, target: string, type?: string } | null>(null);
+  const [screensaverActive, setScreensaverActive] = useState(false);
+  const [lastFocusedApp, setLastFocusedApp] = useState<string | null>(null);
   const [iconPositions, setIconPositions] = useState<Record<string, {x: number, y: number}>>(() => {
     const saved = localStorage.getItem('desktop_icon_positions');
     return saved ? JSON.parse(saved) : {};
@@ -221,6 +259,44 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   useEffect(() => {
     localStorage.setItem('desktop_icon_positions', JSON.stringify(iconPositions));
   }, [iconPositions]);
+
+  // Welcome Tour Trigger
+  useEffect(() => {
+    if (vfs.displaySettings.showWelcomeTour) {
+      const timeout = setTimeout(() => {
+        openWindow("welcome_tour");
+      }, 1500);
+      return () => clearTimeout(timeout);
+    }
+  }, []);
+
+  // Plus! Theme Ambient Audio Trigger
+  useEffect(() => {
+    const themeId = vfs.displaySettings?.plusTheme || 'standard';
+    const isMuted = vfs.displaySettings?.plusThemeAmbientMuted === true;
+    
+    if (themeId !== 'standard' && PLUS_THEMES[themeId]?.ambientType) {
+      if (document.visibilityState === 'visible') {
+         startPlusAmbient(PLUS_THEMES[themeId].ambientType!, isMuted ? 0 : PLUS_THEMES[themeId].ambientVolume);
+      }
+    } else {
+      stopPlusAmbient();
+    }
+
+    const handleVisibilityChange = () => {
+       if (document.visibilityState === 'hidden') {
+          stopPlusAmbient();
+       } else if (themeId !== 'standard' && PLUS_THEMES[themeId]?.ambientType) {
+          startPlusAmbient(PLUS_THEMES[themeId].ambientType!, isMuted ? 0 : PLUS_THEMES[themeId].ambientVolume);
+       }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      stopPlusAmbient();
+    };
+  }, [vfs.displaySettings?.plusTheme, vfs.displaySettings?.plusThemeAmbientMuted]);
 
   useEffect(() => {
     if (localStorage.getItem('needsRecovery') === 'true') {
@@ -244,6 +320,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [signingOut, needsRecovery]);
+
   const [cmdWindows, setCmdWindows] = useState<{id: number, x: number, y: number, text: string}[]>([]);
   const [bootPhase, setBootPhase] = useState<number>(0);
   // Post-login reveal animation state
@@ -261,6 +338,12 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     nowPlayingArt: null as string | null,
   }));
   const taskbarTrayRef = React.useRef<HTMLDivElement>(null);
+
+  // ── VMail background delivery & notifications ────────────────────
+  const { unreadCount: vmailUnread, newMailArrived, latestMail, clearNewMailFlag, startBackgroundDelivery, stopBackgroundDelivery } = useVMail();
+  const [mailToast, setMailToast] = useState<{ from: string; subject: string } | null>(null);
+  const mailToastTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevNewMailRef = React.useRef(newMailArrived);
 
   // Window resize state
   const [resizing, setResizing] = useState<{
@@ -285,8 +368,8 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     localStorage.setItem('vespera_dock_order', JSON.stringify(dockOrder));
   }, [dockOrder]);
 
-  const MIN_WIN_W = 250;
-  const MIN_WIN_H = 180;
+  const MIN_WIN_W = 300;
+  const MIN_WIN_H = 200;
   const resizeCursorMap: Record<string, string> = {
     n: 'ns-resize', s: 'ns-resize',
     e: 'ew-resize', w: 'ew-resize',
@@ -310,15 +393,18 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         let newH = initialH;
         let newX = initialX;
         let newY = initialY;
-        if (resizing.edge.includes('e')) newW = Math.max(MIN_WIN_W, initialW + dx);
-        if (resizing.edge.includes('s')) newH = Math.max(MIN_WIN_H, initialH + dy);
+        let localMinW = w.minWidth || MIN_WIN_W;
+        let localMinH = w.minHeight || MIN_WIN_H;
+
+        if (resizing.edge.includes('e')) newW = Math.max(localMinW, initialW + dx);
+        if (resizing.edge.includes('s')) newH = Math.max(localMinH, initialH + dy);
         if (resizing.edge.includes('w')) {
-          const delta = Math.min(dx, initialW - MIN_WIN_W);
+          const delta = Math.min(dx, initialW - localMinW);
           newW = initialW - delta;
           newX = initialX + delta;
         }
         if (resizing.edge.includes('n')) {
-          const delta = Math.min(dy, initialH - MIN_WIN_H);
+          const delta = Math.min(dy, initialH - localMinH);
           newH = initialH - delta;
           newY = initialY + delta;
         }
@@ -357,6 +443,36 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     .filter(n => n.isApp)
     .map(n => n.id === 'netmon_exe' ? 'netmon' : n.id === 'rhid_exe' ? 'rhid' : n.id === 'retrotv_exe' ? 'retrotv' : n.id);
 
+  const vmailInstalled = installedApps.includes('vmail');
+
+  // Start/stop background mail delivery based on VMail installation
+  useEffect(() => {
+    if (vmailInstalled && bootPhase === 99) {
+      startBackgroundDelivery();
+    } else {
+      stopBackgroundDelivery();
+    }
+    return () => stopBackgroundDelivery();
+  }, [vmailInstalled, bootPhase, startBackgroundDelivery, stopBackgroundDelivery]);
+
+  // React to new mail arriving — play sound + show toast
+  useEffect(() => {
+    if (newMailArrived > 0 && newMailArrived !== prevNewMailRef.current) {
+      prevNewMailRef.current = newMailArrived;
+      playNewMailSound();
+      
+      if (latestMail && vfs.displaySettings?.agentVEnabled !== false) {
+        window.dispatchEvent(new CustomEvent('agent-v-notify', { detail: { type: 'new_mail', from: latestMail.from, subject: latestMail.subject } }));
+      } else if (latestMail) {
+        setMailToast({ from: latestMail.from, subject: latestMail.subject });
+        // Auto-dismiss after 6 seconds
+        if (mailToastTimerRef.current) clearTimeout(mailToastTimerRef.current);
+        mailToastTimerRef.current = setTimeout(() => setMailToast(null), 6000);
+      }
+      clearNewMailFlag();
+    }
+  }, [newMailArrived, latestMail, clearNewMailFlag, vfs.displaySettings?.agentVEnabled]);
+
   const setTaskbarPlaybackVolume = React.useCallback((v: number) => {
     const clamped = Math.max(0, Math.min(1, v));
     setTaskbarMedia((m) => ({ ...m, volume: clamped }));
@@ -386,6 +502,12 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   }, []);
 
   useEffect(() => {
+    const triggerSs = () => setScreensaverActive(true);
+    window.addEventListener('trigger-screensaver', triggerSs);
+    return () => window.removeEventListener('trigger-screensaver', triggerSs);
+  }, []);
+
+  useEffect(() => {
     if (!internetTrayOpen && !volumeTrayOpen) return;
     const close = (e: MouseEvent) => {
       const el = taskbarTrayRef.current;
@@ -398,6 +520,15 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   }, [internetTrayOpen, volumeTrayOpen]);
 
   useEffect(() => () => stopGuiAmbientHum(), []);
+
+  // ── Screensaver idle timer ────────────────────────────────────────
+  const ssType = (vfs.displaySettings?.screensaverType || 'none') as ScreensaverType;
+  const ssTimeout = vfs.displaySettings?.screensaverTimeout ?? 5;
+  useScreensaverIdle(
+    bootPhase === 99 && ssType !== 'none' && !screensaverActive && !signingOut && !needsRecovery,
+    ssTimeout,
+    () => setScreensaverActive(true),
+  );
 
   useEffect(() => {
     if (bootPhase === 99 && taskbarVisible) {
@@ -529,6 +660,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   }, [neuralBridgeActive]);
 
   const bringToFront = (id: string) => {
+    setLastFocusedApp(id);
     setWindows(prev => {
       const winIndex = prev.findIndex(w => w.id === id);
       if (winIndex === -1) return prev;
@@ -613,10 +745,24 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     e.stopPropagation();
     setWindows(prev => prev.map(w => w.id === id ? { ...w, isMaximized: !w.isMaximized } : w));
     bringToFront(id);
+    
+    // Easter egg/Agent V Hook: Complaining about large windows
+    if (vfs.displaySettings?.agentVEnabled !== false) {
+      if (Math.random() > 0.7) {
+        window.dispatchEvent(new CustomEvent('agent-v-notify', { 
+           detail: { type: 'system_event', text: "Whoa, that's a big window! Careful not to cover me up!", lore: false } 
+        }));
+      }
+    }
   };
 
   const closeWindow = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    // Intercept close on remote_desktop — show warning if session is active
+    if (id === 'remote_desktop') {
+      setRemoteDesktopCloseWarning(true);
+      return;
+    }
     setWindows(prev => prev.map(w => w.id === id ? { ...w, isOpen: false, isMinimized: false, isMaximized: false } : w));
   };
 
@@ -637,6 +783,14 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     };
     window.addEventListener("launch-app", onLaunchApp);
     return () => window.removeEventListener("launch-app", onLaunchApp);
+  }, []);
+
+  // Bridge for ControlPanel to launch the AgentV PLUS! Setup Wizard
+  useEffect(() => {
+    (window as any).__launchAgentVPlusSetup = () => {
+      openWindow("agentv_plus_setup");
+    };
+    return () => { delete (window as any).__launchAgentVPlusSetup; };
   }, []);
 
   const handleLaunchBrowser = () => {
@@ -961,6 +1115,13 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           setUnrestrictedPollingEnabled={setUnrestrictedPollingEnabled}
           onClose={() => closeWindow("xtype", { stopPropagation: () => {} } as any)}
         />;
+      case "welcome_tour":
+        return <WelcomeTour 
+          onClose={() => closeWindow("welcome_tour", { stopPropagation: () => {} } as any)} 
+          onLaunchApp={(appId) => openWindow(appId)}
+          agentVSkin={vfs.displaySettings?.agentVSkin || 'classic'}
+          agentVSpeak={vfs.displaySettings?.agentVSpeak === true}
+        />;
       case "netmon":
         return <NetMonitor neuralBridgeActive={neuralBridgeActive} />;
       case "netmon_setup":
@@ -980,6 +1141,14 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           }}
           onCancel={() => closeWindow("rhid_setup", { stopPropagation: () => {} } as any)}
           onReboot={onReboot}
+        />;
+      case "agentv_plus_setup":
+        return <AgentVPlusSetupWizard
+          vfs={vfs}
+          onComplete={() => {
+            closeWindow("agentv_plus_setup", { stopPropagation: () => {} } as any);
+          }}
+          onCancel={() => closeWindow("agentv_plus_setup", { stopPropagation: () => {} } as any)}
         />;
       case "rhid":
         return <RHIDTerminal neuralBridgeActive={neuralBridgeActive} />;
@@ -1004,6 +1173,10 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         }} />;
       case "defrag":
         return <DiskDefrag />;
+      case "vaim":
+        return <VesperaChat onClose={() => closeWindow("vaim", { stopPropagation: () => {} } as any)} neuralBridgeActive={neuralBridgeActive} />;
+      case "vsweeper":
+        return <VSweeper onClose={() => closeWindow("vsweeper", { stopPropagation: () => {} } as any)} neuralBridgeActive={neuralBridgeActive} />;
       case "scandisk":
         return <DiskScanCheck vfs={vfs} neuralBridgeActive={neuralBridgeActive} />;
       case "dialup":
@@ -1046,7 +1219,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
       case "vmail_setup":
         return <VMailSetup vfs={vfs} onComplete={() => closeWindow("vmail_setup", { stopPropagation: () => {} } as any)} onCancel={() => closeWindow("vmail_setup", { stopPropagation: () => {} } as any)} />;
       case "vmail":
-        return <VMail onClose={() => closeWindow("vmail", { stopPropagation: () => {} } as any)} />;
+        return <VMail vfs={vfs} onClose={() => closeWindow("vmail", { stopPropagation: () => {} } as any)} />;
       case "axis_paint_setup":
         return (
           <AxisPaintSetup
@@ -1066,6 +1239,24 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
             onClose={() => closeWindow("retrotv", { stopPropagation: () => {} } as any)} 
           />
         );
+      case "remote_desktop":
+        return (
+          <RemoteDesktop
+            onRequestClose={() => {
+              setWindows(prev => prev.map(w => w.id === 'remote_desktop' ? { ...w, isOpen: false, isMinimized: false, isMaximized: false } : w));
+            }}
+          />
+        );
+      case "aw_release_radar_setup":
+        return (
+          <ReleaseRadarSetup 
+            vfs={vfs} 
+            onComplete={() => closeWindow("aw_release_radar_setup", { stopPropagation: () => {} } as any)} 
+            onCancel={() => closeWindow("aw_release_radar_setup", { stopPropagation: () => {} } as any)} 
+          />
+        );
+      case "aw_release_radar":
+        return <ReleaseRadar />;
       default:
         // Generic Setup Wizard logic for VStore apps
         if (id.endsWith("_setup")) {
@@ -1124,6 +1315,40 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   const physicalHeight = 600;
   
   const scale = Math.min(physicalWidth / deskWidth, physicalHeight / deskHeight);
+
+  const resetWindowPositions = () => {
+    setWindows(prev => prev.map(w => ({
+      ...w,
+      x: 100 + (Math.random() * 50),
+      y: 100 + (Math.random() * 50),
+      isMinimized: false,
+      isMaximized: false
+    })));
+  };
+
+  // Off-screen rescue logic
+  useEffect(() => {
+    if (bootPhase === 99) {
+      setWindows(prev => {
+        let changed = false;
+        const next = prev.map(w => {
+          if (!w.isOpen) return w;
+          // If window is way off screen (more than 90% hidden)
+          const isOffLeft = w.x < - (w.width || 384) * 0.9;
+          const isOffTop = w.y < 0; // We always want title bar visible
+          const isOffRight = w.x > deskWidth - 40;
+          const isOffBottom = w.y > deskHeight - 40;
+
+          if (isOffLeft || isOffTop || isOffRight || isOffBottom) {
+            changed = true;
+            return { ...w, x: 100, y: 100, isMinimized: false };
+          }
+          return w;
+        });
+        return changed ? next : prev;
+      });
+    }
+  }, [bootPhase, deskWidth, deskHeight]);
 
   // Whether we are still in the boot/init sequence (dialogs visible)
   const isInitializing = bootPhase < 99;
@@ -1216,7 +1441,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   return (
     <div className={`w-full h-full flex items-center justify-center font-sans overflow-hidden ${screenMode === 'Full' ? 'bg-[#5f8787]' : 'bg-black'}`}>
       <div 
-        className={`shrink-0 relative overflow-hidden text-black select-none shadow-[0_0_50px_rgba(0,0,0,0.8)] transition-all duration-1000 origin-center ${isLaunchingBrowser ? 'cursor-wait' : ''} ${neuralBridgeActive ? 'bg-[#4a6b6b]' : (!vfs.displaySettings?.backgroundColor && !vfs.displaySettings?.wallpaper ? 'bg-[#5f8787]' : '')}`}
+        className={`shrink-0 relative overflow-hidden text-black select-none shadow-[0_0_50px_rgba(0,0,0,0.8)] transition-all duration-1000 origin-center ${vfs.displaySettings?.cursorStyle && vfs.displaySettings.cursorStyle !== 'default' ? (['crosshair', 'help', 'wait', 'text', 'move'].includes(vfs.displaySettings.cursorStyle) ? 'sys-cursor-' + vfs.displaySettings.cursorStyle : 'plus-cursor-' + vfs.displaySettings.cursorStyle) : (PLUS_THEMES[vfs.displaySettings?.plusTheme || 'standard']?.cursorClass || '')} ${PLUS_THEMES[vfs.displaySettings?.plusTheme || 'standard']?.overlayClass || ''} ${PLUS_THEMES[vfs.displaySettings?.plusTheme || 'standard']?.scrollbarClass || ''} ${isLaunchingBrowser ? 'sys-cursor-wait' : ''} ${neuralBridgeActive ? 'bg-[#4a6b6b]' : (!vfs.displaySettings?.backgroundColor && !vfs.displaySettings?.wallpaper ? 'bg-[#5f8787]' : '')}`}
         style={{ 
           width: deskWidth, 
           height: deskHeight, 
@@ -1231,6 +1456,14 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           } : {})
         }}
       >
+
+      {/* ── Screensaver Overlay ────────────────────────────────────── */}
+      {screensaverActive && ssType !== 'none' && bootPhase === 99 && (
+        <ScreensaverOverlay
+          type={ssType}
+          onDismiss={() => setScreensaverActive(false)}
+        />
+      )}
       
       {/* Download Dialog */}
       {downloadState?.isDownloading && (
@@ -1385,7 +1618,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
       {/* Desktop Workspace */}
       <div 
         ref={desktopRef}
-        className="absolute inset-0 p-4 pb-12" 
+        className="absolute inset-0" 
         onClick={() => {
           setMenuOpen(false);
           setContextMenu(null);
@@ -1393,6 +1626,9 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         }}
         onContextMenu={(e) => handleContextMenu(e)}
       >
+        <div className="absolute inset-0 p-4 pointer-events-none">
+          {/* This layer provides the icon margin without affecting window constraints */}
+        </div>
         
         {/* Haunted Background Elements */}
         {neuralBridgeActive && (
@@ -1448,7 +1684,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
 
         {/* Desktop Icons — hidden during init, then fade + stagger in */}
         <div 
-          className={`absolute inset-0 p-4 flex flex-col gap-4 flex-wrap max-h-[calc(100%-4rem)] transition-opacity duration-700 ${iconsVisible ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute inset-0 p-6 pb-20 flex flex-col gap-4 flex-wrap max-h-full transition-opacity duration-700 ${iconsVisible ? 'opacity-100' : 'opacity-0'}`}
           style={{ pointerEvents: iconsVisible ? 'auto' : 'none' }}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
@@ -1653,6 +1889,30 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           />
         )}
 
+        {/* Remote Desktop Close Warning */}
+        {remoteDesktopCloseWarning && (
+          <div className="absolute inset-0 z-[9999] flex items-center justify-center bg-black/40">
+            <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] w-80">
+              <div className="bg-[#000080] text-white px-2 py-1 text-sm font-bold">VesperaConnect</div>
+              <div className="p-4 text-sm">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="w-8 h-8 bg-yellow-400 border-2 border-t-yellow-200 border-l-yellow-200 border-b-yellow-600 border-r-yellow-600 flex items-center justify-center text-black font-bold text-xl shrink-0">!</div>
+                  <div>
+                    <p className="font-bold mb-1">Active remote session detected!</p>
+                    <p className="text-xs">Closing this window will terminate your connection to VESPERA-SRV01. Any unsaved work on the remote server will be lost.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 px-4 pb-3">
+                <button onClick={() => { setRemoteDesktopCloseWarning(false); setWindows(prev => prev.map(w => w.id === 'remote_desktop' ? { ...w, isOpen: false, isMinimized: false, isMaximized: false } : w)); }}
+                  className="px-4 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-sm font-bold active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">Disconnect</button>
+                <button onClick={() => setRemoteDesktopCloseWarning(false)}
+                  className="px-4 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-sm font-bold active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <RunDialog isOpen={runDialogOpen} onClose={() => setRunDialogOpen(false)} onSubmit={handleRunLine} />
 
         {/* Window Management Workspace - Focus Shield */}
@@ -1666,9 +1926,10 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           }}
         >
           {windows.map((win, index) => {
+            const isPersistentMinimized = win.isMinimized && ["media_player", "vstore", "vmail"].includes(win.id);
             if (!win.isOpen) return null;
-            if (win.isMinimized && win.id !== "media_player") return null;
-            const mediaMinimized = win.id === "media_player" && win.isMinimized;
+            if (win.isMinimized && !isPersistentMinimized) return null;
+            
             const activeWindowId = windows.filter(w => w.isOpen && !w.isMinimized).pop()?.id;
             const isActive = win.id === activeWindowId;
             const isBeingResized = resizing?.id === win.id;
@@ -1676,27 +1937,39 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
             return (
             <motion.div
               key={win.id}
-              drag={!win.isMaximized && !resizing && !mediaMinimized}
+              drag={!win.isMaximized && !resizing && !isPersistentMinimized}
               dragMomentum={false}
+              dragConstraints={desktopRef}
+              dragElastic={0}
               onDragEnd={(e, info) => {
-                setWindows(prev => prev.map(w => w.id === win.id ? { ...w, x: w.x + info.offset.x, y: w.y + info.offset.y } : w));
+                // Ensure some part of the window (at least the title bar) stays on screen
+                // motion.div handles dragging within constraints, but we need to update state
+                // info.point is absolute, but win.x/y are relative to parent
+                const rect = (e.target as HTMLElement).getBoundingClientRect();
+                const parentRect = desktopRef.current?.getBoundingClientRect() || { left: 0, top: 0 };
+                const scaleVal = parentRect.width / (deskWidth || 1) || 1;
+                
+                const finalX = (rect.left - parentRect.left) / scaleVal;
+                const finalY = (rect.top - parentRect.top) / scaleVal;
+
+                setWindows(prev => prev.map(w => w.id === win.id ? { ...w, x: finalX, y: finalY } : w));
               }}
               onMouseDown={() => bringToFront(win.id)}
               initial={{ x: win.x, y: win.y }}
               animate={{ 
-                x: mediaMinimized ? -9999 : (win.isMaximized ? 4 : win.x), 
-                y: mediaMinimized ? 0 : (win.isMaximized ? 4 : win.y), 
-                width: mediaMinimized ? 1 : (win.isMaximized ? 'calc(100% - 8px)' : (win.width || 384)), 
-                height: mediaMinimized ? 1 : (win.isMaximized ? 'calc(100% - 80px)' : (win.height || 'auto')),
+                x: isPersistentMinimized ? -9999 : (win.isMaximized ? 4 : win.x), 
+                y: isPersistentMinimized ? 0 : (win.isMaximized ? 4 : win.y), 
+                width: isPersistentMinimized ? 1 : (win.isMaximized ? (deskWidth - 8) : (win.width || 384)), 
+                height: isPersistentMinimized ? 1 : (win.isMaximized ? (deskHeight - 80) : (win.height || 'auto')),
                 scale: 1,
-                opacity: mediaMinimized ? 0 : 1
+                opacity: isPersistentMinimized ? 0 : 1
               }}
               transition={{ duration: isBeingResized ? 0 : 0.1 }}
-              className="absolute bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden"
-              style={{ zIndex: mediaMinimized ? 0 : 100 + index, top: 0, left: 0, pointerEvents: mediaMinimized ? "none" : "auto" }}
+              className={`absolute bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden box-border ${vfs.displaySettings?.plusTheme === 'cyber_nature' ? 'plus-window-open-nature' : vfs.displaySettings?.plusTheme === 'corporate_void' ? 'plus-window-open-void' : ''}`}
+              style={{ zIndex: isPersistentMinimized ? 0 : 100 + index, top: 0, left: 0, pointerEvents: isPersistentMinimized ? "none" : "auto" }}
             >
               {/* Resize handles — only on non-maximized windows */}
-              {!win.isMaximized && !mediaMinimized && (
+              {!win.isMaximized && !isPersistentMinimized && (
                 <>
                   {/* Edges */}
                   <div onMouseDown={e => startResize(e, win.id, 'n')}  style={{ position:'absolute', top:-4,    left:8,    right:8,   height:8,  cursor:'ns-resize',   zIndex:10 }} />
@@ -1760,7 +2033,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
 
       {/* Motif/CDE Inspired Centered Panel (1991-1994 UNIX style) — slides up when desktop is ready */}
       <div 
-        className={`absolute left-1/2 -translate-x-1/2 h-16 border-2 flex items-center p-1.5 gap-2 z-[9999] shadow-[4px_4px_0px_rgba(0,0,0,0.5)] transition-all duration-700 ease-out ${theme.bgOuter} ${theme.borderOuter} ${taskbarVisible ? 'bottom-2 opacity-100' : '-bottom-20 opacity-0'}`}
+        className={`absolute left-1/2 -translate-x-1/2 h-16 border-2 flex items-center p-1.5 gap-2 z-[9999] shadow-[4px_4px_0px_rgba(0,0,0,0.5)] transition-all duration-700 ease-out ${theme.bgOuter} ${theme.borderOuter} ${taskbarVisible ? 'bottom-2 opacity-100' : '-bottom-20 opacity-0'} max-w-[98%] whitespace-nowrap overflow-hidden`}
         onContextMenu={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -2378,9 +2651,48 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                   <Volume2 size={14} className="text-gray-600 shrink-0 w-[14px]" aria-hidden />
                 </div>
                 <p className="text-[9px] text-gray-600 mt-1.5 leading-tight">Adjusts VERSA Media Agent output. Preference is saved.</p>
+
+                {(vfs.displaySettings?.plusTheme && vfs.displaySettings.plusTheme !== 'standard' && PLUS_THEMES[vfs.displaySettings.plusTheme]?.ambientType) ? (
+                  <div className="mt-3 border-t border-gray-400 pt-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="accent-[#000080]"
+                        checked={vfs.displaySettings.plusThemeAmbientMuted === true}
+                        onChange={(e) => {
+                          if (vfs.updatePlusTheme) {
+                            vfs.updatePlusTheme(vfs.displaySettings.plusTheme, e.target.checked);
+                          }
+                        }}
+                      />
+                      <span className="text-[10px] font-bold">Mute System Ambience</span>
+                    </label>
+                  </div>
+                ) : null}
               </div>
             )}
           </div>
+
+          {/* Tray: Mail icon (only when VMail is installed) */}
+          {vmailInstalled && (
+            <div className="relative h-full flex items-stretch">
+              <button
+                type="button"
+                title={vmailUnread > 0 ? `${vmailUnread} unread message${vmailUnread !== 1 ? 's' : ''}` : 'VMail'}
+                onClick={() => {
+                  setInternetTrayOpen(false);
+                  setVolumeTrayOpen(false);
+                  toggleWindow('vmail');
+                }}
+                className={`h-full w-9 flex items-center justify-center border-2 relative ${theme.bgButton} ${theme.borderButton} ${theme.activeClass}`}
+              >
+                <Mail size={16} className={theme.textMain.includes('black') ? 'text-black' : 'text-white'} />
+                {vmailUnread > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-yellow-400 rounded-full border border-yellow-600 shadow-[0_0_4px_rgba(255,204,0,0.8)] animate-pulse" />
+                )}
+              </button>
+            </div>
+          )}
 
           {(() => {
             const mediaPlayerOpen = windows.some((w) => w.id === "media_player" && w.isOpen);
@@ -2490,6 +2802,56 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           })()}
         </div>
       </div>
+
+        {/* Mail Notification Toast */}
+        <AnimatePresence>
+          {mailToast && (
+            <motion.div
+              key="mail-toast"
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 60, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              className="absolute z-[9999] cursor-pointer"
+              style={{ bottom: 44, right: 8 }}
+              onClick={() => {
+                setMailToast(null);
+                if (mailToastTimerRef.current) clearTimeout(mailToastTimerRef.current);
+                toggleWindow('vmail');
+              }}
+            >
+              <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] w-[260px]">
+                {/* Toast title bar */}
+                <div className="bg-[#000080] text-white text-[11px] font-bold px-2 py-0.5 flex items-center gap-1.5">
+                  <Mail size={12} className="text-yellow-300 shrink-0" />
+                  <span>New Mail</span>
+                  <button
+                    className="ml-auto w-4 h-3.5 flex items-center justify-center bg-[#c0c0c0] border border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-black text-[9px] font-bold leading-none active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMailToast(null);
+                      if (mailToastTimerRef.current) clearTimeout(mailToastTimerRef.current);
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                {/* Toast body */}
+                <div className="p-2.5 flex items-start gap-2">
+                  <div className="shrink-0 mt-0.5">
+                    <Mail size={20} className="text-yellow-600" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] text-black font-bold truncate">{mailToast.subject}</p>
+                    <p className="text-[10px] text-gray-600 truncate mt-0.5">From: {mailToast.from}</p>
+                    <p className="text-[9px] text-gray-500 mt-1">Click to open VMail</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Context Menu */}
         {contextMenu && (
           <div 
@@ -2514,6 +2876,27 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                   }}
                 >
                   Properties
+                </button>
+                <div className="h-0.5 bg-gray-500 border-b border-white my-1 mx-1" />
+                <button 
+                  className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    resetWindowPositions();
+                    setContextMenu(null);
+                  }}
+                >
+                  Cascade Windows
+                </button>
+                <button 
+                  className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setWindows(prev => prev.map(w => ({ ...w, isMinimized: true })));
+                    setContextMenu(null);
+                  }}
+                >
+                  Minimize All
                 </button>
               </>
             ) : contextMenu.nodeId?.startsWith('__task__') ? (() => {
@@ -2700,6 +3083,17 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 >
                   Display Properties
                 </button>
+                <div className="h-0.5 bg-gray-500 border-b border-white my-1 mx-1" />
+                <button 
+                  className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    resetWindowPositions();
+                    setContextMenu(null);
+                  }}
+                >
+                  Reset Window Positions
+                </button>
               </>
             )}
           </div>
@@ -2717,6 +3111,24 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
             setSigningOut(null);
             if (signingOut === "login") onSignOut();
             else onSignOutToTerminal();
+          }}
+        />
+      )}
+
+      {/* Vespera Assistant (Agent V) */}
+      {bootPhase === 99 && !screensaverActive && !signingOut && (
+        <VesperaAssistant
+          enabled={vfs.displaySettings?.agentVEnabled !== false}
+          skin={vfs.displaySettings?.agentVSkin || 'classic'}
+          speak={vfs.displaySettings?.agentVSpeak === true}
+          openAppId={lastFocusedApp}
+          neuralBridgeActive={neuralBridgeActive}
+          tourActive={windows.some(w => w.id === 'welcome_tour' && w.isOpen)}
+          onOpenSettings={() => addWindow({ id: 'control_panel', title: 'CRT Control Panel', x: 100, y: 100, width: 400, height: 420, target: 'agent_v' })}
+          onHide={() => {
+            if (vfs.updateAgentVSettings) {
+               vfs.updateAgentVSettings(false, vfs.displaySettings?.agentVSkin || 'classic', vfs.displaySettings?.agentVSpeak);
+            }
           }}
         />
       )}

@@ -1,12 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, ShieldAlert, KeyRound, ArrowRight, Server, Inbox, Send, FileEdit, Trash2, BookUser, Search, RefreshCw, AlertTriangle, UserCircle2, UserPlus, Network } from 'lucide-react';
-import { getAccounts, VStoreAccount } from './VStoreAuth';
+import { Mail, ShieldAlert, KeyRound, ArrowRight, Server, Inbox, Send, FileEdit, Trash2, BookUser, Search, RefreshCw, AlertTriangle, UserCircle2, UserPlus, Network, Paperclip, Save, CornerUpLeft, CornerUpRight, Printer, Book } from 'lucide-react';
+import { getAccounts, VStoreAccount, getSession, setSession } from './VStoreAuth';
 import { useVMail } from '../contexts/VMailContext';
 import { playBrowserBootSound, playInfoSound } from '../utils/audio';
+import { VersaFileManager } from './VersaFileManager';
 
-export const VMail: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { emails, sendEmail, deleteEmail, markAsRead } = useVMail();
-  const [activeAccount, setActiveAccount] = useState<VStoreAccount | null>(null);
+export const CONTACTS = [
+  { name: 'SysAdmin', email: 'admin@vesperanet.sys' },
+  { name: 'X-Type Support', email: 'xtype@internal.vesperanet.sys' },
+  { name: 'Elias Thorne', email: 'thorne.e@vesperasystems.com' },
+  { name: 'Dr. Vasquez', email: 'dr.vasquez@vesperacorp.internal' },
+  { name: 'IT Helpdesk', email: 'helpdesk@vesperacorp.internal' },
+  { name: 'Postmaster', email: 'postmaster@vesperacorp.internal' },
+  { name: 'EchoSoft Liaison', email: 'unknown_sender@echosoft.com' }
+];
+
+export const VMail: React.FC<{ onClose: () => void, vfs?: any }> = ({ onClose, vfs }) => {
+  const { emails, sendEmail, deleteEmail, markAsRead, saveDraft } = useVMail();
+  const [activeAccount, setActiveAccount] = useState<VStoreAccount | null>(() => {
+    const session = getSession();
+    if (session) {
+      const account = getAccounts().find(a => a.username === session);
+      if (account && !account.isGuest) return account;
+    }
+    return null;
+  });
   
   // Login Form State
   const [username, setUsername] = useState('');
@@ -28,7 +46,11 @@ export const VMail: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [draftTo, setDraftTo] = useState('');
   const [draftSubject, setDraftSubject] = useState('');
   const [draftBody, setDraftBody] = useState('');
+  const [draftAttachments, setDraftAttachments] = useState<{name: string, content: string}[]>([]);
+  const [showAttachmentPicker, setShowAttachmentPicker] = useState(false);
+  const [showAddressBook, setShowAddressBook] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
+  const [alertModal, setAlertModal] = useState<{isOpen: boolean, message: string}>({isOpen: false, message: ''});
 
   const handleCreateAccount = () => {
      window.dispatchEvent(new CustomEvent('launch-app', { detail: { id: 'browser', defaultUrl: 'vespera:account' } }));
@@ -58,6 +80,7 @@ export const VMail: React.FC<{ onClose: () => void }> = ({ onClose }) => {
      setTimeout(() => {
         setIsDialing(false);
         setActiveAccount(account);
+        setSession(account.username);
      }, 4800);
   };
 
@@ -89,12 +112,49 @@ export const VMail: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
   const handleSend = () => {
     if (!draftTo || !draftBody) return;
-    sendEmail(draftTo, draftSubject, draftBody, activeAccount?.displayName || 'Unknown');
+    sendEmail(draftTo, draftSubject, draftBody, activeAccount?.displayName || 'Unknown', draftAttachments.length > 0 ? draftAttachments : undefined);
     setComposing(false);
     setDraftTo('');
     setDraftSubject('');
     setDraftBody('');
+    setDraftAttachments([]);
     setActiveFolder('sent');
+  };
+
+  const handleDiscard = () => {
+    if (draftTo || draftBody || draftSubject) {
+      saveDraft(draftSubject ? draftTo : 'Draft', draftSubject, draftBody, draftAttachments.length > 0 ? draftAttachments : undefined);
+    }
+    setComposing(false);
+    setDraftTo('');
+    setDraftSubject('');
+    setDraftBody('');
+    setDraftAttachments([]);
+  };
+
+  const handleReply = (emailData: any) => {
+    setDraftTo(emailData.from);
+    setDraftSubject(emailData.subject.startsWith('Re:') ? emailData.subject : `Re: ${emailData.subject}`);
+    setDraftBody(`\n\n----------------------------------------\nOn ${emailData.date}, ${emailData.from} wrote:\n\n> ${emailData.body.split('\n').join('\n> ')}`);
+    setDraftAttachments([]);
+    setComposing(true);
+  };
+
+  const handleForward = (emailData: any) => {
+    setDraftTo('');
+    setDraftSubject(emailData.subject.startsWith('Fwd:') ? emailData.subject : `Fwd: ${emailData.subject}`);
+    setDraftBody(`\n\n---------- Forwarded message ---------\nFrom: ${emailData.from}\nDate: ${emailData.date}\nSubject: ${emailData.subject}\n\n${emailData.body}`);
+    setDraftAttachments(emailData.attachments || []);
+    setComposing(true);
+  };
+
+  const handleSaveToVfs = (emailData: any) => {
+    if (!vfs) return;
+    const safeRef = emailData.subject.replace(/[^a-z0-9]/gi, '_').substring(0, 15);
+    const content = `From: ${emailData.from}\r\nDate: ${emailData.date}\r\nSubject: ${emailData.subject}\r\n\r\n${emailData.body}`;
+    vfs.createNode(`MAIL_${safeRef}.TXT`, 'file', 'documents', content);
+    playInfoSound();
+    setAlertModal({ isOpen: true, message: `Saved to C:\\DOCUMENTS\\MAIL_${safeRef}.TXT` });
   };
 
   const handleDelete = () => {
@@ -214,7 +274,7 @@ export const VMail: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const unreadCount = emails.filter(e => e.folder === 'inbox' && !e.read).length;
 
   return (
-    <div className="flex flex-col h-full bg-[#c0c0c0] text-black font-sans border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800">
+    <div className="flex flex-col h-full bg-[#c0c0c0] text-black font-sans border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 relative">
       
       {/* VMail Menu Bar */}
       <div className="flex items-center gap-4 py-1 px-2 border-b border-gray-500 text-xs">
@@ -246,7 +306,7 @@ export const VMail: React.FC<{ onClose: () => void }> = ({ onClose }) => {
            <RefreshCw size={16} className={`text-blue-700 ${isFetching ? 'animate-spin' : ''}`}/>
            <span className="text-xs mt-0.5">Send/Recv</span>
         </button>
-        <button className="flex gap-1 items-center justify-center px-3 py-1 bg-[#c0c0c0] border-2 border-transparent hover:border-t-white hover:border-l-white hover:border-b-gray-800 hover:border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">
+        <button className="flex gap-1 items-center justify-center px-3 py-1 bg-[#c0c0c0] border-2 border-transparent hover:border-t-white hover:border-l-white hover:border-b-gray-800 hover:border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white" onClick={() => setShowAddressBook(true)}>
            <BookUser size={16} className="text-gray-700"/>
            <span className="text-xs mt-0.5">Address</span>
         </button>
@@ -297,25 +357,92 @@ export const VMail: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         {/* Right Pane (Split horizontal for list and read) */}
         <div className="flex flex-col flex-1 min-w-0 gap-1 overflow-hidden">
+          {/* Message List - ALWAYS VISIBLE */}
+          <div className="h-[40%] bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white shadow-inner flex flex-col overflow-y-auto">
+            <div className="bg-[#c0c0c0] flex border-b-2 border-b-gray-400 text-xs font-bold font-sans sticky top-0 shadow-sm">
+              <div className="w-6 border-r-2 border-r-white border-b border-b-gray-400 flex-shrink-0"></div>
+              <div className="w-1/3 border-r-2 border-r-white border-b border-b-gray-400 py-1 px-2">From</div>
+              <div className="flex-1 border-r-2 border-r-white border-b border-b-gray-400 py-1 px-2">Subject</div>
+              <div className="w-1/4 py-1 px-2 border-b border-b-gray-400">Received</div>
+            </div>
+            
+            {activeFolderEmails.length === 0 ? (
+              <div className="p-4 text-center text-sm text-gray-500 mt-2 font-serif italic">This folder is empty.</div>
+            ) : (
+              activeFolderEmails.map(email => (
+                <div 
+                  key={email.id}
+                  onClick={() => {
+                    setSelectedEmailId(email.id);
+                    markAsRead(email.id);
+                    setComposing(false); // Cancel composing if they click a different email here
+                  }}
+                  className={`flex text-xs cursor-pointer select-none
+                    ${selectedEmailId === email.id && !composing ? 'bg-[#000080] text-white' : 'text-black hover:bg-gray-100'}
+                    ${!email.read && (selectedEmailId !== email.id || composing) ? 'font-bold' : ''}
+                  `}
+                >
+                  <div className="w-6 py-0.5 flex-shrink-0 flex items-center justify-center">
+                    {!email.read && <Mail size={12} className={selectedEmailId === email.id && !composing ? 'text-white' : 'text-[#000080]'} />}
+                  </div>
+                  <div className="w-1/3 py-1 px-2 truncate border-r border-[#ececec]">{email.from}</div>
+                  <div className="flex-1 py-1 px-2 truncate border-r border-[#ececec]">{email.subject}</div>
+                  <div className="w-1/4 py-1 px-2 truncate">{email.date}</div>
+                </div>
+              ))
+            )}
+          </div>
+
           {composing ? (
-            <div className="flex flex-col h-full bg-[#c0c0c0] p-2 border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800">
+            <div className="flex-1 flex flex-col min-h-0 bg-[#c0c0c0] p-2 border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800">
               <div className="flex gap-2 mb-2 items-center border-b border-gray-400 pb-2">
                  <button className="flex gap-1 px-4 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 font-bold active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-black hover:bg-[#d0d0d0]" onClick={handleSend} disabled={!draftTo || !draftBody}>
                    <Send size={16} className="text-[#000080]"/> Send
                  </button>
-                 <button className="px-4 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-xs text-black active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white" onClick={() => setComposing(false)}>
+                 <button className="flex gap-1 px-4 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-xs text-black active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white" onClick={() => setShowAttachmentPicker(!showAttachmentPicker)}>
+                   <Paperclip size={14} className="text-gray-700"/> Attach
+                 </button>
+                 <button className="px-4 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-xs text-black active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white ml-auto" onClick={handleDiscard}>
                    Discard
                  </button>
               </div>
               <div className="flex flex-col gap-1 mb-2">
                 <div className="flex items-center gap-2 text-sm bg-white border border-gray-400 p-1">
                   <label className="w-16 font-bold text-gray-800 text-right">To:</label>
-                  <input type="text" value={draftTo} onChange={(e) => setDraftTo(e.target.value)} className="flex-1 outline-none font-sans" placeholder="recipient@vesperanet.sys" />
+                  <div className="flex-1 flex relative items-stretch border border-gray-300">
+                    <input type="text" value={draftTo} onChange={(e) => setDraftTo(e.target.value)} className="flex-1 outline-none font-sans bg-transparent px-1 min-w-0" placeholder="recipient@vesperanet.sys" />
+                    <div className="w-5 bg-[#c0c0c0] border-l border-gray-400 flex items-center justify-center relative cursor-pointer active:bg-gray-300 hover:bg-[#d0d0d0]">
+                       <span className="text-[8px] pointer-events-none">&#9660;</span>
+                       <select 
+                         className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
+                         value=""
+                         onChange={(e) => {
+                           if (e.target.value) setDraftTo(e.target.value);
+                         }}
+                       >
+                         <option value="" disabled>Contacts...</option>
+                         {CONTACTS.map(c => <option key={c.email} value={c.email}>{c.name} &lt;{c.email}&gt;</option>)}
+                       </select>
+                    </div>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 text-sm bg-white border border-gray-400 p-1">
                   <label className="w-16 font-bold text-gray-800 text-right">Subject:</label>
                   <input type="text" value={draftSubject} onChange={(e) => setDraftSubject(e.target.value)} className="flex-1 outline-none font-sans" />
                 </div>
+                {draftAttachments.length > 0 && (
+                  <div className="flex items-center gap-2 text-sm bg-white border border-gray-400 p-1">
+                    <label className="w-16 font-bold text-gray-800 text-right shrink-0">Attached:</label>
+                    <div className="flex-1 flex gap-2 overflow-x-auto">
+                      {draftAttachments.map((att, i) => (
+                        <span key={i} className="flex gap-1 items-center bg-gray-200 px-1 border border-gray-400 text-xs text-[#000080]">
+                          <Paperclip size={10} /> {att.name}
+                          <button onClick={() => setDraftAttachments(prev => prev.filter((_, index) => index !== i))} className="ml-1 text-black hover:text-red-600 font-bold">x</button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <textarea 
                 value={draftBody} 
@@ -324,54 +451,61 @@ export const VMail: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               ></textarea>
             </div>
           ) : (
-            <>
-              {/* Message List */}
-              <div className="h-[40%] bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white shadow-inner flex flex-col overflow-y-auto">
-                <div className="bg-[#c0c0c0] flex border-b-2 border-b-gray-400 text-xs font-bold font-sans sticky top-0 shadow-sm">
-                  <div className="w-6 border-r-2 border-r-white border-b border-b-gray-400 flex-shrink-0"></div>
-                  <div className="w-1/3 border-r-2 border-r-white border-b border-b-gray-400 py-1 px-2">From</div>
-                  <div className="flex-1 border-r-2 border-r-white border-b border-b-gray-400 py-1 px-2">Subject</div>
-                  <div className="w-1/4 py-1 px-2 border-b border-b-gray-400">Received</div>
-                </div>
-                
-                {activeFolderEmails.length === 0 ? (
-                  <div className="p-4 text-center text-sm text-gray-500 mt-2 font-serif italic">This folder is empty.</div>
-                ) : (
-                  activeFolderEmails.map(email => (
-                    <div 
-                      key={email.id}
-                      onClick={() => {
-                        setSelectedEmailId(email.id);
-                        markAsRead(email.id);
-                      }}
-                      className={`flex text-xs cursor-pointer select-none
-                        ${selectedEmailId === email.id ? 'bg-[#000080] text-white' : 'text-black hover:bg-gray-100'}
-                        ${!email.read && selectedEmailId !== email.id ? 'font-bold' : ''}
-                      `}
-                    >
-                      <div className="w-6 py-0.5 flex-shrink-0 flex items-center justify-center">
-                        {!email.read && <Mail size={12} className={selectedEmailId === email.id ? 'text-white' : 'text-[#000080]'} />}
-                      </div>
-                      <div className="w-1/3 py-1 px-2 truncate border-r border-[#ececec]">{email.from}</div>
-                      <div className="flex-1 py-1 px-2 truncate border-r border-[#ececec]">{email.subject}</div>
-                      <div className="w-1/4 py-1 px-2 truncate">{email.date}</div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Message Viewer Wrapper */}
               <div className="flex-1 bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white shadow-inner flex flex-col overflow-hidden">
                 {selectedEmailData ? (
                   <>
+                     <div className="bg-[#c0c0c0] border-b border-gray-400 p-1 flex gap-1 items-center shrink-0">
+                       <button onClick={() => handleReply(selectedEmailData)} className="flex items-center gap-1 px-3 py-0.5 bg-[#c0c0c0] border-2 border-transparent hover:border-t-white hover:border-l-white hover:border-b-gray-800 hover:border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs">
+                         <CornerUpLeft size={14} className="text-[#000080]" /> Reply
+                       </button>
+                       <button onClick={() => handleForward(selectedEmailData)} className="flex items-center gap-1 px-3 py-0.5 bg-[#c0c0c0] border-2 border-transparent hover:border-t-white hover:border-l-white hover:border-b-gray-800 hover:border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs">
+                         <CornerUpRight size={14} className="text-[#000080]" /> Forward
+                       </button>
+                       <div className="w-px h-4 bg-gray-500 mx-1 border-r border-white"></div>
+                       <button onClick={() => handleSaveToVfs(selectedEmailData)} className="flex items-center gap-1 px-3 py-0.5 bg-[#c0c0c0] border-2 border-transparent hover:border-t-white hover:border-l-white hover:border-b-gray-800 hover:border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs">
+                         <Save size={14} className="text-[#000080]" /> Export VFS
+                       </button>
+                     </div>
                      <div className="bg-[#ececec] border-b border-gray-400 p-2 text-xs flex flex-col font-sans shrink-0">
                         <div className="flex mb-1"><strong className="w-16 shrink-0 text-gray-600 font-bold">From:</strong> <span>{selectedEmailData.from}</span></div>
                         <div className="flex mb-1"><strong className="w-16 shrink-0 text-gray-600 font-bold">Date:</strong> <span>{selectedEmailData.date}</span></div>
                         <div className="flex mb-1"><strong className="w-16 shrink-0 text-gray-600 font-bold">To:</strong> <span>{activeAccount.displayName} &lt;{activeAccount.username}@vesperanet.sys&gt;</span></div>
                         <div className="flex pt-1"><strong className="w-16 shrink-0 text-gray-600 font-bold">Subject:</strong> <span className="font-bold">{selectedEmailData.subject}</span></div>
                      </div>
-                     <div className="flex-1 overflow-y-auto whitespace-pre-wrap font-mono text-[13px] p-4 text-black leading-relaxed">
-                       {selectedEmailData.body}
+                     <div className="flex-1 flex flex-col min-h-0 bg-white">
+                       <div className="flex-1 overflow-y-auto whitespace-pre-wrap font-mono text-[13px] p-4 text-black leading-relaxed">
+                         {selectedEmailData.body}
+                       </div>
+                       {selectedEmailData.attachments && selectedEmailData.attachments.length > 0 && (
+                         <div className="p-2 border-t-2 border-gray-400 bg-gray-200 shrink-0 shadow-inner">
+                           <div className="font-bold text-xs mb-2 text-gray-700">Attachments:</div>
+                           <div className="flex gap-2 flex-wrap">
+                             {selectedEmailData.attachments.map((att, idx) => (
+                               <div key={idx} className="flex flex-col gap-1 bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-2 text-xs w-48 shadow-sm">
+                                 <div className="flex items-center gap-2 mb-1">
+                                    <Paperclip size={14} className="text-[#000080]" />
+                                    <span className="font-mono truncate flex-1 font-bold">{att.name}</span>
+                                 </div>
+                                 <button 
+                                   onClick={() => {
+                                     // Save to VFS downloads
+                                     if (vfs) {
+                                        vfs.createNode(att.name, 'file', 'downloads', att.content || '');
+                                        playInfoSound();
+                                        setAlertModal({ isOpen: true, message: `Attachment saved to C:\\DOWNLOADS\\${att.name}` });
+                                     } else {
+                                        setAlertModal({ isOpen: true, message: 'VFS not available to save attachment.' });
+                                     }
+                                   }}
+                                   className="flex justify-center items-center gap-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 px-2 py-1 hover:active:border-t-gray-800 hover:active:border-l-gray-800 hover:active:border-b-white hover:active:border-r-white font-bold w-full"
+                                 >
+                                   <Save size={12} /> Save Target
+                                 </button>
+                               </div>
+                             ))}
+                           </div>
+                         </div>
+                       )}
                      </div>
                   </>
                 ) : (
@@ -380,16 +514,132 @@ export const VMail: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   </div>
                 )}
               </div>
-            </>
           )}
         </div>
       </div>
 
       {/* Status Bar */}
-      <div className="border-t-2 border-t-gray-400 text-[10px] uppercase font-bold text-gray-600 py-0.5 px-2 flex justify-between bg-[#c0c0c0]">
-        <span>Connected as: {activeAccount.displayName}</span>
+      <div className="border-t-2 border-t-gray-400 text-[10px] uppercase font-bold text-gray-600 py-0.5 px-2 flex justify-between items-center bg-[#c0c0c0] shrink-0">
+        <div className="flex gap-2 items-center">
+          <span>Connected as: {activeAccount.displayName}</span>
+          <button 
+            onClick={() => { setSession(null); setActiveAccount(null); }}
+            className="text-[#000080] hover:text-red-700 underline capitalize cursor-pointer font-bold leading-none"
+          >
+            Sign Out
+          </button>
+        </div>
         <span>{unreadCount} Unread Message{unreadCount !== 1 ? 's' : ''}</span>
       </div>
+
+      {showAttachmentPicker && vfs && (
+        <div className="absolute inset-0 z-50 p-4 bg-black/20 flex items-center justify-center pointer-events-auto">
+          <div className="w-[600px] h-[400px] bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[8px_8px_0_rgba(0,0,0,0.5)] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#000080] text-white px-2 py-1 font-bold text-sm tracking-wide border-b border-white flex justify-between">
+              <span>Insert Object</span>
+              <button onClick={() => setShowAttachmentPicker(false)} className="bg-[#c0c0c0] text-black w-4 h-4 flex items-center justify-center font-bold font-mono border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 hover:active:border-t-gray-800 hover:active:border-l-gray-800 hover:active:border-b-white hover:active:border-r-white text-[10px]">X</button>
+            </div>
+            <div className="flex-1 overflow-hidden relative">
+              <VersaFileManager 
+                vfs={vfs} 
+                isPickerMode={true} 
+                onCancel={() => setShowAttachmentPicker(false)}
+                onOpenFile={(nodeId) => {
+                  const file = vfs.getNode(nodeId);
+                  if (file && file.type === 'file') {
+                    setDraftAttachments(prev => [...prev, { name: file.name, content: file.content || '' }]);
+                    setShowAttachmentPicker(false);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      {showAddressBook && (
+        <div className="absolute inset-0 z-[60] p-4 bg-black/20 flex items-center justify-center pointer-events-auto">
+          <div className="w-[500px] h-[350px] bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[8px_8px_0_rgba(0,0,0,0.5)] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#000080] text-white px-2 py-1 font-bold text-sm tracking-wide border-b border-white flex justify-between">
+              <div className="flex gap-2 items-center"><Book size={14}/> <span>VesperaNET Address Book</span></div>
+              <button onClick={() => setShowAddressBook(false)} className="bg-[#c0c0c0] text-black w-4 h-4 flex items-center justify-center font-bold font-mono border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 hover:active:border-t-gray-800 hover:active:border-l-gray-800 hover:active:border-b-white hover:active:border-r-white text-[10px]">X</button>
+            </div>
+            <div className="flex items-center gap-2 p-2 border-b-2 border-gray-500 bg-[#c0c0c0] shrink-0">
+              <BookUser size={32} className="text-[#000080]" />
+              <div className="flex flex-col">
+                 <span className="font-bold text-sm font-serif">Global Directory</span>
+                 <span className="text-xs text-gray-700">Select a contact below to automatically populate the Compose window.</span>
+              </div>
+            </div>
+            <div className="flex-1 bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white m-2 overflow-y-auto w-[460px] self-center">
+               <table className="w-full text-xs text-left">
+                 <thead className="bg-[#c0c0c0] sticky top-0 border-b border-gray-400">
+                   <tr>
+                     <th className="font-bold py-1 px-2 border-r border-gray-400">Name</th>
+                     <th className="font-bold py-1 px-2">E-Mail Address</th>
+                   </tr>
+                 </thead>
+                 <tbody>
+                   {CONTACTS.map((c, i) => (
+                      <tr 
+                         key={i} 
+                         className="hover:bg-[#000080] hover:text-white cursor-pointer border-b border-[#ececec]"
+                         onClick={() => {
+                           setDraftTo(c.email);
+                           setComposing(true);
+                           setShowAddressBook(false);
+                         }}
+                      >
+                        <td className="py-1 px-2 border-r border-[#ececec] whitespace-nowrap">{c.name}</td>
+                        <td className="py-1 px-2">{c.email}</td>
+                      </tr>
+                   ))}
+                   {/* Extract dynamically from emails where from isn't self and not in known */}
+                   {Array.from(new Set(emails.filter(e => e.folder === 'inbox' || e.folder === 'sent').map(e => {
+                      const m = e.from.match(/<([^>]+)>/);
+                      if (m) return m[1];
+                      if (e.from.includes('@')) return e.from;
+                      return '';
+                   }))).filter(f => f && f !== `${activeAccount.username}@vesperanet.sys` && !CONTACTS.some(c => c.email === f)).map((f, i) => (
+                      <tr 
+                         key={f} 
+                         className="hover:bg-[#000080] hover:text-white cursor-pointer border-b border-[#ececec]"
+                         onClick={() => {
+                           setDraftTo(f);
+                           setComposing(true);
+                           setShowAddressBook(false);
+                         }}
+                      >
+                        <td className="py-1 px-2 border-r border-[#ececec] whitespace-nowrap opacity-60">Unknown Entity</td>
+                        <td className="py-1 px-2">{f}</td>
+                      </tr>
+                   ))}
+                 </tbody>
+               </table>
+            </div>
+            <div className="p-2 border-t border-gray-500 flex justify-end gap-2 bg-[#c0c0c0]">
+               <button onClick={() => setShowAddressBook(false)} className="px-6 py-1 font-bold text-sm bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-black hover:bg-gray-200">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {alertModal.isOpen && (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/20 pointer-events-auto">
+          <div className="w-[340px] bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[8px_8px_0_rgba(0,0,0,0.5)] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#000080] text-white px-2 py-1 font-bold text-sm tracking-wide border-b border-white flex justify-between">
+              <span>Information</span>
+              <button onClick={() => setAlertModal({isOpen: false, message: ''})} className="bg-[#c0c0c0] text-black w-4 h-4 flex items-center justify-center font-bold font-mono border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-[10px] hover:active:border-t-gray-800 hover:active:border-l-gray-800 hover:active:border-b-white hover:active:border-r-white">X</button>
+            </div>
+            <div className="p-5 flex gap-4 text-sm items-center font-sans tracking-wide leading-relaxed bg-[#c0c0c0]">
+               <div className="w-10 h-10 border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 rounded-full bg-[#000080] flex items-center justify-center text-white font-bold text-xl shrink-0 text-center font-serif">i</div>
+               <div>{alertModal.message}</div>
+            </div>
+            <div className="p-3 border-t border-gray-500 flex justify-center bg-[#c0c0c0]">
+               <button onClick={() => setAlertModal({isOpen: false, message: ''})} className="px-10 py-1 font-bold text-sm bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-black hover:bg-gray-200 focus:border-black focus:border-dotted outline-none shadow-[inset_0_0_0_1px_black]" autoFocus>OK</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

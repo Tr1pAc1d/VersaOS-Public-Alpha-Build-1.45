@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Monitor, Cpu, User, Package, Settings, ArrowLeft, HardDrive, Trash2, AlertCircle, Menu, ChevronRight, ChevronDown, FolderOpen, ArrowUp, ArrowDown, Plus, RotateCcw, Minus, Globe, Key, Shield } from 'lucide-react';
+import { Monitor, Cpu, User, Package, Settings, ArrowLeft, HardDrive, Trash2, AlertCircle, Menu, ChevronRight, ChevronDown, FolderOpen, ArrowUp, ArrowDown, Plus, RotateCcw, Minus, Globe, Key, Shield, Download, CheckCircle, Sparkles, Loader, Volume2, MessageSquare, MousePointer2 } from 'lucide-react';
 import { DEFAULT_WORKSPACE_MENU } from '../hooks/useVFS';
 import { APP_DICTIONARY } from '../utils/appDictionary';
 import { RETRO_ICONS } from '../utils/retroIcons';
 import { SystemProperties } from './SystemProperties';
+import { PLUS_THEMES, AVAILABLE_UPDATES, type SystemUpdate } from '../utils/plusThemes';
+import { ScreensaverPreview, SCREENSAVER_OPTIONS, type ScreensaverType } from './Screensavers';
 
 // ── Panel items definition ────────────────────────────────────────────────────
 interface PanelItem {
@@ -49,6 +51,20 @@ const PANEL_ITEMS: PanelItem[] = [
     description: 'Task Menu: Customize the appearance and behavior of the Task Menu.',
     Icon: Menu,
     iconColor: 'text-[#4a4a8a]',
+  },
+  {
+    id: 'vespera_update',
+    label: 'Vespera\nUpdate',
+    description: 'Vespera Update: Check for and install system updates from VesperaNET.',
+    Icon: Download,
+    iconColor: 'text-[#006400]',
+  },
+  {
+    id: 'agent_v',
+    label: 'Agent V',
+    description: 'Agent V: Personalize your Vespera desktop assistant.',
+    Icon: MessageSquare,
+    iconColor: 'text-[#000080]',
   },
 ];
 
@@ -123,13 +139,42 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   );
   const [waveBarSpeed, setWaveBarSpeed] = useState(vfs.displaySettings?.waveBarSpeed || 'normal');
   const [waveBarUseAlbumArt, setWaveBarUseAlbumArt] = useState(vfs.displaySettings?.waveBarUseAlbumArt === true);
-  const [displayTab, setDisplayTab] = useState<'Background' | 'Settings' | 'Monitor'>('Background');
+  
+  // Screensaver state
+  const [selectedScreensaverType, setSelectedScreensaverType] = useState<ScreensaverType>(vfs.displaySettings?.screensaverType || 'none');
+  const [selectedScreensaverTimeout, setSelectedScreensaverTimeout] = useState<number>(vfs.displaySettings?.screensaverTimeout || 5);
+
+  const [displayTab, setDisplayTab] = useState<'Background' | 'Screen Saver' | 'Settings' | 'Monitor' | 'Cursors' | 'Themes'>('Background');
   const [taskbarTab, setTaskbarTab] = useState<'Appearance' | 'Clock' | 'Shortcuts' | 'Workspace Menu' | 'Wave bar'>('Appearance');
   
   const [confirming, setConfirming] = useState(false);
   const [countdown, setCountdown] = useState(15);
   const [previousRes, setPreviousRes] = useState(currentRes);
   const [previousScreenMode, setPreviousScreenMode] = useState(screenMode);
+
+  // Cursor settings
+  const [selectedCursorStyle, setSelectedCursorStyle] = useState(vfs.displaySettings?.cursorStyle || 'default');
+
+  // Plus! Theme state
+  const [selectedPlusTheme, setSelectedPlusTheme] = useState(vfs.displaySettings?.plusTheme || 'standard');
+
+  // Agent V internal state
+  const [agentVEnabled, setAgentVEnabled] = useState(vfs.displaySettings?.agentVEnabled !== false);
+  const [agentVSkin, setAgentVSkin] = useState(vfs.displaySettings?.agentVSkin || 'classic');
+  const [agentVSpeak, setAgentVSpeak] = useState(vfs.displaySettings?.agentVSpeak === true);
+
+  // Vespera Update state
+  const [installedUpdates, setInstalledUpdates] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('vespera_installed_updates') || '[]'); } catch { return []; }
+  });
+  const [updateScanPhase, setUpdateScanPhase] = useState<'idle' | 'scanning' | 'done'>('idle');
+  const [updateScanProgress, setUpdateScanProgress] = useState(0);
+  const [updateScanStatus, setUpdateScanStatus] = useState('');
+  const [selectedUpdateId, setSelectedUpdateId] = useState<string | null>(null);
+  const [updateInstallPhase, setUpdateInstallPhase] = useState<'idle' | 'eula' | 'installing' | 'done'>('idle');
+  const [updateInstallProgress, setUpdateInstallProgress] = useState(0);
+  const [updateInstallStatus, setUpdateInstallStatus] = useState('');
+  const [updateInstallTarget, setUpdateInstallTarget] = useState<SystemUpdate | null>(null);
 
   useEffect(() => {
     if (initialPanel) setActivePanel(initialPanel);
@@ -154,6 +199,12 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
       setWaveBarBarCount(typeof vfs.displaySettings?.waveBarBarCount === 'number' ? vfs.displaySettings.waveBarBarCount : 5);
       setWaveBarSpeed(vfs.displaySettings?.waveBarSpeed || 'normal');
       setWaveBarUseAlbumArt(vfs.displaySettings?.waveBarUseAlbumArt === true);
+      setSelectedCursorStyle(vfs.displaySettings?.cursorStyle || 'default');
+      setAgentVEnabled(vfs.displaySettings?.agentVEnabled !== false);
+      setAgentVSkin(vfs.displaySettings?.agentVSkin || 'classic');
+      setAgentVSpeak(vfs.displaySettings?.agentVSpeak === true);
+      setSelectedScreensaverType(vfs.displaySettings?.screensaverType || 'none');
+      setSelectedScreensaverTimeout(vfs.displaySettings?.screensaverTimeout || 5);
     }
   }, [activePanel, vfs.displaySettings]);
 
@@ -176,12 +227,46 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   }, [confirming]);
 
   const handleApply = () => {
-    if (vfs.updateWallpaper) vfs.updateWallpaper(selectedWallpaper);
-    if (vfs.updateBackgroundColor) vfs.updateBackgroundColor(selectedColor);
-    if (vfs.updateTaskbarTheme) vfs.updateTaskbarTheme(selectedTaskbarTheme);
+    let applyWallpaper = selectedWallpaper;
+    let applyBgColor = selectedColor;
+    let applyTaskbarTheme = selectedTaskbarTheme;
+    let applyClockBg = clockBgColor;
+    let applyClockText = clockTextColor;
+    let applyCursor = selectedCursorStyle;
+
+    // Handle deep theme dispatch
+    if (selectedPlusTheme !== vfs.displaySettings?.plusTheme) {
+      if (selectedPlusTheme !== 'standard' && PLUS_THEMES[selectedPlusTheme]) {
+        const p = PLUS_THEMES[selectedPlusTheme];
+        if (p.defaultWallpaper !== undefined) applyWallpaper = p.defaultWallpaper;
+        if (p.defaultBackgroundColor !== undefined) applyBgColor = p.defaultBackgroundColor;
+        if (p.defaultTaskbarTheme !== undefined) applyTaskbarTheme = p.defaultTaskbarTheme;
+        if (p.defaultClockBgColor !== undefined) applyClockBg = p.defaultClockBgColor;
+        if (p.defaultClockColor !== undefined) applyClockText = p.defaultClockColor;
+        
+        // Extract cursor ID from the theme's cursorClass (e.g. 'plus-cursor-nature' → 'nature')
+        applyCursor = p.cursorClass ? p.cursorClass.replace('plus-cursor-', '') : 'default';
+        setSelectedCursorStyle(applyCursor);
+      } else if (selectedPlusTheme === 'standard') {
+        applyCursor = 'default';
+        setSelectedCursorStyle(applyCursor);
+      }
+
+      setSelectedWallpaper(applyWallpaper);
+      setSelectedColor(applyBgColor);
+      setSelectedTaskbarTheme(applyTaskbarTheme);
+      setClockBgColor(applyClockBg);
+      setClockTextColor(applyClockText);
+    }
+
+    if (vfs.updateWallpaper) vfs.updateWallpaper(applyWallpaper);
+    if (vfs.updateBackgroundColor) vfs.updateBackgroundColor(applyBgColor);
+    if (vfs.updateTaskbarTheme) vfs.updateTaskbarTheme(applyTaskbarTheme);
     if (vfs.updateTaskbarClock) vfs.updateTaskbarClock(selectedTaskbarShowClock);
-    if (vfs.updateClockSettings) vfs.updateClockSettings({ clockBgColor, clockTextColor, clockFont, clockFormat });
+    if (vfs.updateClockSettings) vfs.updateClockSettings({ clockBgColor: applyClockBg, clockTextColor: applyClockText, clockFont, clockFormat });
     if (vfs.updatePinnedApps) vfs.updatePinnedApps(selectedPinnedApps);
+    if (vfs.updatePlusTheme) vfs.updatePlusTheme(selectedPlusTheme);
+    if (vfs.updateCursorStyle) vfs.updateCursorStyle(applyCursor);
     if (vfs.updateWaveBarSettings) {
       vfs.updateWaveBarSettings({
         waveBarEnabled,
@@ -190,6 +275,13 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
         waveBarBarCount,
         waveBarSpeed,
         waveBarUseAlbumArt,
+      });
+    }
+
+    if (vfs.updateScreensaverSettings) {
+      vfs.updateScreensaverSettings({
+        screensaverType: selectedScreensaverType,
+        screensaverTimeout: selectedScreensaverTimeout,
       });
     }
 
@@ -232,7 +324,14 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
     waveBarColor !== (vfs.displaySettings?.waveBarColor || '#34d399') ||
     waveBarBarCount !== (typeof vfs.displaySettings?.waveBarBarCount === 'number' ? vfs.displaySettings.waveBarBarCount : 5) ||
     waveBarSpeed !== (vfs.displaySettings?.waveBarSpeed || 'normal') ||
-    waveBarUseAlbumArt !== (vfs.displaySettings?.waveBarUseAlbumArt === true)
+    waveBarUseAlbumArt !== (vfs.displaySettings?.waveBarUseAlbumArt === true) ||
+    selectedPlusTheme !== (vfs.displaySettings?.plusTheme || 'standard') ||
+    selectedCursorStyle !== (vfs.displaySettings?.cursorStyle || 'default') ||
+    agentVEnabled !== (vfs.displaySettings?.agentVEnabled !== false) ||
+    agentVSkin !== (vfs.displaySettings?.agentVSkin || 'classic') ||
+    agentVSpeak !== (vfs.displaySettings?.agentVSpeak === true) ||
+    selectedScreensaverType !== (vfs.displaySettings?.screensaverType || 'none') ||
+    selectedScreensaverTimeout !== (vfs.displaySettings?.screensaverTimeout || 5)
   ) && !confirming;
 
   // ── Hub view ─────────────────────────────────────────────────────────────────
@@ -299,12 +398,12 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b-2 border-white mt-1 relative z-10 px-2">
-        {(['Background', 'Settings', 'Monitor'] as const).map(tab => (
+      <div className="flex gap-[2px] border-b-2 border-white mt-1 relative z-10 px-1 overflow-x-auto">
+        {(['Background', 'Screen Saver', 'Settings', 'Monitor', 'Cursors', ...(installedUpdates.includes('plus_pack') ? ['Themes' as const] : [])] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setDisplayTab(tab)}
-            className={`px-3 py-1 text-xs font-bold border-2 border-b-0 rounded-t-sm ${
+            className={`px-2 py-1 text-xs font-bold border-2 border-b-0 rounded-t-sm whitespace-nowrap ${
               displayTab === tab 
                 ? 'bg-[#c0c0c0] border-t-white border-l-white border-r-gray-800 pb-2 -mb-0.5 z-20' 
                 : 'bg-gray-300 border-t-white border-l-white border-r-gray-800 mt-1 cursor-pointer'
@@ -358,6 +457,76 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
             </div>
           </>
         )}
+
+        {displayTab === 'Screen Saver' && (
+          <div className="flex flex-col h-full gap-4">
+            <div className="flex items-center gap-4 border-b pb-3 border-gray-400 shrink-0">
+              <Monitor size={36} className="text-[#008080]" />
+              <div>
+                <h2 className="font-bold text-sm leading-none tracking-wide">Screen Saver Properties</h2>
+                <p className="text-xs text-gray-700 mt-1">Select a screen saver and set the activation timeout.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-6 flex-1 min-h-0">
+              {/* Left Side: Preview Monitor */}
+              <div className="flex flex-col items-center gap-2 pt-2">
+                <div className="relative scale-[0.85] origin-top">
+                  {/* Monitor Frame */}
+                  <div className="w-[180px] h-[140px] bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 p-2 flex flex-col shadow-[4px_4px_0px_rgba(0,0,0,0.4)]">
+                    <div className="flex-1 bg-black border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white overflow-hidden relative">
+                      <ScreensaverPreview type={selectedScreensaverType} />
+                    </div>
+                  </div>
+                  {/* Monitor Stand */}
+                  <div className="w-16 h-4 mx-auto bg-[#808080] border-x-2 border-gray-600" />
+                  <div className="w-24 h-4 mx-auto bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800" />
+                </div>
+                <button 
+                  onClick={() => window.dispatchEvent(new CustomEvent('trigger-screensaver'))}
+                  className="px-4 py-1 text-xs font-bold border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white bg-[#c0c0c0] hover:bg-gray-100"
+                >
+                  Preview Full
+                </button>
+              </div>
+
+              {/* Right Side: Configuration */}
+              <div className="flex-1 flex flex-col gap-3">
+                <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-2 bg-[#c0c0c0] flex-1 min-h-0 flex flex-col">
+                  <p className="font-bold text-xs mb-1.5 shrink-0">Screen Saver:</p>
+                  <div className="bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white flex-1 overflow-y-auto min-h-0">
+                    {SCREENSAVER_OPTIONS.map(opt => (
+                      <div 
+                        key={opt.id}
+                        onClick={() => setSelectedScreensaverType(opt.id as ScreensaverType)}
+                        className={`px-2 py-1 text-xs cursor-default flex flex-col ${selectedScreensaverType === opt.id ? 'bg-[#000080] text-white' : 'hover:bg-[#008080] hover:text-white'}`}
+                      >
+                        <span className="font-bold underline decoration-dotted">{opt.name}</span>
+                        <span className={`text-[9px] ${selectedScreensaverType === opt.id ? 'text-blue-100' : 'text-gray-500'}`}>{opt.description}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-3 bg-[#c0c0c0] shrink-0">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-bold whitespace-nowrap">Wait:</span>
+                    <input 
+                      type="number" 
+                      min="1" 
+                      max="999"
+                      value={selectedScreensaverTimeout}
+                      onChange={(e) => setSelectedScreensaverTimeout(parseInt(e.target.value) || 1)}
+                      className="w-14 px-1 py-0.5 text-xs border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white focus:outline-none"
+                    />
+                    <span className="text-xs">minutes</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
 
         {displayTab === 'Settings' && (
           <>
@@ -441,7 +610,112 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
           </>
         )}
 
-        <div className="mt-auto flex justify-end pt-1">
+        {displayTab === 'Cursors' && (
+          <>
+            <div className="flex items-center gap-4 border-b pb-3 border-gray-400">
+              <MousePointer2 size={36} className="text-[#008080]" />
+              <div>
+                <h2 className="font-bold text-sm leading-none tracking-wide">Mouse Properties</h2>
+                <p className="text-xs text-gray-700 mt-1">Customize the appearance of your mouse pointer.</p>
+              </div>
+            </div>
+            
+            <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-3 bg-[#c0c0c0] flex flex-col gap-3 min-h-0 flex-1">
+              <p className="font-bold text-xs mb-1 shrink-0">Scheme</p>
+              <div className="bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-2 flex-1 overflow-y-auto">
+                {[
+                  { id: 'default', name: 'Windows Standard' },
+                  { id: 'crosshair', name: 'Precision Crosshair' },
+                  { id: 'help', name: 'Help Select' },
+                  { id: 'wait', name: 'Hourglass (Busy)' },
+                  { id: 'text', name: 'Text Select' },
+                  { id: 'move', name: 'Move' },
+                  ...(installedUpdates.includes('plus_pack') ? [
+                    { id: 'blueglass', name: 'Plus! Blue Glass (Vista)' },
+                    { id: 'bluesilver', name: 'Plus! Blue Silver (Corporate)' },
+                    { id: 'ghostly', name: 'Plus! Ghostly Specter' },
+                    { id: 'redblack', name: 'Plus! Red-Black Pro' },
+                    { id: 'greenglow', name: 'Plus! Green Glow' },
+                    { id: 'earth', name: 'Plus! Earth & Nature' }
+                  ] : [])
+                ].map((c) => (
+                  <label key={c.id} className="flex items-center gap-2 cursor-pointer py-1 text-xs">
+                    <input
+                      type="radio"
+                      name="cursorstyle"
+                      value={c.id}
+                      checked={selectedCursorStyle === c.id}
+                      onChange={() => setSelectedCursorStyle(c.id)}
+                    />
+                    <span>{c.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {displayTab === 'Themes' && installedUpdates.includes('plus_pack') && (
+          <div className="flex flex-col h-full gap-3">
+            <div className="flex items-center gap-4 border-b pb-3 border-gray-400 shrink-0">
+              <Sparkles size={36} className="text-[#008080]" />
+              <div>
+                <h2 className="font-bold text-sm leading-none tracking-wide">Vespera Plus! Themes</h2>
+                <p className="text-xs text-gray-700 mt-1">Transform your desktop with immersive visual and audio enhancements.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 flex-1 min-h-0">
+              <div className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white p-2 min-h-0 flex flex-col">
+                <p className="font-bold text-xs mb-2 shrink-0">Installed Themes</p>
+                <div className="flex flex-col gap-1 overflow-y-auto flex-1 pb-2">
+                  {Object.values(PLUS_THEMES).map(theme => (
+                    <div
+                      key={theme.id}
+                      onClick={() => setSelectedPlusTheme(theme.id)}
+                      className={`px-2 py-1.5 text-xs cursor-default ${selectedPlusTheme === theme.id ? 'bg-[#000080] text-white font-bold' : 'hover:bg-[#008080] hover:text-white'}`}
+                    >
+                      {theme.name}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="w-[45%] shrink-0 flex flex-col gap-3">
+                <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#c0c0c0] p-3 text-[10px] leading-relaxed relative overflow-hidden">
+                  <div className="font-bold mb-1 border-b border-gray-400 pb-1 flex justify-between">
+                    <span>{PLUS_THEMES[selectedPlusTheme]?.name}</span>
+                  </div>
+                  <p>{PLUS_THEMES[selectedPlusTheme]?.description}</p>
+                  
+                  {PLUS_THEMES[selectedPlusTheme]?.ambientType && (
+                    <div className="mt-2 flex items-center gap-1.5 text-blue-800 bg-blue-50/50 p-1">
+                      <Volume2 size={10} className="shrink-0" />
+                      <span className="italic">Includes structural ambient audio.</span>
+                    </div>
+                  )}
+
+                  <div className="mt-4 flex justify-center">
+                    {/* Tiny preview monitor */}
+                    <div className="relative">
+                      <div className="w-[100px] h-[75px] bg-[#a0a0a0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 p-1 pb-0">
+                        <div className="w-full h-full border border-t-gray-800 border-l-gray-800 border-b-white border-r-white flex overflow-hidden">
+                          {PLUS_THEMES[selectedPlusTheme]?.previewColors.map((color, idx) => (
+                            <div key={idx} className="flex-1 h-full" style={{ backgroundColor: color }} />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="w-[60px] h-[8px] mx-auto bg-[#c0c0c0] border-x border-gray-500" />
+                      <div className="w-[80px] h-[6px] mx-auto bg-[#a0a0a0] border border-t-white border-l-white border-b-gray-800 border-r-gray-800" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-auto flex justify-end pt-1 shrink-0">
           <button
             onClick={handleApply}
             disabled={!isApplyEnabled}
@@ -1295,6 +1569,365 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
     );
   };
 
+  // ── Vespera Update panel ──────────────────────────────────────────────────────
+  const renderVesperaUpdate = () => {
+    const startScan = () => {
+      setUpdateScanPhase('scanning');
+      setUpdateScanProgress(0);
+      setUpdateScanStatus('Connecting to VesperaNET...');
+      
+      let p = 0;
+      const interval = setInterval(() => {
+        p += Math.random() * 15;
+        if (p > 30) setUpdateScanStatus('Authenticating system signature...');
+        if (p > 60) setUpdateScanStatus('Querying update manifest...');
+        
+        if (p >= 100) {
+          clearInterval(interval);
+          setUpdateScanPhase('done');
+          setUpdateScanProgress(100);
+          setUpdateScanStatus('Scan complete.');
+        } else {
+          setUpdateScanProgress(p);
+        }
+      }, 500);
+    };
+
+    const beginInstall = () => {
+      const update = AVAILABLE_UPDATES.find(u => u.id === selectedUpdateId);
+      if (!update) return;
+      // agentv_plus has its own dedicated setup wizard
+      if (update.id === 'agentv_plus') {
+        if (typeof (window as any).__launchAgentVPlusSetup === 'function') {
+          (window as any).__launchAgentVPlusSetup();
+        }
+        return;
+      }
+      setUpdateInstallTarget(update);
+      setUpdateInstallPhase('eula');
+    };
+
+    const confirmEula = () => {
+      if (!updateInstallTarget) return;
+      setUpdateInstallPhase('installing');
+      setUpdateInstallProgress(0);
+      setUpdateInstallStatus('Initializing setup...');
+      
+      let p = 0;
+      const interval = setInterval(() => {
+        p += Math.random() * (100 / (updateInstallTarget.installDuration * 2));
+        if (p > 10) setUpdateInstallStatus('Extracting temporary files...');
+        if (p > 40) setUpdateInstallStatus('Modifying system configuration...');
+        if (p > 70) setUpdateInstallStatus('Registering components...');
+        if (p > 90) setUpdateInstallStatus('Finalizing installation...');
+        
+        if (p >= 100) {
+          clearInterval(interval);
+          setUpdateInstallPhase('done');
+          setUpdateInstallProgress(100);
+          setUpdateInstallStatus('Installation complete.');
+          const newInstalled = [...installedUpdates, updateInstallTarget.id];
+          setInstalledUpdates(newInstalled);
+          localStorage.setItem('vespera_installed_updates', JSON.stringify(newInstalled));
+        } else {
+          setUpdateInstallProgress(p);
+        }
+      }, 500);
+    };
+
+    const resetUpdateView = () => {
+      setUpdateInstallPhase('idle');
+      setUpdateInstallTarget(null);
+      setSelectedUpdateId(null);
+      if (vfs.playUIClickSound) vfs.playUIClickSound();
+    };
+
+    return (
+      <div className="flex flex-col h-full p-3 gap-3 bg-[#c0c0c0]">
+        <div className="flex items-center gap-2 border-b border-gray-500 pb-2 bg-[#c0c0c0]">
+          <button
+            onClick={() => { setActivePanel(null); }}
+            className="flex items-center gap-1 px-2 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white text-xs font-bold"
+          >
+            <ArrowLeft size={12} />
+            Back
+          </button>
+          <div className="flex items-center gap-2">
+            <Download size={20} className="text-[#006400]" />
+            <span className="font-bold text-sm tracking-wide">Vespera Update</span>
+          </div>
+        </div>
+
+        {updateInstallPhase === 'idle' && (
+          <div className="flex-1 flex flex-col gap-3 min-h-0">
+            {updateScanPhase === 'idle' && (
+              <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
+                <Globe size={48} className="text-[#006400] mb-4" />
+                <p className="font-bold text-sm mb-2">Keep your Vespera system up to date.</p>
+                <p className="text-xs text-gray-700 mb-6 max-w-[250px]">Connect to VesperaNET to scan for system updates, security patches, and structural enhancements.</p>
+                <button
+                  onClick={startScan}
+                  className="px-6 py-2 font-bold bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white"
+                >
+                  Scan for Updates
+                </button>
+              </div>
+            )}
+
+            {updateScanPhase === 'scanning' && (
+              <div className="flex-1 flex flex-col items-center justify-center p-4">
+                <Loader size={32} className="text-[#006400] mb-4 animate-spin" />
+                <p className="font-bold text-sm mb-2">{updateScanStatus}</p>
+                <div className="w-64 h-4 bg-black p-0.5 border-2 border-white shadow-[inset_0_0_5px_rgba(0,0,0,0.8)]">
+                  <div className="h-full bg-[#000080]" style={{ width: `${updateScanProgress}%` }} />
+                </div>
+              </div>
+            )}
+
+            {updateScanPhase === 'done' && (
+              <div className="flex-1 flex flex-col gap-2 min-h-0 bg-[#c0c0c0]">
+                <p className="font-bold text-sm shrink-0">Available Updates</p>
+                <div className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white overflow-y-auto">
+                  {AVAILABLE_UPDATES.filter(u => !installedUpdates.includes(u.id)).length === 0 ? (
+                    <div className="p-4 flex flex-col items-center justify-center h-full text-gray-500">
+                      <CheckCircle size={32} className="mb-2 text-green-600" />
+                      <p className="text-sm font-bold text-black" >Your system is up to date.</p>
+                    </div>
+                  ) : (
+                    AVAILABLE_UPDATES.filter(u => !installedUpdates.includes(u.id)).map(update => (
+                      <div
+                        key={update.id}
+                        onClick={() => setSelectedUpdateId(update.id)}
+                        className={`p-2 border-b border-gray-200 cursor-default flex items-start gap-3 ${selectedUpdateId === update.id ? 'bg-[#000080] text-white' : 'hover:bg-gray-100'}`}
+                      >
+                        <Package size={24} className={`shrink-0 ${selectedUpdateId === update.id ? 'text-white' : 'text-[#7a4a00]'}`} />
+                        <div>
+                          <p className="font-bold text-xs">{update.name}</p>
+                          <p className={`text-[10px] mt-0.5 ${selectedUpdateId === update.id ? 'text-gray-300' : 'text-gray-600'}`}>{update.size} • {update.description}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                {AVAILABLE_UPDATES.filter(u => !installedUpdates.includes(u.id)).length > 0 && (
+                  <div className="flex justify-end pt-2 shrink-0">
+                    <button
+                      disabled={!selectedUpdateId}
+                      onClick={beginInstall}
+                      className="px-6 py-1 font-bold bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white disabled:opacity-50"
+                    >
+                      Install Update
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {updateInstallPhase === 'eula' && updateInstallTarget && (
+          <div className="flex-1 flex flex-col gap-3 min-h-0 bg-[#c0c0c0]">
+            <p className="font-bold text-sm shrink-0 flex items-center gap-2">
+              <AlertCircle size={16} className="text-blue-800" /> End User License Agreement
+            </p>
+            <div className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white overflow-y-auto p-3 text-xs font-mono whitespace-pre-wrap leading-relaxed">
+              VESPERA SYSTEMS - STRUCTURAL MODIFICATION ADDENDUM
+              {'\n\n'}By proceeding with the installation of "{updateInstallTarget.name}", the USER acknowledges that deep-structural OS modifications carry absolute risk.
+              {updateInstallTarget.id === 'plus_pack' && '\n\nWARNING: The Vespera Plus! features rely on undocumented sensory-stimulus hooks. Prolonged exposure to Cyber-Nature or Corporate-Void environments may induce cognitive disassociation. Vespera Systems assumes ZERO liability for subjective reality degradation.'}
+              {updateInstallTarget.id === 'agentv_plus' && '\n\nBETA NOTICE: The VAgent PLUS! Character Expansion is classified as beta software. PLUS! companion skins may cause visual rendering anomalies, increased GPU utilization, or expression engine instability. Vespera Systems assumes ZERO liability for any cognitive dissonance induced by prolonged companion interaction.'}
+              {updateInstallTarget.lore && '\n\nNOTE: Administrator logging has been permanently enabled to monitor all inbound X-Type transmissions as per Directive 4.'}
+              {'\n\n'}Do you agree to all terms?
+            </div>
+            <div className="flex justify-end gap-2 pt-2 shrink-0">
+              <button onClick={resetUpdateView} className="px-4 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white font-bold">Decline</button>
+              <button onClick={confirmEula} className="px-4 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white font-bold">I Agree</button>
+            </div>
+          </div>
+        )}
+
+        {updateInstallPhase === 'installing' && (
+          <div className="flex-1 flex flex-col items-center justify-center p-4 mt-8 bg-[#c0c0c0]">
+            <Package size={36} className="text-blue-800 mb-4 animate-bounce" />
+            <p className="font-bold text-sm mb-1 text-center">Installing {updateInstallTarget?.name}</p>
+            <p className="text-[10px] text-gray-700 mb-4 h-4">{updateInstallStatus}</p>
+            <div className="w-[80%] h-5 bg-white border-2 border-gray-600 p-[2px] mb-8 shadow-inner">
+              <div className="h-full bg-[#000080]" style={{ width: `${updateInstallProgress}%`, transition: 'width 0.2s linear' }} />
+            </div>
+          </div>
+        )}
+
+        {updateInstallPhase === 'done' && (
+          <div className="flex-1 flex flex-col items-center justify-center p-4 mt-8 bg-[#c0c0c0]">
+            <CheckCircle size={48} className="text-green-600 mb-4" />
+            <p className="font-bold text-sm mb-2 text-center text-black">Installation Successful</p>
+            <p className="text-xs text-gray-700 mb-6 text-center">
+              The update "{updateInstallTarget?.name}" has been successfully installed to your system.
+              {updateInstallTarget?.id === 'plus_pack' && " \nYou can access your new themes from the Display Properties module."}
+            </p>
+            <button onClick={resetUpdateView} className="px-6 py-2 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white font-bold text-sm">Finish</button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ── Agent V Settings ──────────────────────────────────────────────────────────
+  const renderAgentVSettings = () => (
+    <div className="flex flex-col h-full p-3 gap-2">
+      <div className="flex items-center gap-2 border-b border-gray-500 pb-2">
+        <button
+          onClick={() => setActivePanel(null)}
+          className="flex items-center gap-1 px-2 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold"
+        >
+          <ArrowLeft size={12} />
+          Back
+        </button>
+        <div className="flex items-center gap-2">
+          <MessageSquare size={20} className="text-[#000080]" />
+          <span className="font-bold text-sm tracking-wide">Agent V Properties</span>
+        </div>
+      </div>
+      
+      <div className="flex-1 border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 p-4 bg-[#c0c0c0] flex flex-col gap-4 relative z-0 overflow-y-auto min-h-0">
+        <div className="flex items-center gap-4 border-b pb-3 border-gray-400">
+          <MessageSquare size={36} className="text-[#000080]" />
+          <div>
+            <h2 className="font-bold text-sm leading-none tracking-wide">Agent V Preferences</h2>
+            <p className="text-xs text-gray-700 mt-1">Configure your personal assistant's behavior and appearance.</p>
+          </div>
+        </div>
+
+        <label className="flex items-center gap-2 cursor-pointer mt-2">
+          <input
+            type="checkbox"
+            checked={agentVEnabled}
+            onChange={(e) => setAgentVEnabled(e.target.checked)}
+          />
+          <span className="text-xs font-bold">Enable Agent V Assistant</span>
+        </label>
+        
+        <div className={`border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-3 bg-[#c0c0c0] flex flex-col gap-3 ${!agentVEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
+          <p className="font-bold text-xs">Appearance (Skin)</p>
+          <div className="flex gap-4">
+             {['classic', 'robot', 'smiley'].map(skin => (
+               <label key={skin} className="flex flex-col items-center gap-2 cursor-pointer">
+                 <div className={`w-12 h-12 border-2 flex items-center justify-center ${agentVSkin === skin ? 'border-blue-800 bg-blue-100' : 'border-transparent hover:border-gray-500'}`}>
+                   <span className="text-[9px] uppercase font-bold text-center tracking-widest leading-none">{skin}</span>
+                 </div>
+                 <input
+                   type="radio"
+                   name="agentskin"
+                   value={skin}
+                   checked={agentVSkin === skin}
+                   onChange={() => setAgentVSkin(skin)}
+                 />
+               </label>
+             ))}
+          </div>
+
+          {/* PLUS! Skins Section */}
+          <div className="border-t border-gray-400 pt-2 mt-1">
+            <div className="flex items-center gap-1 mb-2">
+              <span className="font-bold text-xs" style={{ color: '#6b21a8' }}>✦ PLUS! Skins</span>
+              {!installedUpdates.includes('agentv_plus') && (
+                <span className="text-[9px] px-1 py-0.5 bg-yellow-100 border border-yellow-400 text-yellow-800 font-bold">BETA</span>
+              )}
+            </div>
+            {installedUpdates.includes('agentv_plus') ? (
+              <>
+                <div className="flex gap-3 flex-wrap">
+                  {[
+                    { id: 'monitor', label: 'Monitor', icon: '▣', bg: '#0a0a0a', fg: '#00ff00' },
+                    { id: 'wizard', label: 'Wizard', icon: '✦', bg: '#2a1040', fg: '#c084fc' },
+                    { id: 'cat', label: 'Cat', icon: '🐱', bg: '#292524', fg: '#fbbf24' },
+                    { id: 'neural', label: 'Neural', icon: '◉', bg: '#0a1628', fg: '#06b6d4' },
+                    { id: 'ghost', label: 'Ghost', icon: '👻', bg: '#1e1e2e', fg: '#e2e8f0' },
+                  ].map(s => (
+                    <label key={s.id} className="flex flex-col items-center gap-1 cursor-pointer">
+                      <div 
+                        className={`w-12 h-12 border-2 flex items-center justify-center text-lg ${agentVSkin === s.id ? 'border-purple-700 shadow-[0_0_6px_rgba(107,33,168,0.5)]' : 'border-gray-500 hover:border-purple-400'}`}
+                        style={{ backgroundColor: s.bg, color: s.fg }}
+                      >
+                        {s.icon}
+                      </div>
+                      <span className="text-[8px] uppercase font-bold tracking-wider" style={{ color: '#6b21a8' }}>{s.label}</span>
+                      <input
+                        type="radio"
+                        name="agentskin"
+                        value={s.id}
+                        checked={agentVSkin === s.id}
+                        onChange={() => setAgentVSkin(s.id)}
+                        className="accent-purple-700"
+                      />
+                    </label>
+                  ))}
+                </div>
+                <p className="text-[9px] text-gray-600 mt-1 italic">⚠ PLUS! skins are beta features and may cause visual anomalies.</p>
+              </>
+            ) : (
+              <>
+                <div className="flex gap-3 flex-wrap opacity-60">
+                  {[
+                    { id: 'monitor', label: 'Monitor', icon: '▣', bg: '#0a0a0a', fg: '#00ff00' },
+                    { id: 'wizard', label: 'Wizard', icon: '✦', bg: '#2a1040', fg: '#c084fc' },
+                    { id: 'cat', label: 'Cat', icon: '🐱', bg: '#292524', fg: '#fbbf24' },
+                    { id: 'neural', label: 'Neural', icon: '◉', bg: '#0a1628', fg: '#06b6d4' },
+                    { id: 'ghost', label: 'Ghost', icon: '👻', bg: '#1e1e2e', fg: '#e2e8f0' },
+                  ].map(s => (
+                    <div key={s.id} className="flex flex-col items-center gap-1">
+                      <div 
+                        className="w-12 h-12 border-2 border-gray-600 flex items-center justify-center text-lg relative"
+                        style={{ backgroundColor: s.bg, color: s.fg }}
+                      >
+                        {s.icon}
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <span className="text-white text-lg">🔒</span>
+                        </div>
+                      </div>
+                      <span className="text-[8px] uppercase font-bold tracking-wider text-gray-500">{s.label}</span>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => {
+                    if (typeof (window as any).__launchAgentVPlusSetup === 'function') {
+                      (window as any).__launchAgentVPlusSetup();
+                    }
+                  }}
+                  className="mt-2 self-start px-4 py-1 text-xs font-bold border-2 text-white"
+                  style={{ backgroundColor: '#6b21a8', borderTopColor: '#a855f7', borderLeftColor: '#a855f7', borderBottomColor: '#3b0764', borderRightColor: '#3b0764' }}
+                >
+                  ✦ Get PLUS! Expansion
+                </button>
+                <p className="text-[9px] text-gray-500 italic mt-0.5">Install the VAgent PLUS! Character Expansion from Vespera Update to unlock 5 premium skins.</p>
+              </>
+            )}
+          </div>
+
+          <p className="font-bold text-xs mt-2 border-t border-gray-400 pt-2">Audio Responses</p>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={agentVSpeak}
+              onChange={(e) => setAgentVSpeak(e.target.checked)}
+            />
+            <span className="text-xs">Use Synth Voice when speaking</span>
+          </label>
+        </div>
+
+        <div className="mt-auto flex justify-end pt-1 shrink-0">
+          <button
+            onClick={handleApply}
+            disabled={!isApplyEnabled}
+            className="px-6 py-1 text-sm font-bold border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white bg-[#c0c0c0] disabled:opacity-50 disabled:text-gray-500 disabled:cursor-not-allowed focus:outline-dotted"
+          >
+            Apply
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   // ── Active panel router ───────────────────────────────────────────────────────
   const renderActivePanel = () => {
     if (!activePanel) return renderHub();
@@ -1302,6 +1935,8 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
     if (activePanel === 'addremove') return renderAddRemove();
     if (activePanel === 'taskbar') return renderTaskbarPanel();
     if (activePanel === 'users') return renderUsers();
+    if (activePanel === 'vespera_update') return renderVesperaUpdate();
+    if (activePanel === 'agent_v') return renderAgentVSettings();
     if (activePanel === 'system') return <SystemProperties onBack={() => setActivePanel(null)} vfs={vfs} currentUser={currentUser} neuralBridgeActive={neuralBridgeActive} />;
     const item = PANEL_ITEMS.find(p => p.id === activePanel);
     return item ? renderStub(item) : renderHub();

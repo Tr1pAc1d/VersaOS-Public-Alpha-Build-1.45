@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { VFSNode } from '../contexts/FileSystemContext';
-import { FileText, Folder, Settings, Terminal, Globe } from 'lucide-react';
+import { FileText, Folder, Settings, Terminal, Globe, Trash2 } from 'lucide-react';
 
 interface DesktopIconProps {
   node: VFSNode;
@@ -72,6 +72,7 @@ export const DesktopIcon: React.FC<DesktopIconProps> = ({
         case 'system': IconComponent = Settings; break;
         case 'app': IconComponent = Terminal; break;
         case 'network': IconComponent = Globe; break;
+        case 'trash': IconComponent = Trash2; break;
         default: IconComponent = FileText; break;
       }
       return (

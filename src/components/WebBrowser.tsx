@@ -4,6 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 import { AetherisNewsNetwork } from './AetherisNewsNetwork';
 import { XArchiveSite } from './XArchiveSite';
 import { VesperaSystemsSite } from './VesperaSystemsSite';
+import { AtlanticWavesSite } from './AtlanticWavesSite';
 import { VMail } from './VMail';
 import { getAccounts, VStoreAccount } from './VStoreAuth';
 import { playBrowserBootSound, playDownloadFailedSound, playInfoSound } from '../utils/audio';
@@ -234,19 +235,29 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
       if (fullUrl === 'vespera:404') return 'http://www.vesperasystems.com/404.html';
       return fullUrl;
     }
-    const match = fullUrl.match(/web\.archive\.org\/web\/\d+\/(.*)/);
+    if (fullUrl === 'atlanticwaves:home') return 'http://www.atlanticwaves.ca/index.html';
+    
+    // Improved regex to handle standard and iframe-friendly (if_) Wayback URLs
+    const match = fullUrl.match(/web\.archive\.org\/web\/\d+(?:[a-z]{2}_)?\/(.*)/i);
     if (match && match[1]) {
-      return match[1];
+      let displayUrl = match[1];
+      // Ensure it's a clean URL without duplicating protocols if possible
+      if (!displayUrl.startsWith('http')) {
+        displayUrl = 'http://' + displayUrl;
+      }
+      return displayUrl;
     }
     return fullUrl;
   };
 
   const navigate = (newUrl: string) => {
     let finalUrl = newUrl;
+    const normalizedUrl = newUrl.toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, '');
     
-    // Map fake URLs back to internal vespera: routes
-    if (newUrl.toLowerCase() === 'http://www.vesperasystems.com/index.html' || newUrl.toLowerCase() === 'www.vesperasystems.com/index.html' || newUrl.toLowerCase() === 'vesperasystems.com/index.html' || newUrl.toLowerCase() === 'http://www.vesperasystems.com' || newUrl.toLowerCase() === 'www.vesperasystems.com' || newUrl.toLowerCase() === 'vesperasystems.com') {
+    if (normalizedUrl === 'vesperasystems.com' || normalizedUrl === 'www.vesperasystems.com' || normalizedUrl === 'vesperasystems.com/index.html') {
       finalUrl = 'home';
+    } else if (normalizedUrl === 'atlanticwaves.ca' || normalizedUrl === 'www.atlanticwaves.ca') {
+      finalUrl = 'atlanticwaves:home';
     } else if (newUrl.toLowerCase().includes('company-info.html')) {
       finalUrl = 'vespera:about';
     } else if (newUrl.toLowerCase().includes('products/x-type.html')) {
@@ -281,12 +292,13 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
       finalUrl = 'vespera:404';
     } else if (newUrl.toLowerCase().includes('vespera.sys/x-arch/login.htm')) {
       finalUrl = 'vespera:x-arch';
-    } else if (newUrl !== 'home' && !newUrl.startsWith('vespera:')) {
+    } else if (newUrl !== 'home' && !newUrl.startsWith('vespera:') && !newUrl.startsWith('atlanticwaves:')) {
       // If it's not already a wayback URL, make it one
       if (!newUrl.includes('web.archive.org')) {
         const cleanUrl = newUrl.replace(/^https?:\/\//, '');
         // Use late 1996 timestamp to get pages from 1996-1999 era
-        finalUrl = `https://web.archive.org/web/19961231235959/http://${cleanUrl}`;
+        // Using 'if_' suffix for better framing compatibility
+        finalUrl = `https://web.archive.org/web/19961231235959if_/http://${cleanUrl}`;
       }
     }
 
@@ -504,12 +516,19 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
 
       {/* Browser Content */}
       <div className="flex-1 bg-white border-t-2 border-l-2 border-gray-800 border-b-2 border-r-2 border-white m-2 overflow-auto relative">
-        {activeTab.url === 'vespera:news' && <AetherisNewsNetwork />}
-        {activeTab.url === 'vespera:x-arch' && <XArchiveSite />}
-        {activeTab.url === 'vespera:vmail' && (
+        {activeTab.url === 'vespera:news' ? (
+          <AetherisNewsNetwork />
+        ) : activeTab.url === 'vespera:x-arch' ? (
+          <XArchiveSite />
+        ) : activeTab.url === 'vespera:vmail' ? (
           <VMail onClose={() => navigate('home')} />
-        )}
-        {activeTab.url !== 'vespera:vmail' && (activeTab.url === 'home' || activeTab.url.startsWith('vespera:')) ? (
+        ) : activeTab.url === 'atlanticwaves:home' ? (
+          <AtlanticWavesSite 
+            onDownload={(filename: string, source: string) => {
+              if (onDownload) onDownload(filename, source);
+            }} 
+          />
+        ) : (activeTab.url === 'home' || activeTab.url.startsWith('vespera:')) ? (
           <VesperaSystemsSite 
             url={activeTab.url}
             navigate={navigate}
@@ -520,15 +539,16 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
             handleWebLogout={handleWebLogout}
             startFailingDownload={startFailingDownload}
             xtypeImage={xtypeImage}
+            hasVMail={vfs?.nodes?.some((n: any) => n.id === 'vmail')}
           />
         ) : (
-          <iframe 
-            src={activeTab.url} 
-            onLoad={() => updateActiveTab({ isLoading: false })}
-            className="absolute inset-0 w-full h-full border-none bg-white"
-            title="Web Browser"
-            sandbox="allow-same-origin allow-scripts allow-forms"
-          />
+            <iframe 
+              src={activeTab.url} 
+              onLoad={() => updateActiveTab({ isLoading: false })}
+              className="absolute inset-0 w-full h-full border-none bg-white"
+              title="Web Browser"
+              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+            />
         )}
       </div>
 

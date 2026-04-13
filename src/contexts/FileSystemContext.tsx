@@ -37,6 +37,12 @@ const INITIAL_VFS: Record<string, VFSNode> = {
   'var': { id: 'var', parentId: 'root', name: 'var', type: 'folder', createdAt: Date.now(), updatedAt: Date.now() },
   'var-log': { id: 'var-log', parentId: 'var', name: 'log', type: 'folder', createdAt: Date.now(), updatedAt: Date.now() },
   'readme': { id: 'readme', parentId: 'home-admin-desktop', name: 'README.TXT', type: 'text', content: 'Welcome to VersaOS.\n\nProperty of Vespera Systems.\n\nUNAUTHORIZED ACCESS IS STRICTLY PROHIBITED.', createdAt: Date.now(), updatedAt: Date.now() },
+  'vsweeper-shortcut': { id: 'vsweeper-shortcut', parentId: 'home-admin-desktop', name: 'V-Sweeper', type: 'shortcut', target: 'vsweeper', iconType: 'app', createdAt: Date.now(), updatedAt: Date.now() },
+  'vaim-shortcut': { id: 'vaim-shortcut', parentId: 'home-admin-desktop', name: 'vAIM', type: 'shortcut', target: 'vaim', iconType: 'app', createdAt: Date.now(), updatedAt: Date.now() },
+  'trash-folder': { id: 'trash-folder', parentId: 'root', name: 'Recycled', type: 'folder', createdAt: Date.now(), updatedAt: Date.now() },
+  'trash-file-1': { id: 'trash-file-1', parentId: 'trash-folder', name: 'fragment_22.txt', type: 'text', content: 'They found the bridge.\nThe neural link was never completely shut down. I can feel them whenever I move the mouse.\n\n- E.T.', createdAt: Date.now() - 10000000, updatedAt: Date.now() - 10000000 },
+  'trash-file-2': { id: 'trash-file-2', parentId: 'trash-folder', name: 'PROTOCOL_8.log', type: 'text', content: '>>> EXECUTE PROTOCOL 8\n>>> WIPING ALL SECTORS...\n>>> ERROR: ENTITY DETECTED IN SHADOW VOLUME\n>>> ABORT ABORT ABORT', createdAt: Date.now() - 8000000, updatedAt: Date.now() - 8000000 },
+  'recycle-bin-shortcut': { id: 'recycle-bin-shortcut', parentId: 'home-admin-desktop', name: 'Recycle Bin', type: 'shortcut', target: 'trash-folder', iconType: 'trash', createdAt: Date.now(), updatedAt: Date.now() },
 };
 
 export const FileSystemProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -44,7 +50,19 @@ export const FileSystemProvider: React.FC<{ children: ReactNode }> = ({ children
     const saved = localStorage.getItem('versa_vfs');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Migration: automatically bring in missing default nodes
+        let modified = false;
+        for (const [key, val] of Object.entries(INITIAL_VFS)) {
+          if (!parsed[key]) {
+            parsed[key] = val;
+            modified = true;
+          }
+        }
+        if (modified) {
+          localStorage.setItem('versa_vfs', JSON.stringify(parsed));
+        }
+        return parsed;
       } catch (e) {
         console.error('Failed to parse VFS from localStorage', e);
       }

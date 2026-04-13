@@ -15,7 +15,7 @@ const DIAL_STEPS = [
   { msg: 'Rendering document...', pct: 100 },
 ];
 
-export const VesperaHome: React.FC<VesperaPageProps> = ({ webAccount, navigate, onLaunchApp }) => {
+export const VesperaHome: React.FC<VesperaPageProps> = ({ webAccount, navigate, onLaunchApp, hasVMail }) => {
   const [vmailDialog, setVmailDialog] = useState<VMailDialogState>(null);
   const [dialStep, setDialStep] = useState(0);
   const [dialPct, setDialPct] = useState(0);
@@ -145,7 +145,7 @@ export const VesperaHome: React.FC<VesperaPageProps> = ({ webAccount, navigate, 
 
       {/* VesperaMail Banner Ad */}
       <div 
-        onClick={() => navigate('vesperamail.vespera.net')}
+        onClick={() => setVmailDialog('choice')}
         className="mb-8 cursor-pointer border-4 border-double border-[#ffcc00] bg-gradient-to-r from-[#001122] via-[#002244] to-[#001122] p-4 flex items-center justify-between shadow-[4px_4px_0px_rgba(0,0,0,0.4)] hover:brightness-110 transition-all select-none"
       >
         <div className="flex items-center gap-4">
@@ -251,17 +251,21 @@ export const VesperaHome: React.FC<VesperaPageProps> = ({ webAccount, navigate, 
                 </div>
               </div>
 
-              {/* Option 1 — VStore */}
+              {/* Option 1 — VStore / Open Local */}
               <button
-                onClick={() => { setVmailDialog(null); onLaunchApp?.('vstore'); }}
+                onClick={() => { setVmailDialog(null); onLaunchApp?.(hasVMail ? 'vmail' : 'vstore'); }}
                 className="flex items-center gap-4 p-3 bg-[#ececec] border-2 border-t-white border-l-white border-b-gray-600 border-r-gray-600 hover:bg-white active:border-t-gray-600 active:border-l-gray-600 active:border-b-white active:border-r-white text-left group"
               >
                 <div className="w-10 h-10 bg-[#000080] border border-gray-400 flex items-center justify-center shrink-0">
                   <Download size={20} className="text-white" />
                 </div>
                 <div>
-                  <p className="font-bold text-sm group-hover:text-[#000080]">Download via VStore</p>
-                  <p className="text-xs text-gray-600">Install VMail as a native desktop application. Requires VStore account.</p>
+                  <p className="font-bold text-sm group-hover:text-[#000080]">
+                    {hasVMail ? 'Launch VMail' : 'Download via VStore'}
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    {hasVMail ? 'Open your locally installed VMail client.' : 'Install VMail as a native desktop application. Requires VStore account.'}
+                  </p>
                 </div>
               </button>
 

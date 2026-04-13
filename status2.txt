@@ -1,0 +1,62 @@
+A  patch_browser.cjs
+A  "public/Vespera Website assets/A photo of a heavy, metal, rack-mounted server.jpeg"
+A  "public/Vespera Website assets/Dr. Arthur Thorne (Portrait).png"
+A  "public/Vespera Website assets/Product Images/DeepSweep Box.png"
+A  "public/Vespera Website assets/Product Images/Vespera Workplace OS - Default box.png"
+A  "public/Vespera Website assets/The AETHERIS Mainframe.png"
+A  "public/Vespera Website assets/Vespera Systems Global Headquarters.png"
+A  "public/Vespera Website assets/X-Type Circuit Diagram.png"
+MM src/App.tsx
+ M src/components/ControlPanel.tsx
+ M src/components/DesktopIcon.tsx
+MM src/components/GUIOS.tsx
+ M src/components/GenericSetupWizard.tsx
+ M src/components/SystemProperties.tsx
+MM src/components/VMail.tsx
+ M src/components/VersaFileManager.tsx
+A  src/components/VesperaSitePages/Vespera404.tsx
+A  src/components/VesperaSitePages/VesperaAbout.tsx
+A  src/components/VesperaSitePages/VesperaAccount.tsx
+A  src/components/VesperaSitePages/VesperaAxisLog.tsx
+A  src/components/VesperaSitePages/VesperaCareers.tsx
+A  src/components/VesperaSitePages/VesperaDownloads.tsx
+A  src/components/VesperaSitePages/VesperaGuestbook.tsx
+AM src/components/VesperaSitePages/VesperaHome.tsx
+A  src/components/VesperaSitePages/VesperaIntranet.tsx
+A  src/components/VesperaSitePages/VesperaPress.tsx
+A  src/components/VesperaSitePages/VesperaProducts.tsx
+A  src/components/VesperaSitePages/VesperaStore.tsx
+A  src/components/VesperaSitePages/VesperaSupport.tsx
+A  src/components/VesperaSitePages/VesperaWelcome.tsx
+A  src/components/VesperaSitePages/VesperaXType.tsx
+AM src/components/VesperaSitePages/types.ts
+AM src/components/VesperaSystemsSite.tsx
+MM src/components/WebBrowser.tsx
+ M src/contexts/FileSystemContext.tsx
+AM src/contexts/VMailContext.tsx
+ M src/data/vstoreApps.ts
+ M src/hooks/useVFS.ts
+ M src/index.css
+ M src/utils/appDictionary.ts
+ M src/utils/audio.ts
+A  system-maintenance-box.png
+A  tsc.txt
+MD tsc_output.txt
+?? append_plus_styles.cjs
+?? generate_css.cjs
+?? public/Cursors/
+?? src/components/AgentVPlusSetupWizard.tsx
+?? src/components/AtlanticWavesSite.tsx
+?? src/components/DirtyScanDisk.tsx
+?? src/components/RemoteDesktop.tsx
+?? src/components/Screensavers.tsx
+?? src/components/VSweeper.tsx
+?? src/components/VesperaAssistant.tsx
+?? src/components/VesperaChat.tsx
+?? src/components/WelcomeTour.tsx
+?? src/data/loreEmails.ts
+?? src/hooks/useRemoteVFS.ts
+?? src/styles/plusCursors.css
+?? src/styles/plusThemes.css
+?? src/utils/plusThemes.ts
+?? status.txt

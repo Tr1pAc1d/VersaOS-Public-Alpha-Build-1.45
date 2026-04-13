@@ -14,6 +14,8 @@ interface VersaFileManagerProps {
   /** Bump nonce and set id to jump the file manager to a folder (e.g. from Find Files). */
   focusDirectoryNonce?: number;
   focusDirectoryId?: string | null;
+  isPickerMode?: boolean;
+  onCancel?: () => void;
 }
 
 const iconMap: Record<string, string> = {
@@ -40,6 +42,8 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
   onContextMenu,
   focusDirectoryNonce = 0,
   focusDirectoryId = null,
+  isPickerMode = false,
+  onCancel,
 }) => {
   useEffect(() => {
     playDiskLoadSound();
@@ -135,10 +139,16 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
       setCurrentDir(node.id);
       setSelectedNode(null);
     } else if (node.type === 'shortcut') {
-      if (node.content && onLaunchApp) {
+      if (isPickerMode) {
+        onOpenFile(node.id);
+      } else if (node.content && onLaunchApp) {
         onLaunchApp(node.content);
       }
     } else {
+      if (isPickerMode) {
+        onOpenFile(node.id);
+        return;
+      }
       const upperName = node.name.toUpperCase();
       
       if (upperName.endsWith('.TXT') || upperName.endsWith('.LOG')) {
@@ -158,6 +168,8 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
           onLaunchApp('netmon_setup');
         } else if (node.name === 'RHID_SUBSYSTEM_SETUP.EXE') {
           onLaunchApp('rhid_setup');
+        } else if (node.name === 'AW_RELEASE_RADAR_SETUP.EXE') {
+          onLaunchApp('aw_release_radar_setup');
         } else {
           onLaunchApp(node.id); // Default to opening it as an app if it's an exe (handled by GUIOS if configured)
         }
@@ -401,6 +413,25 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
         <span>{children.length} object(s)</span>
         <span>Free Space: 42.1 MB</span>
       </div>
+
+      {/* Picker Footer */}
+      {isPickerMode && (
+        <div className="bg-[#c0c0c0] border-t border-gray-500 p-2 flex justify-end gap-2 shadow-inner drop-shadow-md">
+           <button 
+             disabled={!selectedNode || vfs.getNode(selectedNode)?.type === 'directory'}
+             onClick={() => { if (selectedNode) onOpenFile(selectedNode); }}
+             className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 font-bold active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-black hover:bg-[#d0d0d0] disabled:opacity-50"
+           >
+             Insert Object
+           </button>
+           <button 
+             onClick={() => { if (onCancel) onCancel(); }}
+             className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 font-bold active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-black hover:bg-[#d0d0d0]"
+           >
+             Cancel
+           </button>
+        </div>
+      )}
 
       {/* Modals */}
       {pathError && (

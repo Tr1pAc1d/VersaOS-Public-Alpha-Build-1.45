@@ -5,13 +5,14 @@ import { Terminal } from "./components/Terminal";
 import { BIOS } from "./components/BIOS";
 import { GUIOS } from "./components/GUIOS";
 import { GUILogin } from "./components/GUILogin";
+import { DirtyScanDisk } from "./components/DirtyScanDisk";
 
 import { KernelPanic } from "./components/KernelPanic";
 import { ShutdownScreen } from "./components/ShutdownScreen";
 import { NetworkLinkProvider } from "./contexts/NetworkLinkContext";
 import { VMailProvider } from "./contexts/VMailContext";
 
-type AppState = "OFF" | "SPLASH" | "BIOS" | "KERNEL_BOOT" | "TERMINAL" | "GUI_BOOT_SPLASH" | "GUI_KERNEL_BOOT" | "GUI_LOADING_SCREEN" | "GUI_LOGIN" | "GUI_OS" | "KERNEL_PANIC" | "SHUTDOWN";
+type AppState = "OFF" | "SPLASH" | "BIOS" | "KERNEL_BOOT" | "TERMINAL" | "GUI_BOOT_SPLASH" | "GUI_KERNEL_BOOT" | "GUI_LOADING_SCREEN" | "GUI_LOGIN" | "GUI_OS" | "KERNEL_PANIC" | "SHUTDOWN" | "DIRTY_SCANDISK";
 
 export default function App() {
   useEffect(() => {
@@ -204,7 +205,12 @@ export default function App() {
               // 400ms: Fade in Desktop
               setTimeout(() => {
                 setResSwapPhase("FADEIN");
-                setAppState("GUI_LOGIN");
+                if (localStorage.getItem('vespera_dirty_shutdown') === 'true') {
+                  localStorage.removeItem('vespera_dirty_shutdown');
+                  setAppState("DIRTY_SCANDISK");
+                } else {
+                  setAppState("GUI_LOGIN");
+                }
               }, 400);
               // 800ms: End swapping
               setTimeout(() => {
@@ -212,7 +218,13 @@ export default function App() {
                 setResSwapPhase("NONE");
               }, 800);
             } else {
-              setAppState("GUI_LOGIN");
+              // Check for dirty shutdown
+              if (localStorage.getItem('vespera_dirty_shutdown') === 'true') {
+                localStorage.removeItem('vespera_dirty_shutdown');
+                setAppState("DIRTY_SCANDISK");
+              } else {
+                setAppState("GUI_LOGIN");
+              }
             }
           }} 
           neuralBridgeActive={neuralBridgeActive} 
@@ -224,25 +236,34 @@ export default function App() {
           onLogin={(user) => { setCurrentUser(user); setAppState("GUI_OS"); }} 
           neuralBridgeActive={neuralBridgeActive} 
           isVisible={!isResSwapping || resSwapPhase === "FADEIN"}
-          onShutdown={() => setAppState("SHUTDOWN")}
+          onShutdown={() => {
+            localStorage.removeItem('vespera_dirty_shutdown');
+            setAppState("SHUTDOWN");
+          }}
         />;
+      case "DIRTY_SCANDISK":
+        return <DirtyScanDisk key={`scandisk-${rebootKey}`} onComplete={() => setAppState("GUI_LOGIN")} />;
       case "GUI_OS":
         return (
           <NetworkLinkProvider key={`net-${rebootKey}`}>
             <VMailProvider>
-              <GUIOS 
-                key={`gui-os-${rebootKey}`}
+              <GUIOSWrapper
+                rebootKey={rebootKey}
                 onExit={() => {
                   setNeuralBridgeActive(false);
                   setAppState("BIOS");
-                }} 
+                }}
                 onReboot={triggerInternalReboot}
-                neuralBridgeActive={neuralBridgeActive} 
-                neuralBridgeEnabled={neuralBridgeEnabled} 
-                neuralBoostEnabled={neuralBoostEnabled} 
-                unrestrictedPollingEnabled={unrestrictedPollingEnabled} 
-                setUnrestrictedPollingEnabled={setUnrestrictedPollingEnabled} 
-                onShutDown={() => setAppState("SHUTDOWN")}
+                neuralBridgeActive={neuralBridgeActive}
+                neuralBridgeEnabled={neuralBridgeEnabled}
+                neuralBoostEnabled={neuralBoostEnabled}
+                unrestrictedPollingEnabled={unrestrictedPollingEnabled}
+                setUnrestrictedPollingEnabled={setUnrestrictedPollingEnabled}
+                onShutDown={() => {
+                  // Clear dirty flag on proper shutdown
+                  localStorage.removeItem('vespera_dirty_shutdown');
+                  setAppState("SHUTDOWN");
+                }}
                 onSignOut={handleSignOut}
                 onSignOutToTerminal={handleSignOutToTerminal}
                 screenMode={screenMode}
@@ -266,6 +287,15 @@ export default function App() {
         return null;
     }
   };
+
+  // ── GUIOSWrapper: sets dirty shutdown flag on mount ──────────────────
+  function GUIOSWrapper(props: any) {
+    useEffect(() => {
+      localStorage.setItem('vespera_dirty_shutdown', 'true');
+      return () => {};
+    }, []);
+    return <GUIOS key={`gui-os-${props.rebootKey}`} {...props} />;
+  }
 
   return (
     <div className={`relative h-screen w-screen bg-[#000000] overflow-hidden ${glitch ? 'crt-flicker' : ''}`}>

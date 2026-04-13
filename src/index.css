@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "./styles/haunt.css";
+@import "./styles/plusThemes.css";
+@import "./styles/plusCursors.css";
 
 @theme {
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
@@ -135,3 +137,10 @@
 .animate-icon-pop {
   animation: iconPop 0.35s ease-out both;
 }
+
+/* System-wide cursor overrides */
+.sys-cursor-crosshair, .sys-cursor-crosshair * { cursor: crosshair !important; }
+.sys-cursor-help, .sys-cursor-help * { cursor: help !important; }
+.sys-cursor-wait, .sys-cursor-wait * { cursor: wait !important; }
+.sys-cursor-text, .sys-cursor-text * { cursor: text !important; }
+.sys-cursor-move, .sys-cursor-move * { cursor: move !important; }

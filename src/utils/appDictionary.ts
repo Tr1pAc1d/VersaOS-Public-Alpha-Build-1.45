@@ -27,5 +27,7 @@ export const APP_DICTIONARY: Record<string, { icon: any, color: string, defaultT
   'aura_gallery': { icon: Monitor, color: 'text-purple-500', defaultTitle: 'Aura Screen Saver Gallery' },
   'packman_setup': { icon: Ghost, color: 'text-yellow-500', defaultTitle: 'Pac-Man (x86) Setup' },
   'retrotv': { icon: Tv, color: 'text-purple-600', defaultTitle: 'RetroTV Cable Simulator', isSystem: true },
+  'remote_desktop': { icon: Monitor, color: 'text-blue-600', defaultTitle: 'VesperaConnect Remote Desktop', isSystem: true },
+  'aw_release_radar': { icon: Music, color: 'text-cyan-400', defaultTitle: 'AW Release Radar' },
   'default': { icon: Package, color: 'text-gray-400', defaultTitle: 'Application' }
 };

@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { LORE_EMAILS, LORE_CATEGORIES } from '../data/loreEmails';
 
 export interface VMailMessage {
   id: number;
@@ -8,6 +9,7 @@ export interface VMailMessage {
   body: string;
   folder: 'inbox' | 'sent' | 'drafts' | 'trash';
   read: boolean;
+  attachments?: { name: string, content: string }[];
 }
 
 const INITIAL_EMAILS: VMailMessage[] = [
@@ -55,15 +57,81 @@ const INITIAL_EMAILS: VMailMessage[] = [
     body: '[ORIGINAL MESSAGE FOLLOWS]\n----------------------------------------\nFrom: YOU\nDate: [CORRUPTED]\nTo: [CORRUPTED]\n\ni think i sent this already. i don\'t remember writing it.\n\nif someone sees this, please\n\n\n[MESSAGE BODY TRUNCATED — STORAGE LIMIT EXCEEDED]\n[CHECKSUM MISMATCH — POSSIBLE TRANSMISSION ERROR]\n[VESPERA MAIL SERVER v2.3.1 // ERR_CODE: 0x4F4B]\n----------------------------------------',
     folder: 'inbox',
     read: false
+  },
+  {
+    id: 6,
+    from: 'YOU <self@vesperanet.sys>',
+    subject: 'Re: Project timeline updates',
+    date: 'Oct 10, 1996 04:30 PM',
+    body: 'Marcus,\n\nThe revisions to the timeline are unacceptable. The X-Type deliverables cannot be pushed to Q4. We need to maintain the alpha testing schedule or we risk losing the funding for the neural bridge expansion.\n\nMake it work.',
+    folder: 'sent',
+    read: true
+  },
+  {
+    id: 7,
+    from: 'YOU <self@vesperanet.sys>',
+    subject: 'Fw: Weird ambient noise?',
+    date: 'Oct 08, 1996 09:15 AM',
+    body: 'Did you hear that low frequency hum last night around 3AM? I thought it was the HVAC acting up again but the analog monitors spiked at exactly the same time. Let me know if you saw anything unusual in the telemetry.',
+    folder: 'sent',
+    read: true
+  },
+  {
+    id: 8,
+    from: 'YOU <self@vesperanet.sys>',
+    subject: 'Meeting Notes - ECHO/VESPERA MERGER',
+    date: 'Sep 29, 1996 11:00 AM',
+    body: 'Notes from the sync:\n- EchoSoft assets fully transferred to Sub-Level 3.\n- Dr. Vasquez assumes lead on all biological components.\n- Legal finalizing NDA revisions. Do not discuss the "volunteers" openly.\n\nLet\'s keep this locked down.',
+    folder: 'sent',
+    read: true
   }
 ];
 
+// ── Persistence keys ───────────────────────────────────────────────
+const STORAGE_KEY_INBOX = 'vespera_vmail_inbox';
+const STORAGE_KEY_DELIVERED = 'vespera_vmail_delivered_lore';
+
+// ── Random helpers ─────────────────────────────────────────────────
+/** Random integer in [min, max] inclusive */
+const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+/** Pick a random element from an array */
+const pickRandom = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+
+// ── Background delivery — pick next lore email ─────────────────────
+function pickNextLoreEmail(deliveredIds: Set<string>): typeof LORE_EMAILS[number] | null {
+  // Gather categories that still have undelivered emails
+  const availableCategories = LORE_CATEGORIES.filter(cat =>
+    LORE_EMAILS.some(e => e.category === cat && !deliveredIds.has(e.loreId))
+  );
+  if (availableCategories.length === 0) return null;
+
+  // Pick a random category first (ensures narrative variety)
+  const category = pickRandom(availableCategories);
+  const pool = LORE_EMAILS.filter(e => e.category === category && !deliveredIds.has(e.loreId));
+  return pickRandom(pool);
+}
+
+// ── Context type ───────────────────────────────────────────────────
 interface VMailContextType {
   emails: VMailMessage[];
-  sendEmail: (to: string, subject: string, body: string, senderName: string) => void;
+  sendEmail: (to: string, subject: string, body: string, senderName: string, attachments?: { name: string, content: string }[]) => void;
   deleteEmail: (id: number) => void;
   markAsRead: (id: number) => void;
-  receiveMachineEmail: (from: string, subject: string, body: string) => void;
+  saveDraft: (to: string, subject: string, body: string, attachments?: { name: string, content: string }[]) => void;
+  receiveMachineEmail: (from: string, subject: string, body: string, attachments?: { name: string, content: string }[]) => void;
+  /** Live count of unread inbox messages */
+  unreadCount: number;
+  /** Incremented each time a background lore email arrives */
+  newMailArrived: number;
+  /** Info about the latest delivered email (for toast display) */
+  latestMail: { from: string; subject: string } | null;
+  /** Reset the new-mail flag after the notification is shown */
+  clearNewMailFlag: () => void;
+  /** Start the background delivery timer (call from GUIOS when VMail is installed) */
+  startBackgroundDelivery: () => void;
+  /** Stop the background delivery timer */
+  stopBackgroundDelivery: () => void;
 }
 
 const VMailContext = createContext<VMailContextType | undefined>(undefined);
@@ -71,11 +139,9 @@ const VMailContext = createContext<VMailContextType | undefined>(undefined);
 export const VMailProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [emails, setEmails] = useState<VMailMessage[]>(() => {
     try {
-      const stored = localStorage.getItem('vespera_vmail_inbox');
+      const stored = localStorage.getItem(STORAGE_KEY_INBOX);
       if (stored) {
         const parsed = JSON.parse(stored) as VMailMessage[];
-        // Merge: add any INITIAL_EMAILS whose IDs are not present in stored data
-        // (preserves user deletions — if they deleted id:3, it stays deleted)
         const storedIds = new Set(parsed.map(e => e.id));
         const newLoreEmails = INITIAL_EMAILS.filter(e => !storedIds.has(e.id));
         if (newLoreEmails.length > 0) {
@@ -89,46 +155,205 @@ export const VMailProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   });
 
+  // ── Delivered lore IDs (persisted) ─────────────────────────────
+  const [deliveredIds, setDeliveredIds] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_DELIVERED);
+      return stored ? new Set(JSON.parse(stored) as string[]) : new Set<string>();
+    } catch {
+      return new Set<string>();
+    }
+  });
+
+  // ── New-mail notification signal ───────────────────────────────
+  const [newMailArrived, setNewMailArrived] = useState(0);
+  const [latestMail, setLatestMail] = useState<{ from: string; subject: string } | null>(null);
+
+  // ── Timer ref for background delivery ──────────────────────────
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deliveryActiveRef = useRef(false);
+  const isFirstDeliveryRef = useRef(true);
+
+  // ── Persist emails ─────────────────────────────────────────────
   useEffect(() => {
-    localStorage.setItem('vespera_vmail_inbox', JSON.stringify(emails));
+    localStorage.setItem(STORAGE_KEY_INBOX, JSON.stringify(emails));
   }, [emails]);
 
-  const sendEmail = (to: string, subject: string, body: string, senderName: string) => {
+  // ── Persist delivered IDs ──────────────────────────────────────
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_DELIVERED, JSON.stringify([...deliveredIds]));
+  }, [deliveredIds]);
+
+  // ── Unread count ───────────────────────────────────────────────
+  const unreadCount = useMemo(
+    () => emails.filter(e => e.folder === 'inbox' && !e.read).length,
+    [emails]
+  );
+
+  // ── Core email operations ──────────────────────────────────────
+  const receiveMachineEmail = useCallback((from: string, subject: string, body: string, attachments?: { name: string, content: string }[]) => {
     const newEmail: VMailMessage = {
-      id: Date.now(),
-      from: senderName,
-      subject: subject || '(No Subject)',
-      date: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-      body,
-      folder: 'sent',
-      read: true
-    };
-    setEmails(prev => [newEmail, ...prev]);
-  };
-
-  const deleteEmail = (id: number) => {
-    setEmails(prev => prev.map(e => e.id === id ? { ...e, folder: 'trash' } : e));
-  };
-
-  const markAsRead = (id: number) => {
-    setEmails(prev => prev.map(e => e.id === id ? { ...e, read: true } : e));
-  };
-  
-  const receiveMachineEmail = (from: string, subject: string, body: string) => {
-     const newEmail: VMailMessage = {
-      id: Date.now(),
+      id: Date.now() + Math.random(),
       from,
       subject,
       date: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
       body,
       folder: 'inbox',
-      read: false
+      read: false,
+      attachments
     };
     setEmails(prev => [newEmail, ...prev]);
-  };
+    setLatestMail({ from, subject });
+    setNewMailArrived(n => n + 1);
+  }, []);
+
+  const sendEmail = useCallback((to: string, subject: string, body: string, senderName: string, attachments?: { name: string, content: string }[]) => {
+    const newEmail: VMailMessage = {
+      id: Date.now() + Math.random(),
+      from: senderName,
+      subject: subject || '(No Subject)',
+      date: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      body,
+      folder: 'sent',
+      read: true,
+      attachments
+    };
+    setEmails(prev => [newEmail, ...prev]);
+
+    // Check Auto-Reply Rules
+    const toLower = to.toLowerCase();
+    const bodyLower = body.toLowerCase();
+    const subLower = subject.toLowerCase();
+    
+    if (toLower.includes('@vesperasystems.com') || toLower.includes('@echosoft.com') || toLower.includes('@vesperanet.sys') || toLower.includes('vespera')) {
+      const delay = Math.random() * 45000 + 45000; // 45 to 90 seconds
+      setTimeout(() => {
+        let replySub = `Re: ${subject || '(No Subject)'}`;
+        let replyBody = `Received your message. I am currently out of the office or otherwise unavailable. I will review this upon my return.\n\n--\nAutomated Reply`;
+        let replyFrom = to;
+        let replyAttachments: { name: string, content: string }[] | undefined = undefined;
+
+        if (bodyLower.includes('password') || subLower.includes('password') || bodyLower.includes('access')) {
+          replyBody = `SECURITY NOTICE\n\nPasswords and access tokens cannot be distributed via unencrypted channels. Please consult the SysAdmin in person at Building 7.\n\n-- IT Desk`;
+          replyFrom = 'helpdesk@vesperasystems.com';
+        } else if (bodyLower.includes('file') || bodyLower.includes('log') || bodyLower.includes('data')) {
+          replyBody = `I pulled the data you requested. Do not distribute this outside the local subnet. They scan outbound packets.\n\nSee attached.`;
+          replyFrom = 'unknown_sender@echosoft.com';
+          replyAttachments = [{
+             name: 'trace_log.txt',
+             content: `14:00:02 SYNC -- 0x00A\n14:00:03 ERR -- BRIDGE FAULT\n14:00:04 HALT -- UNREGISTERED CORTICAL PATTERN\n14:00:05 END.`
+          }];
+        } else if (toLower.includes('thorne')) {
+          replyBody = `Elias Thorne is not at this terminal. He has not been at this terminal since the incident. Stop sending messages here.`;
+          replyFrom = 'postmaster@vesperacorp.internal';
+        } else if (toLower.includes('vasquez')) {
+          replyBody = `I can't talk right now. The neural mapping phase is at 98%. If this is about the subject pool consent forms, speak to Legal.\n\n- Dr. Vasquez`;
+          replyFrom = 'dr.vasquez@vesperacorp.internal';
+        }
+
+        receiveMachineEmail(replyFrom, replySub, replyBody, replyAttachments);
+      }, delay);
+    }
+  }, [receiveMachineEmail]);
+
+  const deleteEmail = useCallback((id: number) => {
+    setEmails(prev => prev.map(e => e.id === id ? { ...e, folder: 'trash' } : e));
+  }, []);
+
+  const markAsRead = useCallback((id: number) => {
+    setEmails(prev => prev.map(e => e.id === id ? { ...e, read: true } : e));
+  }, []);
+
+  const saveDraft = useCallback((to: string, subject: string, body: string, attachments?: { name: string, content: string }[]) => {
+    const newEmail: VMailMessage = {
+      id: Date.now() + Math.random(),
+      from: 'Draft',
+      subject: subject || '(No Subject)',
+      date: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      body,
+      folder: 'drafts',
+      read: true,
+      attachments
+    };
+    setEmails(prev => [newEmail, ...prev]);
+  }, []);
+
+  const clearNewMailFlag = useCallback(() => {
+    setLatestMail(null);
+  }, []);
+
+  // ── Background delivery engine ─────────────────────────────────
+  const scheduleNextDelivery = useCallback(() => {
+    if (!deliveryActiveRef.current) return;
+
+    // First delivery: 90-180 seconds. Subsequent: 2-10 minutes.
+    const delayMs = isFirstDeliveryRef.current
+      ? randInt(5, 10) * 1000
+      : randInt(2 * 60, 10 * 60) * 1000;
+
+    isFirstDeliveryRef.current = false;
+
+    timerRef.current = setTimeout(() => {
+      if (!deliveryActiveRef.current) return;
+
+      setDeliveredIds(prev => {
+        const email = pickNextLoreEmail(prev);
+        if (!email) {
+          // Pool exhausted — stop delivering
+          deliveryActiveRef.current = false;
+          return prev;
+        }
+
+        // Deliver the email
+        const newEmail: VMailMessage = {
+          id: Date.now() + Math.random(),
+          from: email.from,
+          subject: email.subject,
+          date: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          body: email.body,
+          folder: 'inbox',
+          read: false
+        };
+        setEmails(prevEmails => [newEmail, ...prevEmails]);
+        setLatestMail({ from: email.from, subject: email.subject });
+        setNewMailArrived(n => n + 1);
+
+        // Schedule next
+        scheduleNextDelivery();
+
+        return new Set([...prev, email.loreId]);
+      });
+    }, delayMs);
+  }, []);
+
+  const startBackgroundDelivery = useCallback(() => {
+    if (deliveryActiveRef.current) return;
+    deliveryActiveRef.current = true;
+    isFirstDeliveryRef.current = true;
+    scheduleNextDelivery();
+  }, [scheduleNextDelivery]);
+
+  const stopBackgroundDelivery = useCallback(() => {
+    deliveryActiveRef.current = false;
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  // ── Cleanup on unmount ─────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   return (
-    <VMailContext.Provider value={{ emails, sendEmail, deleteEmail, markAsRead, receiveMachineEmail }}>
+    <VMailContext.Provider value={{
+      emails, sendEmail, deleteEmail, markAsRead, saveDraft,
+      receiveMachineEmail, unreadCount, newMailArrived, latestMail, clearNewMailFlag,
+      startBackgroundDelivery, stopBackgroundDelivery
+    }}>
       {children}
     </VMailContext.Provider>
   );

@@ -1,0 +1,109 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Vespera Plus! Cursor Schemes — Real .cur file sets
+   These use actual cursor files from /Cursors/ instead of inline SVG.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Blue Glass (Vista) ──────────────────────────────────────────────────── */
+.plus-cursor-blueglass,
+.plus-cursor-blueglass * {
+  cursor: url('/Cursors/vista/BlueglassArrow.cur'), auto !important;
+}
+.plus-cursor-blueglass a,
+.plus-cursor-blueglass button,
+.plus-cursor-blueglass [role="button"],
+.plus-cursor-blueglass label {
+  cursor: url('/Cursors/vista/BlueGlassLink.cur'), pointer !important;
+}
+.plus-cursor-blueglass input[type="text"],
+.plus-cursor-blueglass textarea,
+.plus-cursor-blueglass [contenteditable] {
+  cursor: url('/Cursors/vista/BlueglassTextSelect.cur'), text !important;
+}
+
+/* ── Blue Silver (RW) ────────────────────────────────────────────────────── */
+.plus-cursor-bluesilver,
+.plus-cursor-bluesilver * {
+  cursor: url('/Cursors/other/RWArrow.cur'), auto !important;
+}
+.plus-cursor-bluesilver a,
+.plus-cursor-bluesilver button,
+.plus-cursor-bluesilver [role="button"],
+.plus-cursor-bluesilver label {
+  cursor: url('/Cursors/other/RWHand.cur'), pointer !important;
+}
+.plus-cursor-bluesilver input[type="text"],
+.plus-cursor-bluesilver textarea,
+.plus-cursor-bluesilver [contenteditable] {
+  cursor: url('/Cursors/other/RWBeam.cur'), text !important;
+}
+.plus-cursor-bluesilver .cursor-help,
+.plus-cursor-bluesilver [role="tooltip"] {
+  cursor: url('/Cursors/other/RWHelpSelect.cur'), help !important;
+}
+.plus-cursor-bluesilver .cursor-crosshair {
+  cursor: url('/Cursors/other/RWPrecisionSelect.cur'), crosshair !important;
+}
+.plus-cursor-bluesilver .cursor-move,
+.plus-cursor-bluesilver [draggable="true"] {
+  cursor: url('/Cursors/other/RWSizeAll.cur'), move !important;
+}
+
+/* ── Ghostly ─────────────────────────────────────────────────────────────── */
+.plus-cursor-ghostly,
+.plus-cursor-ghostly * {
+  cursor: url('/Cursors/other/GhostlyArrow.cur'), auto !important;
+}
+
+/* ── Red-Black ───────────────────────────────────────────────────────────── */
+.plus-cursor-redblack,
+.plus-cursor-redblack * {
+  cursor: url('/Cursors/Red-Black/MyCursorSet1.cur'), auto !important;
+}
+
+/* ── Green Glow ──────────────────────────────────────────────────────────── */
+.plus-cursor-greenglow,
+.plus-cursor-greenglow * {
+  cursor: url('/Cursors/Green glow/Green hourglass.cur'), auto !important;
+}
+
+/* ── Earth ────────────────────────────────────────────────────────────────── */
+.plus-cursor-earth,
+.plus-cursor-earth * {
+  cursor: url('/Cursors/cool/Earth_handwriting.cur'), auto !important;
+}
+.plus-cursor-earth input[type="text"],
+.plus-cursor-earth textarea,
+.plus-cursor-earth [contenteditable] {
+  cursor: url('/Cursors/cool/Earth_crosshair.ani.cur'), text !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLOBAL CURSOR PERSISTENCE OVERRIDES
+   Ensures Plus! cursors always display over Tailwind utilities,
+   inline styles, and component-level overrides.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[class*="plus-cursor-"] .cursor-default,
+[class*="plus-cursor-"] .cursor-pointer,
+[class*="plus-cursor-"] .cursor-text,
+[class*="plus-cursor-"] .cursor-move,
+[class*="plus-cursor-"] .cursor-grab,
+[class*="plus-cursor-"] .cursor-not-allowed,
+[class*="plus-cursor-"] [style*="cursor"],
+[class*="plus-cursor-"] input,
+[class*="plus-cursor-"] textarea,
+[class*="plus-cursor-"] select,
+[class*="plus-cursor-"] option,
+[class*="plus-cursor-"] a,
+[class*="plus-cursor-"] button,
+[class*="plus-cursor-"] [role="button"],
+[class*="plus-cursor-"] [role="tab"],
+[class*="plus-cursor-"] [role="menuitem"],
+[class*="plus-cursor-"] [role="option"],
+[class*="plus-cursor-"] [role="link"],
+[class*="plus-cursor-"] [role="slider"],
+[class*="plus-cursor-"] label,
+[class*="plus-cursor-"] summary,
+[class*="plus-cursor-"] [tabindex] {
+  cursor: inherit !important;
+}

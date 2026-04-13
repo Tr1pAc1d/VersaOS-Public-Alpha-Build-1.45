@@ -138,6 +138,42 @@ export const SystemProperties: React.FC<SystemPropertiesProps> = ({ onBack, vfs,
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
   const [showDeviceProps, setShowDeviceProps] = useState(false);
   const [devicePropTab, setDevicePropTab] = useState<DevicePropTab>('General');
+  const [deviceConflicts, setDeviceConflicts] = useState<Record<string, boolean>>({});
+
+  // ── Device IRQ Conflict Simulation ──────────────────────────────────────────
+  useEffect(() => {
+    // Collect all conflictable device IDs
+    const conflictableIds: string[] = [];
+    DEVICE_TREE.forEach(category => {
+      category.children?.forEach(dev => {
+        // Can conflict if it has an IRQ and isn't already a hardcoded warning
+        if (!dev.warning && dev.irq && dev.irq !== '—') {
+          conflictableIds.push(dev.id);
+        }
+      });
+    });
+
+    const intervalId = setInterval(() => {
+      setDeviceConflicts(prev => {
+        const next = { ...prev };
+        // Randomly resolve existing conflicts
+        Object.keys(next).forEach(id => {
+          if (next[id] && Math.random() < 0.2) {
+            next[id] = false;
+          }
+        });
+        
+        // Randomly create a new conflict (15% chance every 15s)
+        if (Math.random() < 0.15) {
+          const targetId = conflictableIds[Math.floor(Math.random() * conflictableIds.length)];
+          if (targetId) next[targetId] = true;
+        }
+        return next;
+      });
+    }, 15000);
+
+    return () => clearInterval(intervalId);
+  }, []);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [disabledDevices, setDisabledDevices] = useState<Set<string>>(new Set());
@@ -460,7 +496,7 @@ export const SystemProperties: React.FC<SystemPropertiesProps> = ({ onBack, vfs,
                   >
                     {isDisabled ? (
                       <X size={12} className={selectedDevice === dev.id ? 'text-red-300' : 'text-red-500'} />
-                    ) : dev.warning ? (
+                    ) : (dev.warning || deviceConflicts[dev.id]) ? (
                       <AlertTriangle size={12} className={selectedDevice === dev.id ? 'text-yellow-300' : 'text-yellow-500'} />
                     ) : (
                       <Cpu size={12} className={selectedDevice === dev.id ? 'text-white' : 'text-gray-500'} />
@@ -704,20 +740,27 @@ export const SystemProperties: React.FC<SystemPropertiesProps> = ({ onBack, vfs,
             ))}
           </div>
           <div className="pt-2">
-            {devicePropTab === 'General' && (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 border-b border-gray-400 pb-2">
-                  {selDev.warning ? <AlertTriangle size={20} className="text-yellow-500" /> : <Cpu size={20} className="text-[#000080]" />}
-                  <span className="font-bold">{selDev.label}</span>
+            {devicePropTab === 'General' && (() => {
+              const hasWarning = selDev.warning || deviceConflicts[selDev.id];
+              let statusMsg = selDev.status;
+              if (deviceConflicts[selDev.id]) {
+                statusMsg = "This device cannot find enough free resources that it can use. (Code 12)\n\nIf you want to use this device, you will need to disable one of the other devices on this system.";
+              }
+              return (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 border-b border-gray-400 pb-2">
+                    {hasWarning ? <AlertTriangle size={20} className="text-yellow-500" /> : <Cpu size={20} className="text-[#000080]" />}
+                    <span className="font-bold">{selDev.label}</span>
+                  </div>
+                  <p><b>Manufacturer:</b> {selDev.manufacturer || 'Unknown'}</p>
+                  <p><b>Device type:</b> Hardware</p>
+                  <div className={`p-2 border ${hasWarning ? 'border-yellow-400 bg-yellow-50' : 'border-green-400 bg-green-50'}`}>
+                    <p className={hasWarning ? 'text-yellow-800' : 'text-green-800'}><b>Device status:</b></p>
+                    <p className={`text-[10px] mt-1 whitespace-pre-wrap ${hasWarning ? 'text-yellow-700' : 'text-green-700'}`}>{statusMsg}</p>
+                  </div>
                 </div>
-                <p><b>Manufacturer:</b> {selDev.manufacturer || 'Unknown'}</p>
-                <p><b>Device type:</b> Hardware</p>
-                <div className={`p-2 border ${selDev.warning ? 'border-yellow-400 bg-yellow-50' : 'border-green-400 bg-green-50'}`}>
-                  <p className={selDev.warning ? 'text-yellow-800' : 'text-green-800'}><b>Device status:</b></p>
-                  <p className={`text-[10px] mt-1 ${selDev.warning ? 'text-yellow-700' : 'text-green-700'}`}>{selDev.status}</p>
-                </div>
-              </div>
-            )}
+              );
+            })()}
             {devicePropTab === 'Driver' && (() => {
               const UPDATABLE_DEVICES = ['gpu_s3', 'modem_usr', 'sb16', 'nic_ne2k'];
               const isUpdated = updatedDrivers[selDev.id];

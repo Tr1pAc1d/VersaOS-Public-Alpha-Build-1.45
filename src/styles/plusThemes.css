@@ -1,0 +1,215 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Vespera Plus! Desktop Enhancement Pack — Theme Styles
+   Visual overlays, scrollbars, and window animations.
+   Cursor schemes are now in plusCursors.css using real .cur files.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Cyber-Nature Overlay ────────────────────────────────────────────────── */
+.plus-overlay-nature {
+  position: relative;
+}
+
+.plus-overlay-nature::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(34, 197, 94, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 100%, rgba(34, 197, 94, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.15) 100%);
+  animation: natureBreath 8s ease-in-out infinite;
+}
+
+@keyframes natureBreath {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* Subtle corner vine decorations */
+.plus-overlay-nature::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 120px;
+  height: 120px;
+  pointer-events: none;
+  z-index: 9998;
+  background: radial-gradient(circle at 0% 0%, rgba(34, 197, 94, 0.15) 0%, transparent 70%);
+  border-bottom-right-radius: 100%;
+}
+
+/* ── Corporate-Void Overlay ──────────────────────────────────────────────── */
+.plus-overlay-void {
+  position: relative;
+}
+
+.plus-overlay-void::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background:
+    /* Faint scan lines */
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    ),
+    /* Heavy vignette */
+    radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.35) 100%);
+  animation: voidPulse 4s ease-in-out infinite;
+}
+
+@keyframes voidPulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+/* Red corner warning glow */
+.plus-overlay-void::before {
+  content: '';
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 200px;
+  height: 200px;
+  pointer-events: none;
+  z-index: 9998;
+  background: radial-gradient(circle at 100% 100%, rgba(220, 38, 38, 0.08) 0%, transparent 70%);
+  animation: voidCorner 6s ease-in-out infinite alternate;
+}
+
+@keyframes voidCorner {
+  0% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+/* ── Cyber-Nature Scrollbars ─────────────────────────────────────────────── */
+.plus-scrollbar-nature ::-webkit-scrollbar { width: 10px; }
+.plus-scrollbar-nature ::-webkit-scrollbar-track { background: #1a2e1a; }
+.plus-scrollbar-nature ::-webkit-scrollbar-thumb { background: #22c55e; border: 1px solid #065f46; border-radius: 2px; }
+.plus-scrollbar-nature ::-webkit-scrollbar-thumb:hover { background: #4ade80; }
+
+/* ── Corporate-Void Scrollbars ───────────────────────────────────────────── */
+.plus-scrollbar-void ::-webkit-scrollbar { width: 10px; }
+.plus-scrollbar-void ::-webkit-scrollbar-track { background: #0a0a0a; border: 1px solid #1a1a1a; }
+.plus-scrollbar-void ::-webkit-scrollbar-thumb { background: #4a0000; border: 1px solid #dc2626; }
+.plus-scrollbar-void ::-webkit-scrollbar-thumb:hover { background: #7f1d1d; }
+
+/* ── Window Animation: Nature (organic grow) ─────────────────────────────── */
+.plus-window-open-nature {
+  animation: windowOpenNature 0.4s ease-out both;
+}
+
+@keyframes windowOpenNature {
+  0% { filter: blur(2px) saturate(0.5); }
+  60% { filter: blur(0) saturate(1.1); }
+  100% { filter: blur(0) saturate(1); }
+}
+
+/* ── Window Animation: Void (heavy slam) ─────────────────────────────────── */
+.plus-window-open-void {
+  animation: windowOpenVoid 0.5s ease-in-out both;
+}
+
+@keyframes windowOpenVoid {
+  0% { filter: brightness(2) contrast(2); }
+  30% { filter: brightness(0.8) contrast(1.2); }
+  50% { filter: brightness(1) contrast(1); }
+  100% { filter: brightness(1) contrast(1); }
+}
+
+/* ── Ambient indicator pulse (for the tray icon) ─────────────────────────── */
+@keyframes ambientPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.plus-ambient-pulse {
+  animation: ambientPulse 2s ease-in-out infinite;
+}
+
+/* ── Plus Overlay / Scrollbar: hacker ── */
+.plus-overlay-hacker { position: relative; }
+.plus-overlay-hacker::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0,255,0,0.03) 0px, transparent 2px);
+  z-index: 9998;
+}
+.plus-scrollbar-hacker ::-webkit-scrollbar-track { background: #001100; }
+.plus-scrollbar-hacker ::-webkit-scrollbar-thumb { background: #005500; border: 1px solid #00ff00; }
+
+/* ── Plus Overlay / Scrollbar: ocean ── */
+.plus-overlay-ocean { position: relative; }
+.plus-overlay-ocean::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 100%, rgba(0,229,255,0.05) 0%, transparent 80%);
+  z-index: 9998;
+}
+.plus-scrollbar-ocean ::-webkit-scrollbar-track { background: #001a33; }
+.plus-scrollbar-ocean ::-webkit-scrollbar-thumb { background: #004c66; border: 1px solid #00e5ff; }
+
+/* ── Plus Overlay / Scrollbar: sunset ── */
+.plus-overlay-sunset { position: relative; }
+.plus-overlay-sunset::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,0,255,0.03) 0%, transparent 40%, rgba(0,255,255,0.03) 100%);
+  z-index: 9998;
+}
+.plus-scrollbar-sunset ::-webkit-scrollbar-track { background: #2a0033; }
+.plus-scrollbar-sunset ::-webkit-scrollbar-thumb { background: #4a1c5e; border: 1px solid #ff00ff; }
+
+/* ── Plus Overlay / Scrollbar: gold ── */
+.plus-overlay-gold { position: relative; }
+.plus-scrollbar-gold ::-webkit-scrollbar-track { background: #2a2200; }
+.plus-scrollbar-gold ::-webkit-scrollbar-thumb { background: #b8860b; border: 1px solid #ffd700; }
+
+/* ── Plus Overlay / Scrollbar: rose ── */
+.plus-overlay-rose { position: relative; }
+.plus-scrollbar-rose ::-webkit-scrollbar-track { background: #3a202b; }
+.plus-scrollbar-rose ::-webkit-scrollbar-thumb { background: #a86f7f; border: 1px solid #ffb6c1; }
+
+/* ── Plus Overlay / Scrollbar: monochrome ── */
+.plus-overlay-monochrome { position: relative; }
+.plus-scrollbar-monochrome ::-webkit-scrollbar-track { background: #000000; }
+.plus-scrollbar-monochrome ::-webkit-scrollbar-thumb { background: #ececec; border: 1px solid #ffffff; }
+
+/* ── Plus Overlay / Scrollbar: midnight ── */
+.plus-overlay-midnight { position: relative; }
+.plus-scrollbar-midnight ::-webkit-scrollbar-track { background: #05051a; }
+.plus-scrollbar-midnight ::-webkit-scrollbar-thumb { background: #191970; border: 1px solid #8a2be2; }
+
+/* ── Plus Overlay / Scrollbar: crimson ── */
+.plus-overlay-crimson { position: relative; }
+.plus-scrollbar-crimson ::-webkit-scrollbar-track { background: #260000; }
+.plus-scrollbar-crimson ::-webkit-scrollbar-thumb { background: #8b0000; border: 1px solid #ff0000; }
+
+/* ── Plus Overlay / Scrollbar: teal ── */
+.plus-overlay-teal { position: relative; }
+.plus-scrollbar-teal ::-webkit-scrollbar-track { background: #004d4d; }
+.plus-scrollbar-teal ::-webkit-scrollbar-thumb { background: #008080; border: 1px solid #00ffff; }
+
+/* ── Plus Overlay / Scrollbar: win95 ── */
+.plus-overlay-win95 { position: relative; }
+.plus-scrollbar-win95 ::-webkit-scrollbar-track { background: #c0c0c0; border: 1px solid #808080; }
+.plus-scrollbar-win95 ::-webkit-scrollbar-thumb { background: #dfdfdf; border-top: 1px solid #ffffff; border-left: 1px solid #ffffff; border-right: 1px solid #000; border-bottom: 1px solid #000; }
+
+/* ── Plus Overlay / Scrollbar: motif ── */
+.plus-overlay-motif { position: relative; }
+.plus-scrollbar-motif ::-webkit-scrollbar-track { background: #425a7a; }
+.plus-scrollbar-motif ::-webkit-scrollbar-thumb { background: #537096; border-top: 1px solid #84a3c6; border-left: 1px solid #84a3c6; border-bottom: 1px solid #2a3f5c; border-right: 1px solid #2a3f5c; }

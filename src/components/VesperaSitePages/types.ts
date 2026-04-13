@@ -10,4 +10,5 @@ export interface VesperaPageProps {
   handleWebLogout: () => void;
   startFailingDownload: (filename: string) => void;
   xtypeImage: string | null;
+  hasVMail?: boolean;
 }

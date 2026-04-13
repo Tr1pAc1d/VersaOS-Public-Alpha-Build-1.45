@@ -73,38 +73,33 @@ export const GenericSetupWizard: React.FC<GenericSetupWizardProps> = ({
     }
   };
 
-  const renderHeader = () => (
-    <div className="bg-[#000080] text-white px-2 py-1 font-bold text-sm flex justify-between items-center tracking-wide">
-      <div className="flex items-center gap-2 text-[11px]">
-        <Package size={14} />
-        <span>VESPERA INSTALLER — {appName.toUpperCase()} v{appVersion}</span>
-      </div>
-      <button onClick={onCancel} className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-5 h-5 flex items-center justify-center text-black font-bold text-xs active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">X</button>
-    </div>
-  );
-
   const renderContent = () => {
     switch (step) {
       case 0: // Welcome
         return (
-          <div className="flex gap-4 p-6">
-            <div className="w-24 h-48 bg-[#000080] shadow-inner border border-gray-400 flex flex-col items-center justify-center gap-4 py-4 shrink-0">
-               <Package size={48} className="text-white opacity-20" />
-               <div className="bg-white/10 w-full h-px" />
-               <p className="text-[10px] text-white/40 font-mono rotate-90 whitespace-nowrap">VESPERA CORE %ID_{appId.toUpperCase()}</p>
+          <div className="flex h-full overflow-hidden">
+            <div className="w-1/3 bg-[#000080] shadow-inner border-r border-gray-400 flex flex-col items-center justify-center gap-4 py-4 shrink-0">
+               <Package size={64} className="text-white opacity-40 mb-2" />
+               <div className="bg-white/10 w-full h-[1px]" />
+               <p className="text-[10px] text-white/40 font-mono rotate-90 whitespace-nowrap mt-8 uppercase tracking-widest leading-none translate-y-4">
+                 VESPERA CORE %ID_{appId.toUpperCase()}
+               </p>
             </div>
-            <div className="flex-1 flex flex-col gap-4">
-              <h2 className="text-xl font-bold text-[#000080]">Welcome to the {appName} Setup</h2>
-              <p className="text-xs leading-relaxed text-black">
+            <div className="flex-1 flex flex-col p-6 overflow-y-auto">
+              <h2 className="text-xl font-bold text-[#000080] mb-2">Welcome to the {appName} Setup</h2>
+              <p className="text-xs leading-relaxed text-black mb-4">
                 This utility will guide you through the automated deployment of <strong>{appName}</strong> onto your Vespera OS desktop.
               </p>
-              <p className="text-xs leading-relaxed text-black bg-white p-2 border border-black shadow-inner">
-                 Note: Close all other active terminal sessions before continuing to ensure maximum neural bridge stability.
-              </p>
-              <div className="mt-auto flex justify-end gap-2">
+              <div className="bg-white p-3 border border-gray-400 shadow-inner mb-4">
+                 <p className="text-[10px] uppercase font-bold text-gray-500 mb-1">System Advisory:</p>
+                 <p className="text-[11px] leading-relaxed text-black italic">
+                   Note: Close all other active terminal sessions before continuing to ensure maximum neural bridge stability.
+                 </p>
+              </div>
+              <div className="mt-auto flex justify-end gap-2 pt-4">
                 <button 
                   onClick={() => setStep(1)}
-                  className="px-6 py-1.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-sm font-bold flex items-center gap-1"
+                  className="px-8 py-1.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-sm font-bold flex items-center gap-1"
                 >Next <ChevronRight size={14} /></button>
                 <button onClick={onCancel} className="px-6 py-1.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-sm font-bold">Cancel</button>
               </div>
@@ -113,12 +108,12 @@ export const GenericSetupWizard: React.FC<GenericSetupWizardProps> = ({
         );
       case 1: // EULA
         return (
-          <div className="flex flex-col gap-4 p-6">
-            <h2 className="text-lg font-bold text-[#000080]">End-User License Agreement</h2>
-            <div className="flex-1 overflow-y-auto bg-white border border-black p-3 text-[10px] font-mono h-40 shadow-inner">
-               <p>VESPERA SYSTEMS GLOBAL LICENSE v4.0.2</p>
-               <br/>
+          <div className="flex flex-col h-full p-6">
+            <h2 className="text-lg font-bold text-[#000080] mb-2">End-User License Agreement</h2>
+            <div className="flex-1 overflow-y-auto bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-3 text-[10px] font-mono shadow-inner leading-relaxed">
+               <p className="font-bold border-b border-gray-200 pb-1 mb-2">VESPERA SYSTEMS GLOBAL LICENSE v4.0.2</p>
                <p>BY INSTALLING THIS SOFTWARE, YOU AGREE TO THE FOLLOWING TERMS:</p>
+               <br/>
                <p>1. USE: THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.</p>
                <p>2. RESTRICTIONS: REVERSE ENGINEERING OF SYSTEM DRIVERS IS STRICTLY PROHIBITED UNDER THE AXIS INNOVATIONS CHARTER.</p>
                <p>3. TERMINATION: THIS LICENSE TERMINATES AUTOMATICALLY IF YOU VIOLATE KERNEL PROTECTION POLICIES.</p>
@@ -126,53 +121,58 @@ export const GenericSetupWizard: React.FC<GenericSetupWizardProps> = ({
                <br/>
                <p>DO YOU ACCEPT THESE TERMS?</p>
             </div>
-            <div className="mt-auto flex justify-end gap-2">
-              <button onClick={() => setStep(2)} className="px-6 py-1.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-sm font-bold">I Agree</button>
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={() => setStep(2)} className="px-8 py-1.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-sm font-bold">I Agree</button>
               <button onClick={onCancel} className="px-6 py-1.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-sm font-bold">I Decline</button>
             </div>
           </div>
         );
       case 2: // Location
         return (
-          <div className="flex flex-col gap-4 p-6">
-            <h2 className="text-lg font-bold text-[#000080]">Select Destination Path</h2>
-            <p className="text-xs text-black">Installer will deploy {appName} to the following secure local directory:</p>
-            <div className="flex flex-col gap-2 bg-[#dcdcdc] border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-4">
+          <div className="flex flex-col h-full p-6">
+            <h2 className="text-lg font-bold text-[#000080] mb-2">Select Destination Path</h2>
+            <p className="text-xs text-black mb-4">Installer will deploy {appName} to the following secure local directory:</p>
+            <div className="flex flex-col gap-2 bg-[#dcdcdc] border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-4 mb-4">
               <div className="flex items-center gap-3">
                 <HardDrive size={32} className="text-gray-700" />
                 <div className="bg-white border border-gray-400 p-1 flex-1 font-mono text-[11px] text-gray-800">
-                  C:\PROGRAMS\{appName.toUpperCase()}
+                  C:\PROGRAMS\{appName.toUpperCase().replace(/\s/g, '_')}
                 </div>
               </div>
               <p className="text-[10px] text-gray-500 italic">Space required: {Math.floor(Math.random() * 10) + 1}.2 MB</p>
             </div>
-            <div className="mt-auto flex justify-end gap-2 pt-10">
-              <button onClick={() => setStep(3)} className="px-8 py-1.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-sm font-bold uppercase tracking-wider">Install</button>
+            <div className="mt-auto flex justify-end gap-2 pt-4">
+              <button onClick={() => setStep(3)} className="px-10 py-1.5 bg-[#000080] text-white border-2 border-t-blue-400 border-l-blue-400 border-b-black border-r-black active:border-t-black active:border-l-black active:border-b-blue-400 active:border-r-blue-400 text-sm font-bold uppercase tracking-wider">Install</button>
               <button onClick={onCancel} className="px-6 py-1.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-sm font-bold">Cancel</button>
             </div>
           </div>
         );
       case 3: // Installing
         return (
-          <div className="flex flex-col gap-4 p-6">
-            <h2 className="text-lg font-bold text-[#000080]">Installing {appName}...</h2>
-            <div className="flex flex-col gap-3 mt-4">
-              <p className="text-[11px] font-mono text-gray-700 h-4">{installStatus}</p>
-              <div className="h-6 bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white w-full overflow-hidden relative">
-                <div 
-                  className="h-full bg-blue-800 transition-all duration-300 ease-out"
-                  style={{ width: `${progress}%` }}
-                />
+          <div className="flex flex-col h-full p-6 justify-center">
+            <h2 className="text-lg font-bold text-[#000080] mb-1">Installing {appName}...</h2>
+            <p className="text-[10px] text-gray-600 mb-6 uppercase tracking-widest">Deploying system modules</p>
+            <div className="flex flex-col gap-3">
+              <div className="flex justify-between items-end">
+                 <p className="text-[11px] font-mono text-gray-700 h-4 truncate flex-1">{installStatus}</p>
+                 <p className="text-[10px] text-gray-500 font-mono ml-2">{Math.floor(progress)}%</p>
               </div>
-              <p className="text-[10px] text-gray-500 text-right font-mono">{Math.floor(progress)}%</p>
+              <div className="h-6 bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white w-full overflow-hidden relative p-[2px] flex gap-[2px]">
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <div 
+                    key={i} 
+                    className={`h-full w-[4.5%] ${i < (progress / 5) ? 'bg-[#000080]' : 'bg-transparent'} transition-colors duration-200`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         );
       case 4: // Finish
         return (
-          <div className="flex flex-col gap-4 p-6">
-            <div className="flex items-center gap-4 border-b-2 border-gray-300 pb-4">
-               <div className={`p-3 bg-[#ececec] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800`}>
+          <div className="flex flex-col h-full p-6">
+            <div className="flex items-center gap-4 border-b-2 border-gray-300 pb-4 mb-4">
+               <div className={`p-3 bg-[#ececec] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-sm`}>
                  {appMeta.icon && <appMeta.icon size={48} className={appMeta.color} />}
                </div>
                <div>
@@ -186,18 +186,21 @@ export const GenericSetupWizard: React.FC<GenericSetupWizardProps> = ({
                   type="checkbox" 
                   checked={launchOnFinish} 
                   onChange={(e) => setLaunchOnFinish(e.target.checked)}
-                  className="accent-blue-800"
+                  className="w-4 h-4"
                 />
                 <span className="text-sm font-medium group-hover:text-blue-800">Launch {appName} now</span>
               </label>
-              <p className="text-[11px] leading-relaxed text-gray-600 bg-blue-50 p-2 border border-blue-200">
-                You may now access this application from your Desktop or the System Program Manager.
-              </p>
+              <div className="bg-blue-50 p-3 border border-blue-200 flex gap-3">
+                 <ShieldCheck size={20} className="text-blue-800 shrink-0" />
+                 <p className="text-[11px] leading-relaxed text-blue-900">
+                   You may now access this application from your Desktop or the System Program Manager. System stability remains optimal.
+                 </p>
+              </div>
             </div>
             <div className="mt-auto flex justify-end">
               <button 
                 onClick={handleFinish} 
-                className="px-10 py-2 bg-[#000080] text-white border-2 border-t-blue-400 border-l-blue-400 border-b-black border-r-black active:border-t-black active:border-l-black active:border-b-blue-400 active:border-r-blue-400 text-sm font-bold uppercase tracking-widest shadow-md"
+                className="px-12 py-2 bg-[#000080] text-white border-2 border-t-blue-400 border-l-blue-400 border-b-black border-r-black active:border-t-black active:border-l-black active:border-b-blue-400 active:border-r-blue-400 text-sm font-bold uppercase tracking-widest shadow-[2px_2px_0_rgba(0,0,0,0.3)]"
               >Finish</button>
             </div>
           </div>
@@ -206,13 +209,8 @@ export const GenericSetupWizard: React.FC<GenericSetupWizardProps> = ({
   };
 
   return (
-    <div className="absolute inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-[#c0c0c0] w-[550px] h-[400px] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[20px_20px_0_rgba(0,0,0,0.5)] flex flex-col select-none overflow-hidden">
-        {renderHeader()}
-        <div className="flex-1 bg-[#ececec] m-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white overflow-hidden relative">
-           {renderContent()}
-        </div>
-      </div>
+    <div className="flex flex-col h-full bg-[#ececec] overflow-hidden select-none">
+       {renderContent()}
     </div>
   );
 };

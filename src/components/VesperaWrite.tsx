@@ -12,6 +12,8 @@ export const VesperaWrite: React.FC<VesperaWriteProps> = ({ vfs, fileId, onSave,
   const [content, setContent] = useState('');
   const [fileName, setFileName] = useState('Untitled');
   
+  const [fontSize, setFontSize] = useState('12px');
+  
   useEffect(() => {
     if (fileId) {
       const node = vfs.getNode(fileId);
@@ -54,6 +56,22 @@ export const VesperaWrite: React.FC<VesperaWriteProps> = ({ vfs, fileId, onSave,
             <div className="px-4 py-1 hover:bg-[#000080] hover:text-white text-black opacity-50 cursor-default">Paste</div>
           </div>
         </div>
+        <div className="relative group cursor-pointer">
+          <span className="px-2 hover:bg-[#000080] hover:text-white">Format</span>
+          <div className="absolute left-0 top-full hidden group-hover:block bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-lg z-[100] min-w-[140px] py-1">
+            <div className="px-2 py-1 text-[10px] font-bold text-gray-600 uppercase border-b border-gray-400 mb-1">Font Size</div>
+            {['10px', '12px', '14px', '16px', '18px', '24px'].map(size => (
+              <div 
+                key={size}
+                onClick={() => setFontSize(size)} 
+                className={`px-4 py-1 hover:bg-[#000080] hover:text-white text-black flex justify-between items-center ${fontSize === size ? 'bg-gray-300' : ''}`}
+              >
+                <span>{size}</span>
+                {fontSize === size && <span className="text-[10px]">✓</span>}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Editor Area */}
@@ -61,7 +79,8 @@ export const VesperaWrite: React.FC<VesperaWriteProps> = ({ vfs, fileId, onSave,
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="w-full h-full resize-none bg-white p-2 font-mono text-xs focus:outline-none overflow-y-scroll custom-scrollbar"
+          className="w-full h-full resize-none bg-white p-2 font-mono focus:outline-none overflow-y-scroll custom-scrollbar"
+          style={{ fontSize }}
           spellCheck={false}
           autoFocus
         />
@@ -89,8 +108,9 @@ export const VesperaWrite: React.FC<VesperaWriteProps> = ({ vfs, fileId, onSave,
       {/* Status Bar */}
       <div className="px-2 py-0.5 text-[10px] border-t border-gray-600 flex justify-between bg-[#c0c0c0]">
         <span>File: {fileName}</span>
-        <span>Row: 1, Col: 1</span>
+        <span>Size: {fontSize}</span>
       </div>
     </div>
   );
 };
+

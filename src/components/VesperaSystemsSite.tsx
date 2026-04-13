@@ -215,7 +215,7 @@ export const VesperaSystemsSite: React.FC<VesperaPageProps> = (props) => {
         {/* Main Content Area */}
         <div className="flex-1 p-6 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] relative overflow-hidden">
           
-          <div className={`transition-opacity duration-300 w-full max-w-full ${loadingObj.isDialing ? 'opacity-10' : 'opacity-100'}`}>
+          <div className="w-full max-w-full">
              {renderPage()}
              
              <div className="mt-8 text-center text-xs text-gray-500 border-t border-gray-300 pt-4 w-full relative">

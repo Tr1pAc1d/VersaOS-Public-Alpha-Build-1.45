@@ -22,11 +22,15 @@ export interface SystemUser {
   isGuest: boolean;
   profilePic?: string;
   vstoreId?: string;
+  showHiddenFiles?: boolean;
+  agentVEnabled: boolean;
+  agentVSkin?: 'classic' | 'robot' | 'smiley';
+  agentVSpeak?: boolean;
 }
 
 export const DEFAULT_USERS: SystemUser[] = [
-  { id: 'sys_admin', username: 'admin', password: 'admin', displayName: 'Administrator', isAdmin: true, isGuest: false, profilePic: '' },
-  { id: 'sys_guest', username: 'guest', password: '', displayName: 'Guest', isAdmin: false, isGuest: true, profilePic: '' }
+  { id: 'sys_admin', username: 'admin', password: 'admin', displayName: 'Administrator', isAdmin: true, isGuest: false, profilePic: '', agentVEnabled: true, agentVSkin: 'classic', agentVSpeak: false },
+  { id: 'sys_guest', username: 'guest', password: '', displayName: 'Guest', isAdmin: false, isGuest: true, profilePic: '', agentVEnabled: true, agentVSkin: 'classic', agentVSpeak: false }
 ];
 
 export const DEFAULT_WORKSPACE_MENU: WorkspaceMenuItem[] = [
@@ -46,6 +50,7 @@ export const DEFAULT_WORKSPACE_MENU: WorkspaceMenuItem[] = [
       { id: 'wm_help', label: 'Vespera Help', icon: 'HelpCircle', action: 'help', type: 'app', isSystem: true },
       { id: 'wm_media', label: 'VERSA Media Agent', icon: 'Disc3', action: 'media_player', type: 'app', isSystem: true },
       { id: 'wm_retrotv', label: 'RetroTV Cable Simulator', icon: 'Tv', action: 'retrotv', type: 'app', isSystem: true },
+      { id: 'wm_remote_desktop', label: 'VesperaConnect', icon: 'Monitor', action: 'remote_desktop', type: 'app', isSystem: true },
     ],
   },
   {
@@ -67,6 +72,7 @@ export const DEFAULT_WORKSPACE_MENU: WorkspaceMenuItem[] = [
         type: 'folder',
         isSystem: true,
         children: [
+          { id: 'wm_welcome', label: 'Vespera OS Tour', icon: 'Info', action: 'welcome_tour', type: 'app', isSystem: true },
           { id: 'wm_defrag', label: 'Disk Defragmenter', icon: 'HardDrive', action: 'defrag', type: 'app', isSystem: true },
           { id: 'wm_scandisk', label: 'Disk Checker', icon: 'ShieldCheck', action: 'scandisk', type: 'app', isSystem: true },
           { id: 'wm_stats', label: 'System Statistics', icon: 'Activity', action: 'analyzer', type: 'app', isSystem: true },
@@ -216,7 +222,10 @@ const DEFAULT_VFS: VFSNode[] = [
     content: ''
   })) as any,
   { id: 'cpl_lnk', name: 'Control Panel', type: 'shortcut', parentId: 'desktop', targetId: 'control_panel', content: 'control_panel', customIcon: RETRO_ICONS.find(i => i.id === 'sys_gear')?.url || '' },
-  { id: 'help_lnk', name: 'Vespera Help', type: 'shortcut', parentId: 'desktop', targetId: 'help', content: 'help', customIcon: RETRO_ICONS.find(i => i.id === 'file_hlp')?.url || '' }
+  { id: 'help_lnk', name: 'Vespera Help', type: 'shortcut', parentId: 'desktop', targetId: 'help', content: 'help', customIcon: RETRO_ICONS.find(i => i.id === 'file_hlp')?.url || '' },
+  // VesperaConnect Remote Desktop — pre-installed system app
+  { id: 'remote_desktop', name: 'VESPERACONNECT.EXE', type: 'file', parentId: 'programs', content: '[Application]\nName=VesperaConnect\nVersion=2.1.0\nInstalledAt=1996-10-01T00:00:00Z', isApp: true, appDisplayName: 'VesperaConnect Remote Desktop', appVersion: '2.1.0' },
+  { id: 'remote_desktop_lnk', name: 'VesperaConnect', type: 'shortcut', parentId: 'desktop', content: 'remote_desktop', targetId: 'remote_desktop', iconType: 'network' },
 ];
 
 export function useVFS() {
@@ -246,7 +255,7 @@ export function useVFS() {
     return {
       resolution: parsed.resolution || '1024x768',
       wallpaper: parsed.wallpaper || '',
-      backgroundColor: parsed.backgroundColor || '',
+      backgroundColor: parsed.backgroundColor || '#5f8787',
       taskbarTheme: parsed.taskbarTheme || 'motif',
       taskbarShowClock: parsed.taskbarShowClock !== undefined ? parsed.taskbarShowClock : true,
       clockBgColor: parsed.clockBgColor || '',
@@ -261,6 +270,15 @@ export function useVFS() {
       waveBarBarCount: typeof parsed.waveBarBarCount === 'number' && parsed.waveBarBarCount >= 3 && parsed.waveBarBarCount <= 9 ? parsed.waveBarBarCount : 5,
       waveBarSpeed: parsed.waveBarSpeed === 'slow' || parsed.waveBarSpeed === 'fast' ? parsed.waveBarSpeed : 'normal',
       waveBarUseAlbumArt: parsed.waveBarUseAlbumArt === true,
+      screensaverType: parsed.screensaverType || 'none',
+      screensaverTimeout: typeof parsed.screensaverTimeout === 'number' ? parsed.screensaverTimeout : 5,
+      agentVEnabled: parsed.agentVEnabled !== false,
+      agentVSkin: parsed.agentVSkin || 'classic',
+      agentVSpeak: parsed.agentVSpeak === true,
+      showWelcomeTour: parsed.showWelcomeTour !== false,
+      plusTheme: parsed.plusTheme || 'standard',
+      plusThemeAmbientMuted: parsed.plusThemeAmbientMuted === true,
+      cursorStyle: parsed.cursorStyle || 'standard'
     };
   });
 
@@ -365,6 +383,35 @@ export function useVFS() {
     waveBarUseAlbumArt?: boolean;
   }) => {
     setDisplaySettings((prev: any) => ({ ...prev, ...settings }));
+  };
+
+  const updateScreensaverSettings = (settings: { screensaverType?: string; screensaverTimeout?: number }) => {
+    setDisplaySettings((prev: any) => ({ ...prev, ...settings }));
+  };
+
+  const updateAgentVSettings = (enabled: boolean, skin?: 'classic' | 'robot' | 'smiley', speak?: boolean) => {
+    setDisplaySettings((prev: any) => ({ 
+      ...prev, 
+      agentVEnabled: enabled, 
+      ...(skin ? { agentVSkin: skin } : {}),
+      ...(speak !== undefined ? { agentVSpeak: speak } : {})
+    }));
+  };
+
+  const updateWelcomeTour = (showWelcomeTour: boolean) => {
+    setDisplaySettings((prev: any) => ({ ...prev, showWelcomeTour }));
+  };
+
+  const updatePlusTheme = (plusTheme: string, plusThemeAmbientMuted?: boolean) => {
+    setDisplaySettings((prev: any) => ({
+      ...prev,
+      plusTheme,
+      ...(plusThemeAmbientMuted !== undefined ? { plusThemeAmbientMuted } : {})
+    }));
+  };
+
+  const updateCursorStyle = (cursorStyle: string) => {
+    setDisplaySettings((prev: any) => ({ ...prev, cursorStyle }));
   };
 
   const createNode = (name: string, type: FileType, parentId: string, content: string = '', targetId?: string, iconType?: string, extra?: Partial<VFSNode>) => {
@@ -477,5 +524,5 @@ export function useVFS() {
     return nodes.find(node => node.id === id);
   };
 
-  return { nodes, displaySettings, systemUsers, addSystemUser, updateSystemUser, deleteSystemUser, updateResolution, updateWallpaper, updateBackgroundColor, updateTaskbarTheme, updateTaskbarClock, updateClockSettings, updateWorkspaceMenu, updatePinnedApps, updateWaveBarSettings, createNode, renameNode, updateFileContent, deleteNode, getChildren, getNode, updateCustomIcon, installApp, uninstallApp };
+  return { nodes, displaySettings, systemUsers, addSystemUser, updateSystemUser, deleteSystemUser, updateResolution, updateWallpaper, updateBackgroundColor, updateTaskbarTheme, updateTaskbarClock, updateClockSettings, updateWorkspaceMenu, updatePinnedApps, updateWaveBarSettings, updateScreensaverSettings, updateAgentVSettings, updateWelcomeTour, updatePlusTheme, updateCursorStyle, createNode, renameNode, updateFileContent, deleteNode, getChildren, getNode, updateCustomIcon, installApp, uninstallApp };
 }
