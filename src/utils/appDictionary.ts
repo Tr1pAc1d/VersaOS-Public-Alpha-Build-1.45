@@ -1,4 +1,4 @@
-import { Folder, Globe, Terminal, Activity, MessageSquare, Settings, Cpu, HardDrive, Monitor, Store, Ghost, FileText, Package, Mail, HelpCircle, Music, PenTool, Gamepad2, Wrench, Phone, ShieldCheck, Search, Disc3, Tv } from 'lucide-react';
+import { Folder, Globe, Terminal, Activity, MessageSquare, Settings, Cpu, HardDrive, Monitor, Store, Ghost, FileText, Package, Mail, HelpCircle, Music, PenTool, Gamepad2, Wrench, Phone, ShieldCheck, Search, Disc3, Tv, Grid } from 'lucide-react';
 
 export const APP_DICTIONARY: Record<string, { icon: any, color: string, defaultTitle: string, isSystem?: boolean }> = {
   'files': { icon: Folder, color: 'text-yellow-400', defaultTitle: 'File Manager', isSystem: true },
@@ -17,7 +17,7 @@ export const APP_DICTIONARY: Record<string, { icon: any, color: string, defaultT
   'media_player': { icon: Disc3, color: 'text-purple-400', defaultTitle: 'VERSA Media Agent 2.0', isSystem: true },
   'dialup': { icon: Phone, color: 'text-teal-600', defaultTitle: 'VesperaNET Dial-Up', isSystem: true },
   'vstore': { icon: Store, color: 'text-green-500', defaultTitle: 'VStore Software Exchange', isSystem: true },
-  'v_messenger': { icon: MessageSquare, color: 'text-blue-400', defaultTitle: 'Vespera Messenger (BETA)' },
+  'v_messenger': { icon: MessageSquare, color: 'text-blue-400', defaultTitle: 'Vespera Messenger' },
   'v_sonic': { icon: Music, color: 'text-orange-400', defaultTitle: 'Vespera Sonic' },
   'axis_paint': { icon: PenTool, color: 'text-red-500', defaultTitle: 'Axis Paint 2.0' },
   'neural_solitaire': { icon: Gamepad2, color: 'text-green-600', defaultTitle: 'Neural Solitaire' },
@@ -26,8 +26,10 @@ export const APP_DICTIONARY: Record<string, { icon: any, color: string, defaultT
   'disk_physician': { icon: Wrench, color: 'text-gray-600', defaultTitle: 'Disk Physician v3.1' },
   'aura_gallery': { icon: Monitor, color: 'text-purple-500', defaultTitle: 'Aura Screen Saver Gallery' },
   'packman_setup': { icon: Ghost, color: 'text-yellow-500', defaultTitle: 'Pac-Man (x86) Setup' },
-  'retrotv': { icon: Tv, color: 'text-purple-600', defaultTitle: 'RetroTV Cable Simulator', isSystem: true },
+  'retrotv': { icon: Tv, color: 'text-purple-600', defaultTitle: 'Meridian. TV', isSystem: true },
   'remote_desktop': { icon: Monitor, color: 'text-blue-600', defaultTitle: 'VesperaConnect Remote Desktop', isSystem: true },
+  'vsweeper': { icon: Grid, color: 'text-gray-400', defaultTitle: 'V-Sweeper', isSystem: true },
   'aw_release_radar': { icon: Music, color: 'text-cyan-400', defaultTitle: 'AW Release Radar' },
+  'task_manager': { icon: Activity, color: 'text-green-400', defaultTitle: 'Vespera Task Manager', isSystem: true },
   'default': { icon: Package, color: 'text-gray-400', defaultTitle: 'Application' }
 };

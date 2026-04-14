@@ -93,7 +93,7 @@ export const VesperaSystemsSite: React.FC<VesperaPageProps> = (props) => {
   };
 
   return (
-    <div className={`flex flex-col min-h-full relative transition-all duration-1000 ${isCorrupted ? 'invert hue-rotate-180 contrast-125 sepia font-mono' : 'bg-white font-serif text-black'}`}>
+    <div className={`flex flex-col min-h-full flex-1 w-full relative transition-all duration-1000 ${isCorrupted ? 'invert hue-rotate-180 contrast-125 sepia font-mono' : 'bg-white font-serif text-black'}`}>
       {/* Header */}
       <div className="bg-black text-white p-4 border-b-4 border-gray-400 flex justify-between items-end select-none">
         <div className="flex items-center gap-4">

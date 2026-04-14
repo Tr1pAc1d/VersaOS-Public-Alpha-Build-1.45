@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Ghost, Terminal } from 'lucide-react';
-import { useFileSystem } from '../contexts/FileSystemContext';
+
 
 interface Cell {
   x: number;
@@ -15,6 +15,7 @@ interface Cell {
 interface VSweeperProps {
   onClose: () => void;
   neuralBridgeActive?: boolean;
+  vfs: any;
 }
 
 const ROWS = 9;
@@ -72,7 +73,7 @@ const generateGrid = (firstClickX: number, firstClickY: number): Cell[][] => {
   return grid;
 };
 
-export const VSweeper: React.FC<VSweeperProps> = ({ onClose, neuralBridgeActive }) => {
+export const VSweeper: React.FC<VSweeperProps> = ({ vfs, onClose, neuralBridgeActive }) => {
   const [grid, setGrid] = useState<Cell[][]>(() => {
     // Empty grid until first click
     return Array(ROWS).fill(null).map((_, y) => 
@@ -86,8 +87,21 @@ export const VSweeper: React.FC<VSweeperProps> = ({ onClose, neuralBridgeActive 
   const [time, setTime] = useState(0);
   const [face, setFace] = useState('🙂');
   const [isGlitching, setIsGlitching] = useState(false);
+
+  const [showBestTimes, setShowBestTimes] = useState(false);
+  const [scorePromptTime, setScorePromptTime] = useState<number | null>(null);
+  const [scoreNameValue, setScoreNameValue] = useState('Anonymous');
+  const [bestScore, setBestScore] = useState<{name: string, time: number} | null>(() => {
+    try {
+      const saved = localStorage.getItem('versa_vsweeper_scores');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return { name: 'Anonymous', time: 999 };
+  });
+  const [menuOpen, setMenuOpen] = useState<'game' | 'help' | null>(null);
+
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { vfs, createNode } = useFileSystem();
+
 
   useEffect(() => {
     if (gameState === 'playing') {
@@ -108,13 +122,25 @@ export const VSweeper: React.FC<VSweeperProps> = ({ onClose, neuralBridgeActive 
     // Drop lore file to desktop
     const desktopNodes = Object.values(vfs.nodes || {}).find(n => n.name === 'Desktop');
     if (desktopNodes) {
-      createNode(
-        desktopNodes.id,
+      vfs.createNode(
         'TRUTH.TXT',
-        'text',
+        'file',
+        desktopNodes.id,
         `I SEE YOU CLEARING THE GRID.\nBUT CAN YOU CLEAR THE SHADOWS?\n\n- E. THORNE`
       );
     }
+
+    // High Score logic
+    // we use a setTimeout or a separate effect to fetch `time` accurately but capturing the current `time` state works since `time` increments outside `handleWin` frame.
+    // To ensure exact time, we use a ref or just state. State is fine if we defer via a small timeout so the counter is stable.
+    setTimeout(() => {
+      setTime(currentVal => {
+        if (currentVal < (bestScore?.time ?? 999)) {
+          setScorePromptTime(currentVal);
+        }
+        return currentVal;
+      });
+    }, 100);
   };
 
   const revealCell = (x: number, y: number) => {
@@ -210,9 +236,49 @@ export const VSweeper: React.FC<VSweeperProps> = ({ onClose, neuralBridgeActive 
   };
 
   return (
-    <div className={`h-full flex flex-col items-center justify-center bg-[#c0c0c0] font-sans user-select-none select-none relative ${isGlitching ? 'animate-pulse' : ''} ${neuralBridgeActive && isGlitching ? 'hue-rotate-180 invert' : ''}`}>
+    <div 
+      className={`h-full flex flex-col items-center justify-start pt-6 bg-[#c0c0c0] font-sans user-select-none select-none relative ${isGlitching ? 'animate-pulse' : ''} ${neuralBridgeActive && isGlitching ? 'hue-rotate-180 invert' : ''}`}
+      onClick={() => { if (menuOpen) setMenuOpen(null); }}
+    >
+      
+      {/* Menu Bar */}
+      <div className="absolute top-0 left-0 w-full bg-[#c0c0c0] flex items-center text-sm px-1 z-[60]">
+        <div className="relative">
+          <button 
+            className={`px-2 py-0.5 font-bold outline-none ${menuOpen === 'game' ? 'bg-[#000080] text-white' : 'hover:bg-[#000080] hover:text-white text-black'}`}
+            onClick={(e) => { e.stopPropagation(); setMenuOpen(prev => prev === 'game' ? null : 'game'); }}
+            onMouseEnter={() => { if (menuOpen) setMenuOpen('game'); }}
+          >
+            <span className="underline">G</span>ame
+          </button>
+          {menuOpen === 'game' && (
+            <div className="absolute top-full left-0 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[2px_2px_0_rgba(0,0,0,0.5)] py-1 min-w-[140px] flex flex-col border-solid text-black">
+              <button className="text-left px-4 py-1 hover:bg-[#000080] hover:text-white" onClick={() => { resetGame(); setMenuOpen(null); }}>New</button>
+              <div className="border-b border-white my-1 mx-2" style={{ borderTop: "1px solid #808080" }}></div>
+              <button className="text-left px-4 py-1 hover:bg-[#000080] hover:text-white" onClick={() => { setShowBestTimes(true); setMenuOpen(null); }}>Best Times...</button>
+              <div className="border-b border-white my-1 mx-2" style={{ borderTop: "1px solid #808080" }}></div>
+              <button className="text-left px-4 py-1 hover:bg-[#000080] hover:text-white" onClick={() => { onClose(); setMenuOpen(null); }}>Exit</button>
+            </div>
+          )}
+        </div>
+        <div className="relative">
+          <button 
+            className={`px-2 py-0.5 font-bold outline-none ${menuOpen === 'help' ? 'bg-[#000080] text-white' : 'hover:bg-[#000080] hover:text-white text-black'}`}
+            onClick={(e) => { e.stopPropagation(); setMenuOpen(prev => prev === 'help' ? null : 'help'); }}
+            onMouseEnter={() => { if (menuOpen) setMenuOpen('help'); }}
+          >
+            <span className="underline">H</span>elp
+          </button>
+          {menuOpen === 'help' && (
+            <div className="absolute top-full left-0 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[2px_2px_0_rgba(0,0,0,0.5)] py-1 min-w-[140px] flex flex-col border-solid text-black">
+              <button className="text-left px-4 py-1 hover:bg-[#000080] hover:text-white whitespace-nowrap" onClick={() => { alert('V-Sweeper\nProperty of Vespera Systems'); setMenuOpen(null); }}>About V-Sweeper...</button>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Outer border */}
-      <div className="border-[3px] border-l-white border-t-white border-r-[#808080] border-b-[#808080] p-2 bg-[#c0c0c0] inline-block">
+      <div className="border-[3px] border-l-white border-t-white border-r-[#808080] border-b-[#808080] p-2 bg-[#c0c0c0] inline-block mt-2 shadow-[2px_2px_0_rgba(0,0,0,0.5)]">
         
         {/* Header HUD */}
         <div className="flex justify-between items-center mb-2 p-1 border-[2px] border-l-[#808080] border-t-[#808080] border-r-white border-b-white bg-[#c0c0c0]">
@@ -301,11 +367,55 @@ export const VSweeper: React.FC<VSweeperProps> = ({ onClose, neuralBridgeActive 
         </div>
       </div>
       
-      {/* Lore element for fatal error overlay */}
       {isGlitching && (
-        <div className="absolute inset-0 bg-red-900 opacity-30 pointer-events-none mix-blend-color-burn z-10 flex items-center justify-center">
+        <div className="absolute inset-0 bg-red-900 opacity-30 pointer-events-none mix-blend-color-burn z-[40] flex items-center justify-center">
             <span className="font-mono text-white text-3xl font-bold animate-ping opacity-50 text-center">FATAL_EXCEPTION_0E<br/>AT SECTOR 0028:C001</span>
         </div>
+      )}
+
+      {/* Modals */}
+      {showBestTimes && (
+         <div className="absolute inset-0 bg-black/20 z-[80] flex items-center justify-center pointer-events-auto">
+           <div className="bg-[#c0c0c0] border-[3px] border-l-white border-t-white border-r-[#808080] border-b-[#808080] p-4 flex flex-col min-w-[200px] text-black shadow-[4px_4px_0_rgba(0,0,0,0.6)]">
+             <h2 className="text-md font-bold mb-4 font-sans text-center px-4 w-full border-b border-[#808080] border-solid pb-2" style={{ borderBottomColor: '#ffffff' }}>Fastest Mine Sweeper</h2>
+             <div className="flex justify-between font-mono text-sm px-2 gap-4">
+               <span>Beginner:</span>
+               <span>{bestScore?.time ?? 999}s</span>
+               <span>{bestScore?.name || 'Anonymous'}</span>
+             </div>
+             
+             <div className="flex justify-center gap-2 mt-6">
+               <button className="px-4 py-1 text-sm border-[2px] border-l-white border-t-white border-r-[#808080] border-b-[#808080] active:border-l-[#808080] active:border-t-[#808080] active:border-r-white active:border-b-white font-bold" onClick={() => { setBestScore({ name: 'Anonymous', time: 999 }); localStorage.removeItem('versa_vsweeper_scores'); }}>Reset Scores</button>
+               <button className="px-6 py-1 text-sm border-[2px] border-l-white border-t-white border-r-[#808080] border-b-[#808080] active:border-l-[#808080] active:border-t-[#808080] active:border-r-white active:border-b-white font-bold" onClick={() => setShowBestTimes(false)}>OK</button>
+             </div>
+           </div>
+         </div>
+      )}
+
+      {scorePromptTime !== null && (
+         <div className="absolute inset-0 bg-black/20 z-[80] flex items-center justify-center pointer-events-auto">
+           <div className="bg-[#c0c0c0] border-[3px] border-l-white border-t-white border-r-[#808080] border-b-[#808080] p-4 flex flex-col min-w-[220px] text-black shadow-[4px_4px_0_rgba(0,0,0,0.6)]">
+             <h2 className="text-md font-bold mb-2 font-sans text-center">New High Score!</h2>
+             <p className="mb-4 text-xs text-center font-sans tracking-tight">You have the fastest time for beginner<br/>level. Please enter your name.</p>
+             <input 
+               type="text" 
+               maxLength={15}
+               value={scoreNameValue} 
+               onChange={e => setScoreNameValue(e.target.value)} 
+               className="border-2 border-l-[#808080] border-t-[#808080] border-r-white border-b-white px-2 py-1 mb-4 mx-2 text-black bg-white outline-none font-bold text-sm"
+               autoFocus
+             />
+             <div className="flex justify-center">
+               <button className="px-8 py-1 text-sm border-[2px] border-l-white border-t-white border-r-[#808080] border-b-[#808080] active:border-l-[#808080] active:border-t-[#808080] active:border-r-white active:border-b-white font-bold" onClick={() => {
+                 const newScore = { name: scoreNameValue || 'Anonymous', time: scorePromptTime };
+                 setBestScore(newScore);
+                 localStorage.setItem('versa_vsweeper_scores', JSON.stringify(newScore));
+                 setScorePromptTime(null);
+                 setShowBestTimes(true);
+               }}>OK</button>
+             </div>
+           </div>
+         </div>
       )}
     </div>
   );

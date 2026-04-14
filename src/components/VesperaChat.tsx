@@ -165,7 +165,12 @@ const ChatWindow: React.FC<{ buddyName: string, onClose: () => void, neuralBridg
   };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    // Scroll only the messages container, not the viewport.
+    // scrollIntoView bubbles up and shifts the entire OS desktop.
+    const el = messagesEndRef.current;
+    if (el?.parentElement) {
+      el.parentElement.scrollTop = el.parentElement.scrollHeight;
+    }
   }, [messages, typedValue, selectedOption]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

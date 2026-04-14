@@ -73,4 +73,8 @@ export const RUN_COMMAND_ALIASES: Record<string, string> = {
   wmp: 'media_player',
   vma: 'media_player',
   'media_player.exe': 'media_player',
+  taskmgr: 'task_manager',
+  'taskmgr.exe': 'task_manager',
+  taskmanager: 'task_manager',
+  task_manager: 'task_manager',
 };

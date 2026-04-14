@@ -182,7 +182,7 @@ const TOUR_STEPS: TourStep[] = [
     id: 'multimedia',
     title: 'Multimedia Capabilities',
     icon: Palette,
-    narration: "Vespera OS isn't just for business! We feature top-of-the-line multimedia capabilities. AxisPaint is a powerful bitmap graphics editor for creating art and UI prototypes. RetroTV lets you tune into local broadcast streams and explore public access television through the integrated Cable Guide. And the WaveBar gives you quick volume controls right from the system tray. Creative professionals rejoice!",
+    narration: "Vespera OS isn't just for business! We feature top-of-the-line multimedia capabilities. AxisPaint is a powerful bitmap graphics editor for creating art and UI prototypes. Meridian. TV lets you tune into cable television broadcasts right from your desktop through the integrated Channel Guide. And the WaveBar gives you quick volume controls right from the system tray. Creative professionals rejoice!",
     content: ({ onLaunch }) => (
       <div className="flex flex-col gap-4 text-sm font-serif leading-relaxed text-black">
         <h2 className="text-2xl font-bold text-[#000080] border-b-2 border-gray-400 pb-2">Create & Consume</h2>
@@ -191,7 +191,7 @@ const TOUR_STEPS: TourStep[] = [
         </p>
         <ul className="list-disc pl-5 space-y-2 mt-2">
           <li><strong>AxisPaint:</strong> A powerful bitmap graphics editor for UI prototyping and artistic endeavors.</li>
-          <li><strong>RetroTV:</strong> Tune into local broadcast streams and explore public access television via the integrated Cable Guide.</li>
+          <li><strong>Meridian. TV:</strong> Tune into cable television broadcasts and explore live programming via the integrated Channel Guide, powered by Meridian Broadcasting Network.</li>
           <li><strong>VERSA Media Agent:</strong> Play audio files in high-fidelity with full waveform visualization.</li>
           <li><strong>WaveBar:</strong> Quick access to volume sliders directly in the system tray.</li>
         </ul>
@@ -227,7 +227,7 @@ const TOUR_STEPS: TourStep[] = [
     id: 'system',
     title: 'System Utilities',
     icon: Shield,
-    narration: "For power users, Vespera OS includes robust administrative tools. The Task Manager lets you monitor memory and active processes. If you ever get lost, you can ask me for help — I'm the Vespera Assistant, always available on your desktop. And VesperaConnect lets you establish remote desktop sessions to secure archive terminals. Oh, and one more thing — all network traffic on this machine is monitored by the RHID intrusion detection module. Just so you know.",
+    narration: "For power users, Vespera OS includes robust administrative tools. The Task Manager is your go-to utility for monitoring system health — it has three tabs. The Applications tab shows every running program and lets you end unresponsive tasks. The Performance tab displays real-time CPU, RAM, and hard disk usage with live graphs that update as you open and close programs. And the Startup tab lets you configure which applications launch automatically when you log in. You can open the Task Manager anytime by right-clicking the taskbar, or by typing 'taskmgr' in the Run dialog. If you ever get lost, you can ask me for help — I'm the Vespera Assistant, always available on your desktop.",
     content: ({ onLaunch }) => (
       <div className="flex flex-col gap-4 text-sm font-serif leading-relaxed text-black">
         <h2 className="text-2xl font-bold text-[#000080] border-b-2 border-gray-400 pb-2">Under the Hood</h2>
@@ -235,12 +235,29 @@ const TOUR_STEPS: TourStep[] = [
           For power users, Vespera OS includes robust administrative and tracking tools to monitor the environment's health.
         </p>
         <ul className="list-disc pl-5 space-y-2 mt-2">
-          <li><strong>Task Manager:</strong> Keep tabs on memory limits and active OS processes.</li>
+          <li><strong>Task Manager:</strong> Monitor running applications, CPU/RAM/HDD usage in real time, and configure startup programs.
+            <ul className="list-disc pl-5 mt-1 text-xs text-gray-600 space-y-0.5">
+              <li><em>Applications Tab:</em> View and manage all running tasks — end or switch to any process.</li>
+              <li><em>Performance Tab:</em> Live CPU graph, RAM usage bar, disk utilization, kernel memory stats, and system uptime.</li>
+              <li><em>Startup Tab:</em> Enable or disable programs that launch automatically at boot.</li>
+            </ul>
+          </li>
           <li><strong>Disk Defragmenter:</strong> Reorganize your hard drive sectors for optimal performance.</li>
           <li><strong>ScanDisk:</strong> Check your drive for errors and bad sectors.</li>
           <li><strong>VesperaConnect:</strong> Establish remote desktop sessions to secure archive terminals.</li>
         </ul>
-        <div className="bg-red-900 border border-red-600 text-white p-3 mt-4 shadow-sm text-xs font-mono">
+        <div className="flex justify-center mt-2 border-t border-gray-400 pt-3">
+          <button
+            onClick={() => onLaunch('task_manager')}
+            className="flex items-center gap-2 bg-[#c0c0c0] px-6 py-2 font-bold text-[#000080] border-[3px] border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white"
+          >
+            <Shield size={18} /> Open Task Manager
+          </button>
+        </div>
+        <div className="bg-[#ffffcc] border border-gray-400 p-3 mt-1 shadow-sm text-xs font-mono">
+          <strong>TIP:</strong> Right-click the taskbar at any time for quick access to the Task Manager, or press ⊞+R and type "taskmgr".
+        </div>
+        <div className="bg-red-900 border border-red-600 text-white p-3 mt-2 shadow-sm text-xs font-mono">
           <strong>SECURITY NOTICE:</strong> All network traffic on this machine is continually monitored by the RHID (Remote Host Intrusion Detection) module.
         </div>
       </div>

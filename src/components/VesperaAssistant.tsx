@@ -75,7 +75,7 @@ const TIPS: VTip[] = [
   { id: 'ctx_vstore', trigger: 'app_open', context: 'vstore', text: "Welcome to VStore! Purchase the latest multimedia software and totally tubular 3D games delivered straight to your hard drive!" },
   { id: 'ctx_workbench', trigger: 'app_open', context: 'workbench', text: "AETHERIS Workbench Pro is for advanced developers. Don't compile any analog signals you find out there." },
   { id: 'ctx_media_player', trigger: 'app_open', context: 'media_player', text: "VERSA Media Agent lets you listen to high-fidelity audio up to 44.1kHz! Load up an MP3 or CD Audio track." },
-  { id: 'ctx_retrotv', trigger: 'app_open', context: 'retrotv', text: "RetroTV Simulator lets you tune into classic cable broadcasts. You might even catch an old commercial of ours from 1993!" },
+  { id: 'ctx_retrotv', trigger: 'app_open', context: 'retrotv', text: "Meridian. TV lets you tune into cable broadcasts right from your Vespera PC! Make sure your coaxial cable and cable box are connected." },
   { id: 'ctx_remote_desktop', trigger: 'app_open', context: 'remote_desktop', text: "VesperaConnect establishes a secure link to the corporate mainframe. Do not leave active sessions unattended." },
   { id: 'ctx_dialup', trigger: 'app_open', context: 'dialup', text: "Dial-Up Networking negotiates a PPP connection to your ISP. Ensure you have your username and password handy!" },
   { id: 'ctx_defrag', trigger: 'app_open', context: 'defrag', text: "Defragmenting organizes scattered data sectors. It's very relaxing to watch all the little blocks line up perfectly." },

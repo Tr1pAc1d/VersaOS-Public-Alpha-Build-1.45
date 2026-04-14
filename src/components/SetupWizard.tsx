@@ -55,10 +55,10 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ vfs, onComplete, onCan
       'network', // iconType
     );
 
-    // Install RetroTV Cable Simulator as a preinstalled system app
+    // Install Meridian. TV as a preinstalled system app
     vfs.installApp(
       'RETROTV.EXE',
-      'RetroTV Cable Simulator',
+      'Meridian. TV',
       '1.0',
       'retrotv_exe',
       true,      // place shortcut

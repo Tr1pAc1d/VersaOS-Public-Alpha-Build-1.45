@@ -13,6 +13,15 @@ export interface WorkspaceMenuItem {
   isDynamic?: boolean;    // auto-populated (installed apps)
 }
 
+// ── Applet Types ──────────────────────────────────────────────────────────────
+export interface AppletConfig {
+  enabled: boolean;
+  position: 'dock_left' | 'dock_right' | 'float';
+  borderStyle: 'raised' | 'sunken' | 'none';
+  x?: number;
+  y?: number;
+}
+
 export interface SystemUser {
   id: string;
   username: string;
@@ -41,16 +50,44 @@ export const DEFAULT_WORKSPACE_MENU: WorkspaceMenuItem[] = [
     type: 'folder',
     isSystem: true,
     children: [
-      { id: 'wm_files', label: 'File Manager', icon: 'Folder', action: 'files', type: 'app', isSystem: true },
-      { id: 'wm_browser', label: 'Vespera Navigator', icon: 'Globe', action: 'browser', type: 'app', isSystem: true },
-      { id: 'wm_vstore', label: 'VStore', icon: 'Package', action: 'vstore', type: 'app', isSystem: true },
-      { id: 'wm_analyzer', label: 'Data Analyzer', icon: 'Activity', action: 'analyzer', type: 'app', isSystem: true },
-      { id: 'wm_workbench', label: 'AETHERIS Workbench Pro', icon: 'Terminal', action: 'workbench', type: 'app', isSystem: true },
-      { id: 'wm_chat', label: 'Vespera Assistant', icon: 'MessageSquare', action: 'chat', type: 'app', isSystem: true },
-      { id: 'wm_help', label: 'Vespera Help', icon: 'HelpCircle', action: 'help', type: 'app', isSystem: true },
-      { id: 'wm_media', label: 'VERSA Media Agent', icon: 'Disc3', action: 'media_player', type: 'app', isSystem: true },
-      { id: 'wm_retrotv', label: 'RetroTV Cable Simulator', icon: 'Tv', action: 'retrotv', type: 'app', isSystem: true },
-      { id: 'wm_remote_desktop', label: 'VesperaConnect', icon: 'Monitor', action: 'remote_desktop', type: 'app', isSystem: true },
+      { id: 'wm_files',          label: 'File Manager',       icon: 'Folder',       action: 'files',          type: 'app', isSystem: true },
+      { id: 'wm_browser',        label: 'Vespera Navigator',  icon: 'Globe',        action: 'browser',        type: 'app', isSystem: true },
+      { id: 'wm_vstore',         label: 'VStore',             icon: 'Package',      action: 'vstore',         type: 'app', isSystem: true },
+      { id: 'wm_chat',           label: 'Vespera Assistant',  icon: 'MessageSquare',action: 'chat',           type: 'app', isSystem: true },
+      { id: 'wm_help',           label: 'Vespera Help',       icon: 'HelpCircle',   action: 'help',           type: 'app', isSystem: true },
+      { id: 'wm_remote_desktop', label: 'VesperaConnect',     icon: 'Monitor',      action: 'remote_desktop', type: 'app', isSystem: true },
+    ],
+  },
+  {
+    id: 'games',
+    label: 'Games',
+    icon: 'folder',
+    type: 'folder',
+    isSystem: true,
+    children: [
+      { id: 'wm_vsweeper', label: 'V-Sweeper', icon: 'Grid', action: 'vsweeper', type: 'app', isSystem: true },
+    ],
+  },
+  {
+    id: 'media',
+    label: 'Media',
+    icon: 'folder',
+    type: 'folder',
+    isSystem: true,
+    children: [
+      { id: 'wm_media',   label: 'VERSA Media Agent',       icon: 'Disc3', action: 'media_player', type: 'app', isSystem: true },
+      { id: 'wm_retrotv', label: 'Meridian. TV', icon: 'Tv',    action: 'retrotv',      type: 'app', isSystem: true },
+    ],
+  },
+  {
+    id: 'accessories',
+    label: 'Accessories',
+    icon: 'folder',
+    type: 'folder',
+    isSystem: true,
+    children: [
+      { id: 'wm_analyzer',   label: 'Data Analyzer',         icon: 'Activity', action: 'analyzer',  type: 'app', isSystem: true },
+      { id: 'wm_workbench',  label: 'AETHERIS Workbench Pro',icon: 'Terminal', action: 'workbench', type: 'app', isSystem: true },
     ],
   },
   {
@@ -60,11 +97,11 @@ export const DEFAULT_WORKSPACE_MENU: WorkspaceMenuItem[] = [
     type: 'folder',
     isSystem: true,
     children: [
-      { id: 'wm_about', label: 'System Info', icon: 'Monitor', action: 'about', type: 'app', isSystem: true },
-      { id: 'wm_control', label: 'Control Panel', icon: 'Settings', action: 'control_panel', type: 'app', isSystem: true },
-      { id: 'wm_xtype', label: 'X-Type Control Panel', icon: 'Cpu', action: 'xtype', type: 'app', isSystem: true },
-      { id: 'wm_find', label: 'Find Files…', icon: 'Search', action: 'findfiles', type: 'app', isSystem: true },
-      { id: 'wm_run', label: 'Run…', icon: 'Play', action: '__run__', type: 'app', isSystem: true },
+      { id: 'wm_about',   label: 'System Info',          icon: 'Monitor',  action: 'about',         type: 'app', isSystem: true },
+      { id: 'wm_control', label: 'Control Panel',        icon: 'Settings', action: 'control_panel', type: 'app', isSystem: true },
+      { id: 'wm_xtype',   label: 'X-Type Control Panel', icon: 'Cpu',      action: 'xtype',         type: 'app', isSystem: true },
+      { id: 'wm_find',    label: 'Find Files…',          icon: 'Search',   action: 'findfiles',     type: 'app', isSystem: true },
+      { id: 'wm_run',     label: 'Run…',                 icon: 'Play',     action: '__run__',       type: 'app', isSystem: true },
       {
         id: 'system_tools',
         label: 'System Tools',
@@ -72,11 +109,11 @@ export const DEFAULT_WORKSPACE_MENU: WorkspaceMenuItem[] = [
         type: 'folder',
         isSystem: true,
         children: [
-          { id: 'wm_welcome', label: 'Vespera OS Tour', icon: 'Info', action: 'welcome_tour', type: 'app', isSystem: true },
-          { id: 'wm_defrag', label: 'Disk Defragmenter', icon: 'HardDrive', action: 'defrag', type: 'app', isSystem: true },
-          { id: 'wm_scandisk', label: 'Disk Checker', icon: 'ShieldCheck', action: 'scandisk', type: 'app', isSystem: true },
-          { id: 'wm_stats', label: 'System Statistics', icon: 'Activity', action: 'analyzer', type: 'app', isSystem: true },
-          { id: 'wm_dialup', label: 'Dial-Up Networking', icon: 'Phone', action: 'dialup', type: 'app', isSystem: true },
+          { id: 'wm_welcome', label: 'Vespera OS Tour',    icon: 'Info',       action: 'welcome_tour', type: 'app', isSystem: true },
+          { id: 'wm_defrag',  label: 'Disk Defragmenter',  icon: 'HardDrive',  action: 'defrag',       type: 'app', isSystem: true },
+          { id: 'wm_scandisk',label: 'Disk Checker',       icon: 'ShieldCheck',action: 'scandisk',     type: 'app', isSystem: true },
+          { id: 'wm_stats',   label: 'System Statistics',  icon: 'Activity',   action: 'analyzer',     type: 'app', isSystem: true },
+          { id: 'wm_dialup',  label: 'Dial-Up Networking', icon: 'Phone',      action: 'dialup',       type: 'app', isSystem: true },
         ],
       },
     ],
@@ -91,11 +128,12 @@ export const DEFAULT_WORKSPACE_MENU: WorkspaceMenuItem[] = [
     children: [],
   },
   { id: 'sep1', label: '', type: 'separator', isSystem: true },
-  { id: 'wm_signout', label: 'Sign Out', icon: 'LogOut', type: 'signout', isSystem: true },
-  { id: 'wm_signout_term', label: 'Sign Out to Terminal', icon: 'Terminal', type: 'signout', isSystem: true },
+  { id: 'wm_signout',      label: 'Sign Out',             icon: 'LogOut',   type: 'signout',  isSystem: true },
+  { id: 'wm_signout_term', label: 'Sign Out to Terminal', icon: 'Terminal', type: 'signout',  isSystem: true },
   { id: 'sep2', label: '', type: 'separator', isSystem: true },
   { id: 'wm_shutdown', label: 'Shut Down...', icon: 'X', type: 'shutdown', isSystem: true },
 ];
+
 
 // ── Theme Color Map for Workspace Menu ──────────────────────────────────────
 export const WORKSPACE_MENU_THEME_COLORS: Record<string, {
@@ -278,7 +316,9 @@ export function useVFS() {
       showWelcomeTour: parsed.showWelcomeTour !== false,
       plusTheme: parsed.plusTheme || 'standard',
       plusThemeAmbientMuted: parsed.plusThemeAmbientMuted === true,
-      cursorStyle: parsed.cursorStyle || 'standard'
+      cursorStyle: parsed.cursorStyle || 'standard',
+      activeApplets: parsed.activeApplets || {},
+      startupApps: parsed.startupApps || []
     };
   });
 
@@ -414,6 +454,24 @@ export function useVFS() {
     setDisplaySettings((prev: any) => ({ ...prev, cursorStyle }));
   };
 
+  const updateAppletSettings = (appletId: string, settings: Partial<AppletConfig>) => {
+    setDisplaySettings((prev: any) => {
+      const currentApplets = prev.activeApplets || {};
+      const currentConfig = currentApplets[appletId] || { enabled: false, position: 'float', borderStyle: 'sunken' };
+      return {
+        ...prev,
+        activeApplets: {
+          ...currentApplets,
+          [appletId]: { ...currentConfig, ...settings }
+        }
+      };
+    });
+  };
+
+  const updateStartupApps = (apps: { appId: string; enabled: boolean }[]) => {
+    setDisplaySettings((prev: any) => ({ ...prev, startupApps: apps }));
+  };
+
   const createNode = (name: string, type: FileType, parentId: string, content: string = '', targetId?: string, iconType?: string, extra?: Partial<VFSNode>) => {
     const newNode: VFSNode = {
       id: Math.random().toString(36).substr(2, 9),
@@ -524,5 +582,5 @@ export function useVFS() {
     return nodes.find(node => node.id === id);
   };
 
-  return { nodes, displaySettings, systemUsers, addSystemUser, updateSystemUser, deleteSystemUser, updateResolution, updateWallpaper, updateBackgroundColor, updateTaskbarTheme, updateTaskbarClock, updateClockSettings, updateWorkspaceMenu, updatePinnedApps, updateWaveBarSettings, updateScreensaverSettings, updateAgentVSettings, updateWelcomeTour, updatePlusTheme, updateCursorStyle, createNode, renameNode, updateFileContent, deleteNode, getChildren, getNode, updateCustomIcon, installApp, uninstallApp };
+  return { nodes, displaySettings, systemUsers, addSystemUser, updateSystemUser, deleteSystemUser, updateResolution, updateWallpaper, updateBackgroundColor, updateTaskbarTheme, updateTaskbarClock, updateClockSettings, updateWorkspaceMenu, updatePinnedApps, updateWaveBarSettings, updateScreensaverSettings, updateAgentVSettings, updateWelcomeTour, updatePlusTheme, updateCursorStyle, updateAppletSettings, updateStartupApps, createNode, renameNode, updateFileContent, deleteNode, getChildren, getNode, updateCustomIcon, installApp, uninstallApp };
 }

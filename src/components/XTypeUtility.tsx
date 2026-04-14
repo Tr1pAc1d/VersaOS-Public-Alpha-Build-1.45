@@ -317,7 +317,7 @@ export const XTypeUtility: React.FC<XTypeUtilityProps> = ({ neuralBridgeActive, 
   };
 
   return (
-    <div className="bg-[#c0c0c0] text-black h-full flex flex-col font-sans text-sm relative">
+    <div className="bg-[#c0c0c0] text-black h-full w-full flex-1 flex flex-col font-sans text-sm relative">
       {/* Menu Bar */}
       <div className="flex bg-[#c0c0c0] border-b-2 border-gray-500 px-2 py-1 relative z-50">
         {['File', 'Diagnostics', 'View', 'Help'].map(menu => (

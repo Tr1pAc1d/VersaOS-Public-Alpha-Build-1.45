@@ -6,6 +6,8 @@ import { RETRO_ICONS } from '../utils/retroIcons';
 import { SystemProperties } from './SystemProperties';
 import { PLUS_THEMES, AVAILABLE_UPDATES, type SystemUpdate } from '../utils/plusThemes';
 import { ScreensaverPreview, SCREENSAVER_OPTIONS, type ScreensaverType } from './Screensavers';
+import { WIDGET_COMPONENTS } from './ActiveApplets';
+import { WORKSPACE_MENU_THEME_COLORS, type AppletConfig } from '../hooks/useVFS';
 
 // ── Panel items definition ────────────────────────────────────────────────────
 interface PanelItem {
@@ -112,6 +114,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   const [activePanel, setActivePanel] = useState<string | null>(initialPanel || null);
   const [hoverDesc, setHoverDesc] = useState<string>('');
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const [selectedAppletId, setSelectedAppletId] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [uninstallTarget, setUninstallTarget] = useState<{ id: string; name: string } | null>(null);
 
@@ -145,8 +148,9 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   const [selectedScreensaverTimeout, setSelectedScreensaverTimeout] = useState<number>(vfs.displaySettings?.screensaverTimeout || 5);
 
   const [displayTab, setDisplayTab] = useState<'Background' | 'Screen Saver' | 'Settings' | 'Monitor' | 'Cursors' | 'Themes'>('Background');
-  const [taskbarTab, setTaskbarTab] = useState<'Appearance' | 'Clock' | 'Shortcuts' | 'Workspace Menu' | 'Wave bar'>('Appearance');
-  
+  const [taskbarTab, setTaskbarTab] = useState<'Appearance' | 'Clock' | 'Shortcuts' | 'Workspace Menu' | 'Wave bar' | 'Active Applets'>('Appearance');
+  const [activeApplets, setActiveApplets] = useState<Record<string, AppletConfig>>(vfs.displaySettings?.activeApplets || {});
+
   const [confirming, setConfirming] = useState(false);
   const [countdown, setCountdown] = useState(15);
   const [previousRes, setPreviousRes] = useState(currentRes);
@@ -199,6 +203,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
       setWaveBarBarCount(typeof vfs.displaySettings?.waveBarBarCount === 'number' ? vfs.displaySettings.waveBarBarCount : 5);
       setWaveBarSpeed(vfs.displaySettings?.waveBarSpeed || 'normal');
       setWaveBarUseAlbumArt(vfs.displaySettings?.waveBarUseAlbumArt === true);
+      setActiveApplets(vfs.displaySettings?.activeApplets || {});
       setSelectedCursorStyle(vfs.displaySettings?.cursorStyle || 'default');
       setAgentVEnabled(vfs.displaySettings?.agentVEnabled !== false);
       setAgentVSkin(vfs.displaySettings?.agentVSkin || 'classic');
@@ -267,6 +272,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
     if (vfs.updatePinnedApps) vfs.updatePinnedApps(selectedPinnedApps);
     if (vfs.updatePlusTheme) vfs.updatePlusTheme(selectedPlusTheme);
     if (vfs.updateCursorStyle) vfs.updateCursorStyle(applyCursor);
+    if (vfs.updateAgentVSettings) vfs.updateAgentVSettings(agentVEnabled, agentVSkin, agentVSpeak);
     if (vfs.updateWaveBarSettings) {
       vfs.updateWaveBarSettings({
         waveBarEnabled,
@@ -275,6 +281,12 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
         waveBarBarCount,
         waveBarSpeed,
         waveBarUseAlbumArt,
+      });
+    }
+
+    if (vfs.updateAppletSettings) {
+      Object.entries(activeApplets).forEach(([id, config]) => {
+        vfs.updateAppletSettings(id, config);
       });
     }
 
@@ -331,7 +343,8 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
     agentVSkin !== (vfs.displaySettings?.agentVSkin || 'classic') ||
     agentVSpeak !== (vfs.displaySettings?.agentVSpeak === true) ||
     selectedScreensaverType !== (vfs.displaySettings?.screensaverType || 'none') ||
-    selectedScreensaverTimeout !== (vfs.displaySettings?.screensaverTimeout || 5)
+    selectedScreensaverTimeout !== (vfs.displaySettings?.screensaverTimeout || 5) ||
+    JSON.stringify(activeApplets) !== JSON.stringify(vfs.displaySettings?.activeApplets || {})
   ) && !confirming;
 
   // ── Hub view ─────────────────────────────────────────────────────────────────
@@ -830,9 +843,16 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   const DEFAULT_WS_MENU = DEFAULT_WORKSPACE_MENU;
   const currentWorkspaceMenu = vfs.displaySettings?.workspaceMenu || DEFAULT_WS_MENU;
   const [editingMenu, setEditingMenu] = useState<any[]>(JSON.parse(JSON.stringify(currentWorkspaceMenu)));
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['programs', 'system', 'installed']));
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['programs', 'games', 'media', 'accessories', 'system', 'installed']));
   const [selectedMenuItemId, setSelectedMenuItemId] = useState<string | null>(null);
   const [newFolderName, setNewFolderName] = useState('');
+  // Drag-and-drop state
+  const [dragItemId, setDragItemId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  // Right-click context menu for the tree
+  const [wmContextMenu, setWmContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
+  // Ref on the tree container for coordinate math
+  const treePanelRef = React.useRef<HTMLDivElement>(null);
   
   // Sync editing menu when panel changes
   useEffect(() => {
@@ -911,32 +931,196 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   };
   
   const isWorkspaceMenuChanged = JSON.stringify(editingMenu) !== JSON.stringify(vfs.displaySettings?.workspaceMenu || DEFAULT_WS_MENU);
-  
+
+  // ── New drag/context-menu helpers ────────────────────────────────────────
+
+  /** Collect all folder items recursively, optionally excluding one id */
+  const getAllFolders = (items: any[], excludeId?: string): any[] => {
+    const result: any[] = [];
+    for (const item of items) {
+      if (item.type === 'folder' && item.id !== excludeId) {
+        result.push(item);
+        if (item.children) result.push(...getAllFolders(item.children, excludeId));
+      }
+    }
+    return result;
+  };
+
+  /** Remove an item from anywhere in the tree and return it */
+  const removeItemDeep = (items: any[], id: string): { items: any[]; removed: any | null } => {
+    let removed: any = null;
+    const newItems = items
+      .filter((item) => {
+        if (item.id === id) { removed = item; return false; }
+        return true;
+      })
+      .map((item) => {
+        if (item.children && !removed) {
+          const res = removeItemDeep(item.children, id);
+          if (res.removed) { removed = res.removed; return { ...item, children: res.items }; }
+        }
+        return item;
+      });
+    return { items: newItems, removed };
+  };
+
+  /** Move an item into a target folder */
+  const moveItemToFolder = (itemId: string, folderId: string) => {
+    const newMenu = JSON.parse(JSON.stringify(editingMenu));
+    const { items: stripped, removed } = removeItemDeep(newMenu, itemId);
+    if (!removed) return;
+    const insert = (items: any[]): boolean => {
+      for (const item of items) {
+        if (item.id === folderId) {
+          item.children = item.children || [];
+          item.children.push(removed);
+          return true;
+        }
+        if (item.children && insert(item.children)) return true;
+      }
+      return false;
+    };
+    insert(stripped);
+    setEditingMenu(stripped);
+    setExpandedFolders((prev) => new Set([...prev, folderId]));
+    setWmContextMenu(null);
+    setSelectedMenuItemId(itemId);
+  };
+
+  /** Handle a drag-drop onto a target row */
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!dragItemId || dragItemId === targetId) { setDragItemId(null); setDragOverId(null); return; }
+    const newMenu = JSON.parse(JSON.stringify(editingMenu));
+    const { items: stripped, removed } = removeItemDeep(newMenu, dragItemId);
+    if (!removed) return;
+    const insertNear = (items: any[]): boolean => {
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].id === targetId) {
+          if (items[i].type === 'folder') {
+            items[i].children = items[i].children || [];
+            items[i].children.unshift(removed);
+            setExpandedFolders((prev) => new Set([...prev, targetId]));
+          } else {
+            items.splice(i, 0, removed);
+          }
+          return true;
+        }
+        if (items[i].children && insertNear(items[i].children)) return true;
+      }
+      return false;
+    };
+    insertNear(stripped);
+    setEditingMenu(stripped);
+    setDragItemId(null);
+    setDragOverId(null);
+  };
+
+  /** One-click smart categorisation — moves items out of Programs into Games / Media folders */
+  const autoOrganize = () => {
+    const newMenu = JSON.parse(JSON.stringify(editingMenu));
+    const programsFolder = newMenu.find((i: any) => i.id === 'programs');
+    if (!programsFolder) return;
+
+    const gameActions = new Set(['vsweeper', 'packman']);
+    const mediaActions = new Set(['media_player', 'retrotv', 'aw_release_radar', 'axis_paint']);
+
+    const gamesApps: any[] = [];
+    const mediaApps: any[] = [];
+    const remaining: any[] = [];
+    for (const child of (programsFolder.children || [])) {
+      if (child.type === 'app' && gameActions.has(child.action)) gamesApps.push(child);
+      else if (child.type === 'app' && mediaActions.has(child.action)) mediaApps.push(child);
+      else remaining.push(child);
+    }
+    programsFolder.children = remaining;
+
+    const getOrCreate = (id: string, label: string) => {
+      let folder = newMenu.find((i: any) => i.id === id || (i.type === 'folder' && i.label === label));
+      if (!folder) {
+        folder = { id, label, icon: 'folder', type: 'folder', children: [] };
+        const sep = newMenu.findIndex((i: any) => i.id === 'sep1');
+        if (sep !== -1) newMenu.splice(sep, 0, folder); else newMenu.unshift(folder);
+      }
+      folder.children = folder.children || [];
+      return folder;
+    };
+
+    if (gamesApps.length > 0) {
+      const gf = getOrCreate('games', 'Games');
+      for (const a of gamesApps) { if (!gf.children.some((c: any) => c.id === a.id)) gf.children.push(a); }
+    }
+    if (mediaApps.length > 0) {
+      const mf = getOrCreate('media', 'Media');
+      for (const a of mediaApps) { if (!mf.children.some((c: any) => c.id === a.id)) mf.children.push(a); }
+    }
+
+    setEditingMenu([...newMenu]);
+    setExpandedFolders((prev) => {
+      const next = new Set(prev);
+      next.add('programs');
+      if (gamesApps.length > 0) next.add('games');
+      if (mediaApps.length > 0) next.add('media');
+      return next;
+    });
+  };
+
   // Recursive tree renderer for workspace menu editor
   const renderMenuTree = (items: any[], depth: number = 0) => {
     return items.map((item: any) => {
       if (item.type === 'separator') {
         return (
-          <div key={item.id} className="flex items-center gap-1 pl-2 py-0.5" style={{ paddingLeft: depth * 16 + 8 }}>
+          <div key={item.id} className="flex items-center gap-1 py-0.5" style={{ paddingLeft: depth * 16 + 8 }}>
             <div className="flex-1 h-[1px] bg-gray-400" />
             <span className="text-[9px] text-gray-500 italic">separator</span>
             <div className="flex-1 h-[1px] bg-gray-400" />
           </div>
         );
       }
-      
+
       const isFolder = item.type === 'folder';
       const isExpanded = expandedFolders.has(item.id);
       const isSelected = selectedMenuItemId === item.id;
       const isDynamic = item.isDynamic;
-      
+      const isBeingDragged = dragItemId === item.id;
+      const isDropTarget = dragOverId === item.id;
+
       return (
         <div key={item.id}>
           <div
-            className={`flex items-center gap-1 px-1 py-0.5 cursor-default text-xs ${isSelected ? 'bg-[#000080] text-white' : 'hover:bg-blue-50'}`}
+            className={`flex items-center gap-1 px-1 py-0.5 cursor-default text-xs select-none
+              ${isSelected ? 'bg-[#000080] text-white' : 'hover:bg-blue-50'}
+              ${isBeingDragged ? 'opacity-40' : ''}
+              ${isDropTarget ? 'border-t-2 border-blue-500' : 'border-t-2 border-transparent'}`}
             style={{ paddingLeft: depth * 16 + 4 }}
-            onClick={() => setSelectedMenuItemId(item.id)}
+            draggable={!isDynamic}
+            onClick={() => { setSelectedMenuItemId(item.id); setWmContextMenu(null); }}
+            onDragStart={(e) => { e.stopPropagation(); setDragItemId(item.id); }}
+            onDragEnd={() => { setDragItemId(null); setDragOverId(null); }}
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverId(item.id); }}
+            onDrop={(e) => handleDrop(e, item.id)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!treePanelRef.current) return;
+              const rect = treePanelRef.current.getBoundingClientRect();
+              const sf = treePanelRef.current.offsetWidth > 0 ? rect.width / treePanelRef.current.offsetWidth : 1;
+              const x = Math.min((e.clientX - rect.left) / sf, treePanelRef.current.offsetWidth - 170);
+              const y = Math.min((e.clientY - rect.top) / sf, treePanelRef.current.offsetHeight - 120);
+              setWmContextMenu({ x, y, itemId: item.id });
+              setSelectedMenuItemId(item.id);
+            }}
           >
+            {/* Drag handle — hidden for dynamic/auto items */}
+            {!isDynamic ? (
+              <span
+                className="shrink-0 text-[11px] leading-none cursor-grab active:cursor-grabbing mr-0.5"
+                style={{ color: isSelected ? '#aaaaff' : '#aaaaaa' }}
+                title="Drag to reorder"
+              >⠿</span>
+            ) : <span className="w-3 shrink-0" />}
+
             {isFolder ? (
               <button
                 className="w-4 h-4 flex items-center justify-center shrink-0"
@@ -945,8 +1129,13 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
                 {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
               </button>
             ) : <div className="w-4" />}
+
             {isFolder ? <FolderOpen size={12} className={isSelected ? 'text-white' : 'text-yellow-600'} /> : null}
-            <span className={`truncate ${isDynamic ? 'italic' : ''} ${item.isSystem ? '' : 'text-blue-700'}`} style={isSelected ? { color: 'white' } : {}}>
+
+            <span
+              className={`truncate ${isDynamic ? 'italic' : ''} ${item.isSystem ? '' : 'text-blue-700'}`}
+              style={isSelected ? { color: 'white' } : {}}
+            >
               {item.label || '---'}
               {isDynamic ? ' (auto)' : ''}
             </span>
@@ -978,11 +1167,11 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
 
       {/* Tabs */}
       <div className="flex gap-1 border-b-2 border-white mt-1 relative z-10 px-1 overflow-x-auto scroller-hidden">
-        {(['Appearance', 'Clock', 'Shortcuts', 'Workspace Menu', 'Wave bar'] as const).map(tab => (
+        {(['Appearance', 'Clock', 'Shortcuts', 'Workspace Menu', 'Wave bar', 'Active Applets'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setTaskbarTab(tab)}
-            className={`px-2 py-1 text-[11px] font-bold border-2 border-b-0 rounded-t-sm ${
+            className={`px-2 py-1 text-[11px] font-bold border-2 border-b-0 rounded-t-sm whitespace-nowrap ${
               taskbarTab === tab 
                 ? 'bg-[#c0c0c0] border-t-white border-l-white border-r-gray-800 pb-2 -mb-0.5 z-20' 
                 : 'bg-gray-300 border-t-white border-l-white border-r-gray-800 mt-1 cursor-pointer'
@@ -1143,11 +1332,73 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
               </div>
             </div>
             
-            {/* Tree view */}
-            <div className="flex-1 min-h-[10rem] border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white overflow-y-auto">
+            {/* Tree view — drag target on the outer container too so drops at the bottom register */}
+            <div
+              ref={treePanelRef}
+              className="flex-1 min-h-[10rem] border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white overflow-y-auto relative"
+              onClick={() => setWmContextMenu(null)}
+              onDragOver={(e) => e.preventDefault()}
+            >
               {renderMenuTree(editingMenu)}
+
+              {/* ── Right-click context menu ── */}
+              {wmContextMenu && (() => {
+                const ctxFound = findItemAndParent(editingMenu, wmContextMenu.itemId);
+                const ctxItem = ctxFound?.item;
+                const ctxIsSystem = ctxItem?.isSystem;
+                const ctxIsFolder = ctxItem?.type === 'folder';
+                const ctxFolders = getAllFolders(editingMenu, wmContextMenu.itemId);
+                return (
+                  <div
+                    className="absolute bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.45)] z-50 py-1 text-xs"
+                    style={{ left: wmContextMenu.x, top: wmContextMenu.y, minWidth: 164 }}
+                    onContextMenu={(e) => e.preventDefault()}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Move-to-folder entries */}
+                    {!ctxIsFolder && ctxFolders.length > 0 && (
+                      <>
+                        <div className="px-3 py-0.5 text-gray-500 text-[9px] uppercase tracking-widest font-bold select-none">Move into…</div>
+                        {ctxFolders.map((f: any) => (
+                          <button
+                            key={f.id}
+                            className="w-full text-left px-4 py-1 flex items-center gap-1.5 hover:bg-[#000080] hover:text-white"
+                            onClick={() => moveItemToFolder(wmContextMenu.itemId, f.id)}
+                          >
+                            <FolderOpen size={10} className="text-yellow-600 shrink-0" />
+                            {f.label}
+                          </button>
+                        ))}
+                        <div className="h-px bg-gray-500 mx-1 my-1" />
+                      </>
+                    )}
+                    {/* Move Up / Down */}
+                    <button
+                      className="w-full text-left px-4 py-1 hover:bg-[#000080] hover:text-white flex items-center gap-1"
+                      onClick={() => { moveItem('up'); setWmContextMenu(null); }}
+                    >
+                      <ArrowUp size={10} /> Move Up
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-1 hover:bg-[#000080] hover:text-white flex items-center gap-1"
+                      onClick={() => { moveItem('down'); setWmContextMenu(null); }}
+                    >
+                      <ArrowDown size={10} /> Move Down
+                    </button>
+                    <div className="h-px bg-gray-500 mx-1 my-1" />
+                    {/* Remove */}
+                    <button
+                      disabled={!!ctxIsSystem}
+                      className="w-full text-left px-4 py-1 hover:bg-[#000080] hover:text-white flex items-center gap-1 disabled:text-gray-400 disabled:pointer-events-none"
+                      onClick={() => { if (!ctxIsSystem) { removeItem(); setWmContextMenu(null); } }}
+                    >
+                      <Minus size={10} /> Remove
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
-            
+
             {/* Action buttons */}
             <div className="flex flex-wrap gap-1">
               <button
@@ -1177,8 +1428,15 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
               >
                 <RotateCcw size={10} /> Restore Defaults
               </button>
+              <button
+                onClick={autoOrganize}
+                title="Auto-sort games and media into their own folders"
+                className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white bg-[#c0c0c0] text-[#000080]"
+              >
+                <Sparkles size={10} /> Auto-Organize
+              </button>
             </div>
-            
+
             {/* New Folder row */}
             <div className="flex items-center gap-2 border-t border-gray-400 pt-2">
               <span className="text-xs font-bold shrink-0">New Folder:</span>
@@ -1301,6 +1559,93 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
                   </div>
                 </div>
               )}
+            </div>
+          </>
+        )}
+
+        {taskbarTab === 'Active Applets' && (
+          <>
+            <div className="flex items-center gap-4 border-b pb-3 border-gray-400">
+              <Package size={36} className="text-[#4a4a8a]" />
+              <div>
+                <h2 className="font-bold text-sm leading-none tracking-wide">Active Applets</h2>
+                <p className="text-xs text-gray-700 mt-1">Select and configure desktop widgets.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 min-h-[12rem]">
+              <div className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white overflow-y-auto">
+                <p className="font-bold text-xs bg-gray-200 border-b border-gray-400 p-1 shrink-0">Available Applets</p>
+                {Object.keys(WIDGET_COMPONENTS).map((id) => (
+                  <div 
+                    key={id} 
+                    className={`flex items-center px-2 py-1.5 cursor-pointer text-xs ${selectedAppletId === id ? 'bg-[#000080] text-white' : 'hover:bg-gray-100 text-black'}`}
+                    onClick={() => setSelectedAppletId(id)}
+                  >
+                    <input
+                      type="checkbox"
+                      className="mr-2"
+                      checked={activeApplets[id]?.enabled || false}
+                      onChange={(e) => setActiveApplets(prev => ({
+                        ...prev,
+                        [id]: { ...(prev[id] || { position: 'float', borderStyle: 'raised' }), enabled: e.target.checked }
+                      }))}
+                    />
+                    <span>{id.replace('applet_', '').toUpperCase()}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="w-[180px] shrink-0 border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 bg-[#c0c0c0] p-2 flex flex-col gap-3">
+                {selectedAppletId ? (
+                  <>
+                    <div className="flex flex-col gap-1 text-[10px]">
+                      <span className="font-bold">Placement</span>
+                      <div className="flex flex-col gap-1 ml-1 bg-white p-1 border border-gray-400">
+                        {['float', 'dock_left', 'dock_right'].map(pos => (
+                          <label key={pos} className="flex items-center gap-1 cursor-pointer">
+                            <input
+                              type="radio"
+                              name={`pos_${selectedAppletId}`}
+                              checked={(activeApplets[selectedAppletId]?.position || 'float') === pos}
+                              onChange={() => setActiveApplets(prev => ({
+                                ...prev, [selectedAppletId]: { ...(prev[selectedAppletId] || {}), position: pos as any }
+                              }))}
+                            />
+                            {pos === 'float' ? 'Floating' : pos === 'dock_left' ? 'Dock Left' : 'Dock Right'}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1 text-[10px]">
+                      <span className="font-bold">Border Style</span>
+                      <select 
+                        className="border border-gray-400 bg-white"
+                        value={activeApplets[selectedAppletId]?.borderStyle || 'raised'}
+                        onChange={(e) => setActiveApplets(prev => ({
+                          ...prev, [selectedAppletId]: { ...(prev[selectedAppletId] || {}), borderStyle: e.target.value as any }
+                        }))}
+                      >
+                        <option value="none">None</option>
+                        <option value="raised">Raised</option>
+                        <option value="sunken">Sunken</option>
+                      </select>
+                    </div>
+
+                    <div className="mt-auto border-t border-gray-400 pt-1">
+                      <p className="text-[9px] text-[#cc0000] leading-tight flex items-start gap-1">
+                        <AlertCircle size={10} className="shrink-0 mt-0.5" />
+                        Color inherited from Task Menu theme.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-[10px] text-gray-500 text-center italic">
+                    Select an applet to configure its properties.
+                  </div>
+                )}
+              </div>
             </div>
           </>
         )}

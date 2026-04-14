@@ -3,7 +3,7 @@ import {
   MessageSquare, Plane, FileText, Image as ImageIcon, Camera, Gamepad2, Grid, Layers, Cpu, Video, Settings, PenTool, Bookmark, Briefcase, Activity, HardDrive, Monitor, Wrench, Download, Code, Disc, Shield, Mail
 } from 'lucide-react';
 
-export type VStoreCategory = 'Featured Apps' | 'Games & Entertainment' | 'Productivity' | 'System Utilities' | 'Networking' | 'System';
+export type VStoreCategory = 'Featured Apps' | 'Games & Entertainment' | 'Productivity' | 'System Utilities' | 'Networking' | 'System' | 'Desktop Applets';
 
 export interface VStoreReview {
   user: string;
@@ -318,6 +318,21 @@ export const VSTORE_APPS: VStoreApp[] = [
     screenshotUrl: 'https://placehold.co/400x300/003366/FFFFFF/png?text=VMail+Inbox',
     functional: true,
     price: 1.00
+  },
+  {
+    id: 'v_messenger',
+    name: 'Vespera Messenger',
+    developer: 'Vespera Systems',
+    version: '1.0 Beta',
+    size: '850 KB',
+    icon: MessageSquare,
+    color: 'text-blue-400',
+    category: ['Featured Apps', 'Networking'],
+    description: 'Keep in touch with your friends and colleagues in real-time over the VesperaNET! Now featuring experimental neural-learning A.I. chat bots. Warning: Do not ignore Protocol 8.',
+    requirements: 'Vespera OS, Active Dial-up connection',
+    screenshotUrl: 'https://placehold.co/400x300/000080/FFFFFF/png?text=vAIM+Buddy+List',
+    functional: true,
+    rating: 4.5
   },
   {
     id: 'word95',
@@ -1324,21 +1339,6 @@ export const VSTORE_APPS: VStoreApp[] = [
     rating: 4.9
   },
   {
-    id: 'v_messenger',
-    name: 'Vespera Messenger (BETA)',
-    developer: 'VesperaNET Services',
-    version: '0.9.2b',
-    size: '1.2 MB',
-    icon: MessageSquare,
-    color: 'text-blue-400',
-    category: ['Networking', 'Featured Apps'],
-    description: 'The internal communications hub for the VesperaNET community. Connect with colleagues and staff across the global network using secure AETHERIS packet encryption.',
-    requirements: 'Vespera OS, VesperaNET Account Connection',
-    screenshotUrl: 'https://placehold.co/400x300/001a22/00a3cc/png?text=V-Messenger+Buddy+List',
-    functional: true,
-    rating: 4.5
-  },
-  {
     id: 'disk_physician',
     name: 'Disk Physician v3.1',
     developer: 'Vespera Utilities',
@@ -1382,6 +1382,92 @@ export const VSTORE_APPS: VStoreApp[] = [
     screenshotUrl: 'https://placehold.co/400x300/000080/00CCFF/png?text=VesperaConnect+RDP',
     functional: true,
     rating: 4.5
+  },
+  
+  // ── Desktop Applets ──
+  {
+    id: 'applet_cpu',
+    name: 'SYS-MON CPU Graph',
+    developer: 'Vespera Systems',
+    version: '1.0',
+    size: '12 KB',
+    icon: Activity,
+    color: 'text-green-500',
+    category: 'Desktop Applets',
+    description: 'Monitor your system\'s heuristic load with a real-time glowing block graph. Docks seamlessly to your desktop corners.',
+    requirements: 'Vespera OS',
+    screenshotUrl: 'https://placehold.co/400x300/003300/00FF00/png?text=CPU+Monitor',
+    functional: false
+  },
+  {
+    id: 'applet_marquee',
+    name: 'News Ticker Marquee',
+    developer: 'Vespera Systems',
+    version: '1.0',
+    size: '8 KB',
+    icon: FileText,
+    color: 'text-yellow-500',
+    category: 'Desktop Applets',
+    description: 'A customizable scrolling text marquee. Keep an eye on system alerts or custom broadcast messages directly on your desktop.',
+    requirements: 'Vespera OS',
+    screenshotUrl: 'https://placehold.co/400x300/333300/FFFF00/png?text=Marquee+Ticker',
+    functional: false
+  },
+  {
+    id: 'applet_osc',
+    name: 'Audio Oscilloscope',
+    developer: 'Vespera Systems',
+    version: '1.0',
+    size: '15 KB',
+    icon: Music,
+    color: 'text-cyan-500',
+    category: 'Desktop Applets',
+    description: 'A beautiful retro sine-wave oscilloscope that reacts to simulated ambient system frequencies (or your active media).',
+    requirements: 'Vespera OS',
+    screenshotUrl: 'https://placehold.co/400x300/003333/00FFFF/png?text=Oscilloscope',
+    functional: false
+  },
+  {
+    id: 'applet_mascot',
+    name: 'Desktop Pet (Neko)',
+    developer: 'Shareware Labs',
+    version: '1.2',
+    size: '30 KB',
+    icon: Ghost,
+    color: 'text-pink-500',
+    category: 'Desktop Applets',
+    description: 'A cute animated mascot that lives on your screen. It will wander around aimlessly and fall asleep when your system is idle.',
+    requirements: 'Vespera OS',
+    screenshotUrl: 'https://placehold.co/400x300/330011/FF00FF/png?text=Virtual+Pet',
+    functional: false
+  },
+  {
+    id: 'applet_blinker',
+    name: 'Dial-Up Net Blinker',
+    developer: 'Vespera Systems',
+    version: '1.0',
+    size: '4 KB',
+    icon: Monitor,
+    color: 'text-red-500',
+    category: 'Desktop Applets',
+    description: 'Flashing TX/RX terminal lights that activate when network packets are transmitted or received over your modem connection.',
+    requirements: 'Vespera OS',
+    screenshotUrl: 'https://placehold.co/400x300/110000/FF0000/png?text=TX/RX+Blinkers',
+    functional: false
+  },
+  {
+    id: 'applet_clock',
+    name: 'World Clock & Uptime',
+    developer: 'Vespera Systems',
+    version: '1.0',
+    size: '10 KB',
+    icon: Globe,
+    color: 'text-blue-500',
+    category: 'Desktop Applets',
+    description: 'A digital 7-segment display tracking your exact system uptime and global standard time zones.',
+    requirements: 'Vespera OS',
+    screenshotUrl: 'https://placehold.co/400x300/000033/0088FF/png?text=Uptime+Clock',
+    functional: false
   }
 ];
 
