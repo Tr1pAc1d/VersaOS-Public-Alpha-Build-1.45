@@ -148,8 +148,12 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   const [selectedScreensaverTimeout, setSelectedScreensaverTimeout] = useState<number>(vfs.displaySettings?.screensaverTimeout || 5);
 
   const [displayTab, setDisplayTab] = useState<'Background' | 'Screen Saver' | 'Settings' | 'Monitor' | 'Cursors' | 'Themes'>('Background');
-  const [taskbarTab, setTaskbarTab] = useState<'Appearance' | 'Clock' | 'Shortcuts' | 'Workspace Menu' | 'Wave bar' | 'Active Applets'>('Appearance');
+  const [taskbarTab, setTaskbarTab] = useState<'Appearance' | 'Position' | 'Clock' | 'Shortcuts' | 'Workspace Menu' | 'Wave bar' | 'Active Applets'>('Appearance');
   const [activeApplets, setActiveApplets] = useState<Record<string, AppletConfig>>(vfs.displaySettings?.activeApplets || {});
+
+  const [taskbarPosition, setTaskbarPosition] = useState<'top' | 'bottom' | 'left' | 'right'>(vfs.displaySettings?.taskbarPosition || 'bottom');
+  const [taskbarSize, setTaskbarSize] = useState<number>(typeof vfs.displaySettings?.taskbarSize === 'number' ? vfs.displaySettings.taskbarSize : 56);
+  const [taskbarSpanFull, setTaskbarSpanFull] = useState<boolean>(vfs.displaySettings?.taskbarSpanFull === true);
 
   const [confirming, setConfirming] = useState(false);
   const [countdown, setCountdown] = useState(15);
@@ -210,6 +214,9 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
       setAgentVSpeak(vfs.displaySettings?.agentVSpeak === true);
       setSelectedScreensaverType(vfs.displaySettings?.screensaverType || 'none');
       setSelectedScreensaverTimeout(vfs.displaySettings?.screensaverTimeout || 5);
+      setTaskbarPosition(vfs.displaySettings?.taskbarPosition || 'bottom');
+      setTaskbarSize(vfs.displaySettings?.taskbarSize || 56);
+      setTaskbarSpanFull(vfs.displaySettings?.taskbarSpanFull === true);
     }
   }, [activePanel, vfs.displaySettings]);
 
@@ -273,6 +280,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
     if (vfs.updatePlusTheme) vfs.updatePlusTheme(selectedPlusTheme);
     if (vfs.updateCursorStyle) vfs.updateCursorStyle(applyCursor);
     if (vfs.updateAgentVSettings) vfs.updateAgentVSettings(agentVEnabled, agentVSkin, agentVSpeak);
+    if (vfs.updateTaskbarLayout) vfs.updateTaskbarLayout(taskbarPosition, taskbarSize, taskbarSpanFull);
     if (vfs.updateWaveBarSettings) {
       vfs.updateWaveBarSettings({
         waveBarEnabled,
@@ -344,6 +352,9 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
     agentVSpeak !== (vfs.displaySettings?.agentVSpeak === true) ||
     selectedScreensaverType !== (vfs.displaySettings?.screensaverType || 'none') ||
     selectedScreensaverTimeout !== (vfs.displaySettings?.screensaverTimeout || 5) ||
+    taskbarPosition !== (vfs.displaySettings?.taskbarPosition || 'bottom') ||
+    taskbarSize !== (typeof vfs.displaySettings?.taskbarSize === 'number' ? vfs.displaySettings.taskbarSize : 56) ||
+    taskbarSpanFull !== (vfs.displaySettings?.taskbarSpanFull === true) ||
     JSON.stringify(activeApplets) !== JSON.stringify(vfs.displaySettings?.activeApplets || {})
   ) && !confirming;
 
@@ -508,16 +519,31 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
                 <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-2 bg-[#c0c0c0] flex-1 min-h-0 flex flex-col">
                   <p className="font-bold text-xs mb-1.5 shrink-0">Screen Saver:</p>
                   <div className="bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white flex-1 overflow-y-auto min-h-0">
-                    {SCREENSAVER_OPTIONS.map(opt => (
-                      <div 
-                        key={opt.id}
-                        onClick={() => setSelectedScreensaverType(opt.id as ScreensaverType)}
-                        className={`px-2 py-1 text-xs cursor-default flex flex-col ${selectedScreensaverType === opt.id ? 'bg-[#000080] text-white' : 'hover:bg-[#008080] hover:text-white'}`}
-                      >
-                        <span className="font-bold underline decoration-dotted">{opt.name}</span>
-                        <span className={`text-[9px] ${selectedScreensaverType === opt.id ? 'text-blue-100' : 'text-gray-500'}`}>{opt.description}</span>
+                    {SCREENSAVER_OPTIONS
+                      .filter(opt => !opt.plus || installedUpdates.includes('screensaver_plus'))
+                      .map(opt => (
+                        <div 
+                          key={opt.id}
+                          onClick={() => setSelectedScreensaverType(opt.id as ScreensaverType)}
+                          className={`px-2 py-1 text-xs cursor-default flex flex-col ${selectedScreensaverType === opt.id ? 'bg-[#000080] text-white' : 'hover:bg-[#008080] hover:text-white'}`}
+                        >
+                          <span className="font-bold underline decoration-dotted flex items-center gap-1">
+                            {opt.plus && <span className="text-yellow-500 text-[8px] font-black not-underline">★</span>}
+                            {opt.name}
+                          </span>
+                          <span className={`text-[9px] ${selectedScreensaverType === opt.id ? 'text-blue-100' : 'text-gray-500'}`}>{opt.description}</span>
+                        </div>
+                      ))}
+                    {/* Plus! upsell row when pack not installed */}
+                    {!installedUpdates.includes('screensaver_plus') && (
+                      <div className="px-2 py-1.5 border-t border-dashed border-gray-300 mt-1 flex items-start gap-1.5">
+                        <span className="text-yellow-500 text-[10px] font-black shrink-0 mt-0.5">★</span>
+                        <div>
+                          <p className="text-[9px] font-bold text-[#000080]">Vespera Plus! Screen Saver Pack</p>
+                          <p className="text-[8px] text-gray-500 leading-tight">10 new animated screen savers. Install from <span className="font-bold">Vespera Update</span> in Control Panel.</p>
+                        </div>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
 
@@ -1167,7 +1193,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
 
       {/* Tabs */}
       <div className="flex gap-1 border-b-2 border-white mt-1 relative z-10 px-1 overflow-x-auto scroller-hidden">
-        {(['Appearance', 'Clock', 'Shortcuts', 'Workspace Menu', 'Wave bar', 'Active Applets'] as const).map(tab => (
+        {(['Appearance', 'Position', 'Clock', 'Shortcuts', 'Workspace Menu', 'Wave bar', 'Active Applets'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setTaskbarTab(tab)}
@@ -1184,6 +1210,90 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
 
       <div className="flex-1 border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 p-3 bg-[#c0c0c0] flex flex-col gap-3 relative z-0 -mt-2 overflow-y-auto min-h-0">
         
+        {/* ── Position Tab ── */}
+        {taskbarTab === 'Position' && (
+          <>
+            <div className="flex items-center gap-4 border-b pb-3 border-gray-400">
+              <Menu size={36} className="text-[#4a4a8a]" />
+              <div>
+                <h2 className="font-bold text-sm leading-none tracking-wide">Taskbar Layout</h2>
+                <p className="text-xs text-gray-700 mt-1">Configure screen position and thickness.</p>
+              </div>
+            </div>
+            
+            <div className="flex-1 flex flex-col gap-4 overflow-y-auto pr-1">
+              {/* Position Group */}
+              <fieldset className="border-2 border-t-white border-l-white border-b-gray-400 border-r-gray-400 p-3 pt-4 relative mt-2">
+                <legend className="absolute -top-2.5 left-2 bg-[#c0c0c0] px-1 text-xs text-black">Screen Edge</legend>
+                <div className="flex gap-4">
+                  {/* Visual Picker */}
+                  <div className="relative w-24 h-[72px] shrink-0 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-blue-900 overflow-hidden">
+                    {/* Ghost preview bar based on state */}
+                    <div 
+                      className="absolute bg-gray-300 border border-t-white border-l-white border-b-black border-r-black opacity-80"
+                      style={{
+                        ...(taskbarPosition === 'top' ? { top: 0, left: 0, right: 0, height: '12px' } : {}),
+                        ...(taskbarPosition === 'bottom' ? { bottom: 0, left: 0, right: 0, height: '12px' } : {}),
+                        ...(taskbarPosition === 'left' ? { top: 0, bottom: 0, left: 0, width: '12px' } : {}),
+                        ...(taskbarPosition === 'right' ? { top: 0, bottom: 0, right: 0, width: '12px' } : {}),
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Radio buttons */}
+                  <div className="flex flex-col gap-2 flex-1 justify-center">
+                    {(['top', 'bottom', 'left', 'right'] as const).map(pos => (
+                      <label key={pos} className="flex items-center gap-2 cursor-pointer group" onClick={() => setTaskbarPosition(pos)}>
+                        <div className={`w-3 h-3 rounded-full border border-gray-600 bg-white flex items-center justify-center group-active:bg-gray-300 ${taskbarPosition === pos ? '!bg-[#c0c0c0] shadow-[inset_1px_1px_0_0_gray]' : ''}`}>
+                          {taskbarPosition === pos && <div className="w-1.5 h-1.5 rounded-full bg-black"></div>}
+                        </div>
+                        <span className="text-xs capitalize">{pos}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </fieldset>
+
+              {/* Size Group */}
+              <fieldset className="border-2 border-t-white border-l-white border-b-gray-400 border-r-gray-400 p-3 pt-4 relative mt-1">
+                <legend className="absolute -top-2.5 left-2 bg-[#c0c0c0] px-1 text-xs text-black">Thickness (Pixels)</legend>
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between items-end mb-1 text-[10px] text-gray-700">
+                    <div className="text-center w-8">Small<br/>40px</div>
+                    <div className="text-center w-8">Normal<br/>56px</div>
+                    <div className="text-center w-8">Large<br/>80px</div>
+                  </div>
+                  <input 
+                    type="range" 
+                    min={40} 
+                    max={80} 
+                    step={8}
+                    value={taskbarSize} 
+                    onChange={e => setTaskbarSize(Number(e.target.value))} 
+                    className="w-full h-1 accent-[#000080]"
+                  />
+                  <div className="flex justify-between text-[10px] text-gray-500 font-mono mt-1 px-[2%]">
+                    <span>|</span><span>|</span><span>|</span><span>|</span><span>|</span><span>|</span>
+                  </div>
+                </div>
+              </fieldset>
+
+              <label className="flex items-start gap-2 mt-2 px-1 cursor-pointer select-none">
+                <input 
+                  type="checkbox"
+                  className="accent-[#000080]"
+                  checked={taskbarSpanFull}
+                  onChange={(e) => setTaskbarSpanFull(e.target.checked)}
+                />
+                <div>
+                  <span className="font-bold text-sm tracking-wide leading-none">Span entire screen edge</span>
+                  <p className="text-xs text-gray-600 leading-tight mt-0.5">Disables taskbar applets/widgets to conserve space.</p>
+                </div>
+              </label>
+            </div>
+          </>
+        )}
+
         {/* ── Appearance Tab ── */}
         {taskbarTab === 'Appearance' && (
           <>
@@ -1310,7 +1420,11 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
                         <div className="w-4 h-4 bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white flex items-center justify-center shrink-0">
                           {isPinned && <div className="w-2 h-2 bg-black" />}
                         </div>
-                        <meta.icon size={16} className={isPinned ? 'text-white' : meta.color} />
+                        {meta.customIcon ? (
+                          <img src={meta.customIcon} alt="icon" className="w-[16px] h-[16px] pointer-events-none drop-shadow-sm" style={{ imageRendering: 'pixelated' }} draggable={false} />
+                        ) : (
+                          <meta.icon size={16} className={isPinned ? 'text-white' : meta.color} />
+                        )}
                         <span className="text-xs font-bold tracking-wide select-none">{meta.defaultTitle}</span>
                       </label>
                     );

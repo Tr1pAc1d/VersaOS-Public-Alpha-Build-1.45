@@ -301,8 +301,7 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
       if (!newUrl.includes('web.archive.org')) {
         const cleanUrl = newUrl.replace(/^https?:\/\//, '');
         // Use late 1996 timestamp to get pages from 1996-1999 era
-        // Using 'if_' suffix for better framing compatibility
-        finalUrl = `https://web.archive.org/web/19961231235959if_/http://${cleanUrl}`;
+        finalUrl = `https://web.archive.org/web/19961231235959id_/http://${cleanUrl}`;
       }
     }
 
@@ -553,7 +552,6 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
               onLoad={() => updateActiveTab({ isLoading: false })}
               className="absolute inset-0 w-full h-full border-none bg-white"
               title="Web Browser"
-              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
             />
         )}
       </div>

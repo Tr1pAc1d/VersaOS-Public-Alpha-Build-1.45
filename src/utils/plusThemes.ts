@@ -313,6 +313,14 @@ export const AVAILABLE_UPDATES: SystemUpdate[] = [
     lore: true,
   },
   {
+    id: 'screensaver_plus',
+    name: 'Vespera Plus! Screen Saver Pack',
+    kb: 'KB501138',
+    size: '2.4 MB',
+    description: '10 stunning new animated screen savers including Aurora Borealis, Plasma Wave, Warp Tunnel, Burning Embers, Crystal Lattice, Neon Rain, DNA Helix, Galaxy Spiral, Lissajous Art, and a retro Digital Clock. Requires Vespera OS 1.0.4.',
+    installDuration: 10,
+  },
+  {
     id: 'agentv_plus',
     name: 'VAgent PLUS! Character Expansion',
     kb: 'KB400833',

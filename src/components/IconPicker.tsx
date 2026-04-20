@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { X, Search } from 'lucide-react';
 import { RETRO_ICONS } from '../utils/retroIcons';
+import { PNG_ICONS } from '../utils/pngIcons';
+
+const ALL_ICONS = [...PNG_ICONS, ...RETRO_ICONS];
 
 interface IconPickerProps {
   currentIconUrl?: string;
@@ -9,10 +12,10 @@ interface IconPickerProps {
 }
 
 export const IconPicker: React.FC<IconPickerProps> = ({ currentIconUrl, onSelect, onCancel }) => {
-  const [selectedIcon, setSelectedIcon] = useState(currentIconUrl || RETRO_ICONS[0].url);
+  const [selectedIcon, setSelectedIcon] = useState(currentIconUrl || ALL_ICONS[0].url);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredIcons = RETRO_ICONS.filter(icon => 
+  const filteredIcons = ALL_ICONS.filter(icon => 
     icon.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 

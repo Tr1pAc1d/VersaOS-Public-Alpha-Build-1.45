@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { VFSNode } from '../contexts/FileSystemContext';
 import { FileText, Folder, Settings, Terminal, Globe, Trash2 } from 'lucide-react';
+import { APP_DICTIONARY } from '../utils/appDictionary';
 
 interface DesktopIconProps {
   node: VFSNode;
@@ -52,10 +53,21 @@ export const DesktopIcon: React.FC<DesktopIconProps> = ({
   };
 
   const renderIcon = () => {
-    if (node.customIcon) {
+    // 1. Check if node explicitly has a customIcon
+    let overrideIcon = node.customIcon;
+    
+    // 2. If it's a shortcut or app, check if APP_DICTIONARY has one
+    if (!overrideIcon && (node.type === 'shortcut' || node.type === 'app' || node.type === 'file')) {
+      const lookupId = node.targetId || node.id;
+      if (lookupId && APP_DICTIONARY[lookupId] && APP_DICTIONARY[lookupId].customIcon) {
+        overrideIcon = APP_DICTIONARY[lookupId].customIcon;
+      }
+    }
+
+    if (overrideIcon) {
       return (
         <div className="relative">
-          <img src={node.customIcon} alt="icon" className="w-[32px] h-[32px]" style={{ imageRendering: 'pixelated' }} draggable={false} />
+          <img src={overrideIcon} alt="icon" className="w-[32px] h-[32px]" style={{ imageRendering: 'pixelated' }} draggable={false} />
           {node.type === 'shortcut' && (
             <div className="absolute -bottom-1 -left-1 bg-white border border-dotted border-black w-3 h-3 flex items-center justify-center">
               <div className="w-1 h-1 bg-black" />

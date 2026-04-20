@@ -258,7 +258,11 @@ export const TaskManager: React.FC<TaskManagerProps> = ({ windows, onEndTask, on
                       ${selectedApp === win.id ? 'bg-[#000080] text-white' : 'hover:bg-gray-100'}`}
                   >
                     <span className="flex-1 flex items-center gap-2 truncate">
-                      <meta.icon size={14} className={selectedApp === win.id ? 'text-white' : meta.color} />
+                      {meta.customIcon ? (
+                        <img src={meta.customIcon} alt="icon" className={`w-[14px] h-[14px] pointer-events-none ${selectedApp === win.id ? '' : 'drop-shadow-sm'}`} style={{ imageRendering: 'pixelated' }} draggable={false} />
+                      ) : (
+                        <meta.icon size={14} className={selectedApp === win.id ? 'text-white' : meta.color} />
+                      )}
                       {win.title}
                     </span>
                     <span className={`w-24 text-center ${selectedApp === win.id ? 'text-green-300' : 'text-green-700'}`}>
@@ -438,7 +442,11 @@ export const TaskManager: React.FC<TaskManagerProps> = ({ windows, onEndTask, on
                       </div>
                     </span>
                     <span className="flex-1 flex items-center gap-2 truncate">
-                      <meta.icon size={14} className={meta.color} />
+                      {meta.customIcon ? (
+                        <img src={meta.customIcon} alt="icon" className="w-[14px] h-[14px] pointer-events-none drop-shadow-sm" style={{ imageRendering: 'pixelated' }} draggable={false} />
+                      ) : (
+                        <meta.icon size={14} className={meta.color} />
+                      )}
                       {meta.defaultTitle}
                     </span>
                     <span className="w-28 text-center text-gray-500 truncate">{profile.publisher}</span>

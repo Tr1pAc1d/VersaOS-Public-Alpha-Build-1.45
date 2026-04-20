@@ -18,21 +18,6 @@ interface VersaFileManagerProps {
   onCancel?: () => void;
 }
 
-const iconMap: Record<string, string> = {
-  '.EXE': 'file_exe',
-  '.COM': 'file_exe',
-  '.BAT': 'file_bat',
-  '.SYS': 'mem_stick',
-  '.VXD': 'mem_stick',
-  '.DRV': 'mem_stick',
-  '.DLL': 'file_generic3',
-  '.INI': 'file_generic2',
-  '.CFG': 'file_generic2',
-  '.INF': 'file_generic2',
-  '.TXT': 'file_txt',
-  '.LOG': 'file_txt',
-};
-
 export const VersaFileManager: React.FC<VersaFileManagerProps> = ({ 
   vfs, 
   onOpenFile, 
@@ -83,14 +68,31 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
 
   const getFileIcon = (node: VFSNode) => {
     if (node.customIcon) return node.customIcon;
+    if (node.type === 'directory') return '/Icons/directory_closed-4.png';
+    if (node.type === 'shortcut') return '/Icons/computer-4.png';
+
     const dotIndex = node.name.lastIndexOf('.');
-    if (dotIndex === -1) return null;
-    const ext = node.name.slice(dotIndex).toUpperCase();
-    const iconId = iconMap[ext];
-    if (iconId) {
-      return RETRO_ICONS.find(i => i.id === iconId)?.url || null;
+    const ext = dotIndex === -1 ? '' : node.name.slice(dotIndex).toUpperCase();
+
+    switch (ext) {
+      case '.EXE':
+      case '.COM':
+      case '.BAT':
+        return '/Icons/executable_gear-0.png';
+      case '.SYS':
+      case '.VXD':
+      case '.DRV':
+      case '.DLL':
+        return '/Icons/gears_3-0.png';
+      case '.INI':
+      case '.CFG':
+      case '.INF':
+        return '/Icons/settings_gear-2.png';
+      case '.TXT':
+      case '.LOG':
+      default:
+        return '/Icons/notepad-2.png';
     }
-    return null;
   };
 
   const isHidden = (node: VFSNode) => {

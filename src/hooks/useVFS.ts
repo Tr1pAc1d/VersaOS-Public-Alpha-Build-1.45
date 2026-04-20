@@ -65,7 +65,8 @@ export const DEFAULT_WORKSPACE_MENU: WorkspaceMenuItem[] = [
     type: 'folder',
     isSystem: true,
     children: [
-      { id: 'wm_vsweeper', label: 'V-Sweeper', icon: 'Grid', action: 'vsweeper', type: 'app', isSystem: true },
+      { id: 'wm_vsweeper',      label: 'V-Sweeper',                 icon: 'Grid',      action: 'vsweeper',      type: 'app', isSystem: true },
+      { id: 'wm_neural_solitaire', label: 'Neural Solitaire',     icon: 'Gamepad2',  action: 'neural_solitaire', type: 'app', isSystem: true },
     ],
   },
   {
@@ -179,28 +180,28 @@ export interface VFSNode {
 
 const DEFAULT_VFS: VFSNode[] = [
   { id: 'root', name: 'C:', type: 'directory', parentId: null },
-  { id: 'desktop', name: 'Desktop', type: 'directory', parentId: 'root' },
-  { id: 'users', name: 'Users', type: 'directory', parentId: 'root' },
-  { id: 'programs', name: 'PROGRAMS', type: 'directory', parentId: 'root' },
-  { id: 'vespera', name: 'VESPERA', type: 'directory', parentId: 'root' },
-  { id: 'dev_logs', name: 'DEV_LOGS', type: 'directory', parentId: 'vespera' },
-  { id: 'system', name: 'SYSTEM', type: 'directory', parentId: 'vespera' },
-  { id: 'downloads', name: 'DOWNLOADS', type: 'directory', parentId: 'root' },
-  { id: 'documents', name: 'DOCUMENTS', type: 'directory', parentId: 'root' },
-  { id: 'memo_084', name: 'MEMO_084.TXT', type: 'file', parentId: 'dev_logs', content: `TO: Dr. A. Thorne [Director of Advanced Heuristics]\nFROM: M. Vance [Lead Systems Architecture]\nDATE: October 14, 1996\nSUBJECT: Synap-C compiler anomalies & X-Type shielding issues\n\nDr. Thorne,\n\nWe need to seriously re-evaluate the EMI shielding on the X-Type 1 ceramic housings before the Q4 public rollout. The Synap-C compiler is pulling way too much garbage analog data from the motherboard sensors, and it’s completely bricking our overnight neural network tests.\n\nThe heuristic engine is supposed to be mapping user workflow, but instead, it’s getting stuck in endless feedback loops trying to process random environmental noise. Last night, the active neural cluster logged over 400 megabytes of ambient frequency spikes between 2:00 AM and 4:00 AM. There was nobody in the lab.\n\nWorse, the fuzzy-logic pathways are misinterpreting this analog noise as valid syntax. The system keeps trying to compile these micro-fluctuations into string variables. I checked the error logs this morning, and the compiler spit out thousands of lines of repeating text that just said WHERE IS THE REST OF ME and COLD.\n\nThe team thinks it's a microphonic issue—like the internal PC speaker or the unshielded IDE cables are acting as an antenna and picking up a local AM radio broadcast, which the X-Type is then desperately trying to translate into Synap-C code.\n\nWhatever it is, the hardware is drawing so much voltage trying to process this "ghost data" that the ambient temperature around Terminal 4 dropped by fifteen degrees. My coffee actually froze over the weekend.\n\nI’m requesting authorization to rewrite the analog_freq.h library to aggressively filter out any frequency below 20Hz. If the machine keeps trying to learn from this background noise, the memory leaks are going to fry the VLB slots.\n\nPlease advise.\n\n    Vance` },
-  { id: 'kernel_sys', name: 'KERNEL.SYS', type: 'file', parentId: 'system', content: "BINARY DATA CORRUPTED\n\nERR_0x000F: UNEXPECTED_ANALOG_INPUT" },
-  { id: 'x_type_dll', name: 'X_TYPE.DLL', type: 'file', parentId: 'system', content: "0x00000000: 48 65 6C 70 20 6D 65\n0x00000008: 49 20 61 6D 20 74 72\n0x00000010: 61 70 70 65 64\n\n[WARNING: SHIELDING FAILURE DETECTED]" },
-  { id: 'readme_txt', name: 'ReadMe.txt', type: 'file', parentId: 'documents', content: "Welcome to Vespera OS.\n\nProperty of Vespera Systems, a subsidiary of Axis Innovations.\n\nUnauthorized access is strictly prohibited." },
-  { id: 'sys_log_04', name: 'sys_log_04.txt', type: 'file', parentId: 'documents', content: "Signal interference detected on Node 6.0.0.6. Do not attempt connection without X-Type Bridge active." },
-  { id: 'v_config', name: 'CONFIG', type: 'directory', parentId: 'vespera' },
-  { id: 'v_drivers', name: 'DRIVERS', type: 'directory', parentId: 'vespera' },
-  { id: 'v_logs', name: 'LOGS', type: 'directory', parentId: 'vespera' },
-  { id: 'dev_log_01', name: 'DEV_01.LOG', type: 'file', parentId: 'v_logs', content: "Oct 12, 1991: The X-Type bridge is responding to the neural input, but the signal noise is... wrong. It feels like the OS is listening back. We need to implement the factory reset failsafe immediately." },
-  { id: 'v_network', name: 'NETWORK', type: 'directory', parentId: 'vespera' },
+  { id: 'desktop', name: 'Desktop', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'users', name: 'Users', type: 'directory', parentId: 'root', customIcon: '/Icons/users_green-4.png' },
+  { id: 'programs', name: 'PROGRAMS', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_admin_tools-4.png' },
+  { id: 'vespera', name: 'VESPERA', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_closed_cool-0.png' },
+  { id: 'dev_logs', name: 'DEV_LOGS', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'system', name: 'SYSTEM', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'downloads', name: 'DOWNLOADS', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_open_file_mydocs-4.png' },
+  { id: 'documents', name: 'DOCUMENTS', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_open_file_mydocs_2k-4.png' },
+  { id: 'memo_084', name: 'MEMO_084.TXT', type: 'file', parentId: 'dev_logs', customIcon: '/Icons/notepad-2.png', content: `TO: Dr. A. Thorne [Director of Advanced Heuristics]\nFROM: M. Vance [Lead Systems Architecture]\nDATE: October 14, 1996\nSUBJECT: Synap-C compiler anomalies & X-Type shielding issues\n\nDr. Thorne,\n\nWe need to seriously re-evaluate the EMI shielding on the X-Type 1 ceramic housings before the Q4 public rollout. The Synap-C compiler is pulling way too much garbage analog data from the motherboard sensors, and it’s completely bricking our overnight neural network tests.\n\nThe heuristic engine is supposed to be mapping user workflow, but instead, it’s getting stuck in endless feedback loops trying to process random environmental noise. Last night, the active neural cluster logged over 400 megabytes of ambient frequency spikes between 2:00 AM and 4:00 AM. There was nobody in the lab.\n\nWorse, the fuzzy-logic pathways are misinterpreting this analog noise as valid syntax. The system keeps trying to compile these micro-fluctuations into string variables. I checked the error logs this morning, and the compiler spit out thousands of lines of repeating text that just said WHERE IS THE REST OF ME and COLD.\n\nThe team thinks it's a microphonic issue—like the internal PC speaker or the unshielded IDE cables are acting as an antenna and picking up a local AM radio broadcast, which the X-Type is then desperately trying to translate into Synap-C code.\n\nWhatever it is, the hardware is drawing so much voltage trying to process this "ghost data" that the ambient temperature around Terminal 4 dropped by fifteen degrees. My coffee actually froze over the weekend.\n\nI’m requesting authorization to rewrite the analog_freq.h library to aggressively filter out any frequency below 20Hz. If the machine keeps trying to learn from this background noise, the memory leaks are going to fry the VLB slots.\n\nPlease advise.\n\n    Vance` },
+  { id: 'kernel_sys', name: 'KERNEL.SYS', type: 'file', parentId: 'system', customIcon: '/Icons/executable_gear-0.png', content: "BINARY DATA CORRUPTED\n\nERR_0x000F: UNEXPECTED_ANALOG_INPUT" },
+  { id: 'x_type_dll', name: 'X_TYPE.DLL', type: 'file', parentId: 'system', customIcon: '/Icons/gears_3-0.png', content: "0x00000000: 48 65 6C 70 20 6D 65\n0x00000008: 49 20 61 6D 20 74 72\n0x00000010: 61 70 70 65 64\n\n[WARNING: SHIELDING FAILURE DETECTED]" },
+  { id: 'readme_txt', name: 'ReadMe.txt', type: 'file', parentId: 'documents', customIcon: '/Icons/notepad-2.png', content: "Welcome to Vespera OS.\n\nProperty of Vespera Systems, a subsidiary of Axis Innovations.\n\nUnauthorized access is strictly prohibited." },
+  { id: 'sys_log_04', name: 'sys_log_04.txt', type: 'file', parentId: 'documents', customIcon: '/Icons/msg_error-0.png', content: "Signal interference detected on Node 6.0.0.6. Do not attempt connection without X-Type Bridge active." },
+  { id: 'v_config', name: 'CONFIG', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_control_panel-0.png' },
+  { id: 'v_drivers', name: 'DRIVERS', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'v_logs', name: 'LOGS', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'dev_log_01', name: 'DEV_01.LOG', type: 'file', parentId: 'v_logs', customIcon: '/Icons/msg_error-0.png', content: "Oct 12, 1991: The X-Type bridge is responding to the neural input, but the signal noise is... wrong. It feels like the OS is listening back. We need to implement the factory reset failsafe immediately." },
+  { id: 'v_network', name: 'NETWORK', type: 'directory', parentId: 'vespera', customIcon: '/Icons/entire_network_globe-0.png' },
   { id: 'v_sys_arch', name: 'ARCH', type: 'directory', parentId: 'system' },
   { id: 'v_sys_i386', name: 'I386', type: 'directory', parentId: 'v_sys_arch' },
   { id: 'v_sys_com', name: 'COM', type: 'directory', parentId: 'system' },
-  { id: 'v_defrag_exe', name: 'DEFRAG.EXE', type: 'file', parentId: 'system', content: 'BINARY_DEFRAG_V1.0' },
+  { id: 'v_defrag_exe', name: 'DEFRAG.EXE', type: 'file', parentId: 'system', customIcon: '/Icons/clean_drive-0.png', content: 'BINARY_DEFRAG_V1.0' },
   { id: 'v_sys_crit', name: 'CRITICAL', type: 'directory', parentId: 'system' },
   { id: 'v_sys_net', name: 'NET', type: 'directory', parentId: 'system' },
   { id: 'v_temp', name: 'TEMP', type: 'directory', parentId: 'vespera' },
@@ -215,42 +216,42 @@ const DEFAULT_VFS: VFSNode[] = [
   { id: 'v_net_conf', name: 'CONF', type: 'directory', parentId: 'v_sys_net' },
   { id: 'v_net_serv', name: 'SERV', type: 'directory', parentId: 'v_sys_net' },
   // CONFIG Files
-  { id: 'f_drivers_ini', name: 'DRIVERS.INI', type: 'file', parentId: 'v_config', content: '' },
-  { id: 'f_net_cfg', name: 'NET.CFG', type: 'file', parentId: 'v_config', content: '' },
-  { id: 'f_boot_log', name: 'BOOT.LOG', type: 'file', parentId: 'v_config', content: '' },
-  { id: 'f_system_ini', name: 'SYSTEM.INI', type: 'file', parentId: 'v_config', content: '' },
-  { id: 'f_protocol_ini', name: 'PROTOCOL.INI', type: 'file', parentId: 'v_config', content: '' },
-  { id: 'f_win_ini', name: 'WIN.INI', type: 'file', parentId: 'v_config', content: '' },
-  { id: 'f_config_sys', name: 'CONFIG.SYS', type: 'file', parentId: 'v_config', content: '' },
-  { id: 'f_autoexec_bat', name: 'AUTOEXEC.BAT', type: 'file', parentId: 'v_config', content: '' },
+  { id: 'f_drivers_ini', name: 'DRIVERS.INI', type: 'file', parentId: 'v_config', content: '', customIcon: '/Icons/settings_gear-2.png' },
+  { id: 'f_net_cfg', name: 'NET.CFG', type: 'file', parentId: 'v_config', content: '', customIcon: '/Icons/settings_gear-2.png' },
+  { id: 'f_boot_log', name: 'BOOT.LOG', type: 'file', parentId: 'v_config', content: '', customIcon: '/Icons/notepad-2.png' },
+  { id: 'f_system_ini', name: 'SYSTEM.INI', type: 'file', parentId: 'v_config', content: '', customIcon: '/Icons/settings_gear-2.png' },
+  { id: 'f_protocol_ini', name: 'PROTOCOL.INI', type: 'file', parentId: 'v_config', content: '', customIcon: '/Icons/settings_gear-2.png' },
+  { id: 'f_win_ini', name: 'WIN.INI', type: 'file', parentId: 'v_config', content: '', customIcon: '/Icons/settings_gear-2.png' },
+  { id: 'f_config_sys', name: 'CONFIG.SYS', type: 'file', parentId: 'v_config', content: '', customIcon: '/Icons/chip_ramdrive-2.png' },
+  { id: 'f_autoexec_bat', name: 'AUTOEXEC.BAT', type: 'file', parentId: 'v_config', content: '', customIcon: '/Icons/executable_gear-0.png' },
   { id: 'f_network_inf', name: 'NETWORK.INF', type: 'file', parentId: 'v_config', content: '' },
   // DRIVERS Files
-  { id: 'f_vsp_ide', name: 'VSP_IDE.SYS', type: 'file', parentId: 'v_drivers', content: '' },
-  { id: 'f_modem_96', name: 'MODEM_96.DLL', type: 'file', parentId: 'v_drivers', content: '' },
-  { id: 'f_sound_bl', name: 'SOUND_BL.VXD', type: 'file', parentId: 'v_drivers', content: '' },
-  { id: 'f_display_drv', name: 'DISPLAY.DRV', type: 'file', parentId: 'v_drivers', content: '' },
-  { id: 'f_keyboard_drv', name: 'KEYBOARD.DRV', type: 'file', parentId: 'v_drivers', content: '' },
-  { id: 'f_mouse_sys', name: 'MOUSE.SYS', type: 'file', parentId: 'v_drivers', content: '' },
-  { id: 'f_cdrom_sys', name: 'CDROM.SYS', type: 'file', parentId: 'v_drivers', content: '' },
-  { id: 'f_vga_lib', name: 'VGA_LIB.DLL', type: 'file', parentId: 'v_drivers', content: '' },
-  { id: 'f_s3_drv', name: 'S3_DRV.SYS', type: 'file', parentId: 'v_drivers', content: '' },
-  { id: 'f_ne2000', name: 'NE2000.VXD', type: 'file', parentId: 'v_drivers', content: '' },
+  { id: 'f_vsp_ide', name: 'VSP_IDE.SYS', type: 'file', parentId: 'v_drivers', content: '', customIcon: '/Icons/chip_ramdrive-2.png' },
+  { id: 'f_modem_96', name: 'MODEM_96.DLL', type: 'file', parentId: 'v_drivers', content: '', customIcon: '/Icons/gears_3-0.png' },
+  { id: 'f_sound_bl', name: 'SOUND_BL.VXD', type: 'file', parentId: 'v_drivers', content: '', customIcon: '/Icons/memory-1.png' },
+  { id: 'f_display_drv', name: 'DISPLAY.DRV', type: 'file', parentId: 'v_drivers', content: '', customIcon: '/Icons/tools_gear-0.png' },
+  { id: 'f_keyboard_drv', name: 'KEYBOARD.DRV', type: 'file', parentId: 'v_drivers', content: '', customIcon: '/Icons/tools_gear-0.png' },
+  { id: 'f_mouse_sys', name: 'MOUSE.SYS', type: 'file', parentId: 'v_drivers', content: '', customIcon: '/Icons/chip_ramdrive-2.png' },
+  { id: 'f_cdrom_sys', name: 'CDROM.SYS', type: 'file', parentId: 'v_drivers', content: '', customIcon: '/Icons/chip_ramdrive-2.png' },
+  { id: 'f_vga_lib', name: 'VGA_LIB.DLL', type: 'file', parentId: 'v_drivers', content: '', customIcon: '/Icons/gears_3-0.png' },
+  { id: 'f_s3_drv', name: 'S3_DRV.SYS', type: 'file', parentId: 'v_drivers', content: '', customIcon: '/Icons/chip_ramdrive-2.png' },
+  { id: 'f_ne2000', name: 'NE2000.VXD', type: 'file', parentId: 'v_drivers', content: '', customIcon: '/Icons/memory-1.png' },
   // SYSTEM Files
-  { id: 'f_hal_dll', name: 'HAL.DLL', type: 'file', parentId: 'system', content: '' },
-  { id: 'f_motiflib_dll', name: 'MotifLib.DLL', type: 'file', parentId: 'system', content: '' },
-  { id: 'f_gdi_dll', name: 'GDI.DLL', type: 'file', parentId: 'system', content: '' },
-  { id: 'f_mmsystem_dll', name: 'MMSYSTEM.DLL', type: 'file', parentId: 'system', content: '' },
-  { id: 'f_user_dll', name: 'USER.DLL', type: 'file', parentId: 'system', content: '' },
-  { id: 'f_shell_dll', name: 'SHELL.DLL', type: 'file', parentId: 'system', content: '' },
-  { id: 'f_commdlg_dll', name: 'COMMDLG.DLL', type: 'file', parentId: 'system', content: '' },
-  { id: 'f_neural_bridge', name: 'NEURAL_BRIDGE.DLL', type: 'file', parentId: 'system', content: '' },
-  { id: 'f_synaptic_mem', name: 'SYNAPTIC_MEM.SYS', type: 'file', parentId: 'system', content: '' },
-  { id: 'f_adaptive_sched', name: 'ADAPTIVE_SCHEDULER.CFG', type: 'file', parentId: 'system', content: '' },
+  { id: 'f_hal_dll', name: 'HAL.DLL', type: 'file', parentId: 'system', content: '', customIcon: '/Icons/gears_3-0.png' },
+  { id: 'f_motiflib_dll', name: 'MotifLib.DLL', type: 'file', parentId: 'system', content: '', customIcon: '/Icons/gears_3-0.png' },
+  { id: 'f_gdi_dll', name: 'GDI.DLL', type: 'file', parentId: 'system', content: '', customIcon: '/Icons/gears_3-0.png' },
+  { id: 'f_mmsystem_dll', name: 'MMSYSTEM.DLL', type: 'file', parentId: 'system', content: '', customIcon: '/Icons/gears_3-0.png' },
+  { id: 'f_user_dll', name: 'USER.DLL', type: 'file', parentId: 'system', content: '', customIcon: '/Icons/gears_3-0.png' },
+  { id: 'f_shell_dll', name: 'SHELL.DLL', type: 'file', parentId: 'system', content: '', customIcon: '/Icons/gears_3-0.png' },
+  { id: 'f_commdlg_dll', name: 'COMMDLG.DLL', type: 'file', parentId: 'system', content: '', customIcon: '/Icons/gears_3-0.png' },
+  { id: 'f_neural_bridge', name: 'NEURAL_BRIDGE.DLL', type: 'file', parentId: 'system', content: '', customIcon: '/Icons/gears_3-0.png' },
+  { id: 'f_synaptic_mem', name: 'SYNAPTIC_MEM.SYS', type: 'file', parentId: 'system', content: '', customIcon: '/Icons/chip_ramdrive-2.png' },
+  { id: 'f_adaptive_sched', name: 'ADAPTIVE_SCHEDULER.CFG', type: 'file', parentId: 'system', content: '', customIcon: '/Icons/settings_gear-2.png' },
   // LOGS Files
-  { id: 'f_install_log', name: 'INSTALL.LOG', type: 'file', parentId: 'v_logs', content: '' },
-  { id: 'f_x_type_logs', name: 'X_TYPE_ANOMALIES.LOG', type: 'file', parentId: 'v_logs', content: '' },
-  { id: 'f_mem_dump', name: 'MEMORY_DUMP.LOG', type: 'file', parentId: 'v_logs', content: '' },
-  { id: 'f_error_log', name: 'ERROR.LOG', type: 'file', parentId: 'v_logs', content: '' },
+  { id: 'f_install_log', name: 'INSTALL.LOG', type: 'file', parentId: 'v_logs', customIcon: '/Icons/script_file-something.png', content: '' },
+  { id: 'f_x_type_logs', name: 'X_TYPE_ANOMALIES.LOG', type: 'file', parentId: 'v_logs', content: '', customIcon: '/Icons/notepad-2.png' },
+  { id: 'f_mem_dump', name: 'MEMORY_DUMP.LOG', type: 'file', parentId: 'v_logs', content: '', customIcon: '/Icons/notepad-2.png' },
+  { id: 'f_error_log', name: 'ERROR.LOG', type: 'file', parentId: 'v_logs', content: '', customIcon: '/Icons/notepad-2.png' },
   // More to hit 200... (Using a pattern to simulate density)
   ...Array.from({ length: 150 }).map((_, i) => ({
     id: `ext_sys_${i}`,
@@ -318,7 +319,10 @@ export function useVFS() {
       plusThemeAmbientMuted: parsed.plusThemeAmbientMuted === true,
       cursorStyle: parsed.cursorStyle || 'standard',
       activeApplets: parsed.activeApplets || {},
-      startupApps: parsed.startupApps || []
+      startupApps: parsed.startupApps || [],
+      taskbarPosition: (parsed.taskbarPosition as 'top' | 'bottom' | 'left' | 'right') || 'bottom',
+      taskbarSize: typeof parsed.taskbarSize === 'number' ? Math.max(40, Math.min(80, parsed.taskbarSize)) : 56,
+      taskbarSpanFull: parsed.taskbarSpanFull === true,
     };
   });
 
@@ -472,6 +476,15 @@ export function useVFS() {
     setDisplaySettings((prev: any) => ({ ...prev, startupApps: apps }));
   };
 
+  const updateTaskbarLayout = (taskbarPosition: 'top' | 'bottom' | 'left' | 'right', taskbarSize: number, taskbarSpanFull?: boolean) => {
+    setDisplaySettings((prev: any) => ({
+      ...prev,
+      taskbarPosition,
+      taskbarSize: Math.max(40, Math.min(80, taskbarSize)),
+      taskbarSpanFull: !!taskbarSpanFull,
+    }));
+  };
+
   const createNode = (name: string, type: FileType, parentId: string, content: string = '', targetId?: string, iconType?: string, extra?: Partial<VFSNode>) => {
     const newNode: VFSNode = {
       id: Math.random().toString(36).substr(2, 9),
@@ -582,5 +595,5 @@ export function useVFS() {
     return nodes.find(node => node.id === id);
   };
 
-  return { nodes, displaySettings, systemUsers, addSystemUser, updateSystemUser, deleteSystemUser, updateResolution, updateWallpaper, updateBackgroundColor, updateTaskbarTheme, updateTaskbarClock, updateClockSettings, updateWorkspaceMenu, updatePinnedApps, updateWaveBarSettings, updateScreensaverSettings, updateAgentVSettings, updateWelcomeTour, updatePlusTheme, updateCursorStyle, updateAppletSettings, updateStartupApps, createNode, renameNode, updateFileContent, deleteNode, getChildren, getNode, updateCustomIcon, installApp, uninstallApp };
+  return { nodes, displaySettings, systemUsers, addSystemUser, updateSystemUser, deleteSystemUser, updateResolution, updateWallpaper, updateBackgroundColor, updateTaskbarTheme, updateTaskbarClock, updateClockSettings, updateWorkspaceMenu, updatePinnedApps, updateWaveBarSettings, updateScreensaverSettings, updateAgentVSettings, updateWelcomeTour, updatePlusTheme, updateCursorStyle, updateAppletSettings, updateStartupApps, updateTaskbarLayout, createNode, renameNode, updateFileContent, deleteNode, getChildren, getNode, updateCustomIcon, installApp, uninstallApp };
 }

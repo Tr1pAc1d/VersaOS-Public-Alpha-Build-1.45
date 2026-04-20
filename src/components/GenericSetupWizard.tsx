@@ -173,7 +173,11 @@ export const GenericSetupWizard: React.FC<GenericSetupWizardProps> = ({
           <div className="flex flex-col h-full p-6">
             <div className="flex items-center gap-4 border-b-2 border-gray-300 pb-4 mb-4">
                <div className={`p-3 bg-[#ececec] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-sm`}>
-                 {appMeta.icon && <appMeta.icon size={48} className={appMeta.color} />}
+                 {appMeta.customIcon ? (
+                   <img src={appMeta.customIcon} alt="icon" className="w-[48px] h-[48px]" style={{ imageRendering: 'pixelated' }} draggable={false} />
+                 ) : (
+                   appMeta.icon && <appMeta.icon size={48} className={appMeta.color} />
+                 )}
                </div>
                <div>
                  <h2 className="text-xl font-bold text-[#000080]">Setup Complete</h2>

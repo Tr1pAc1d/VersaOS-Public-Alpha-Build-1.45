@@ -493,7 +493,7 @@ export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onL
                 <div className="flex-1 flex flex-col gap-4 overflow-y-auto pr-1">
                   <div className="flex items-start gap-4 p-3 bg-white border border-gray-300 shadow-sm">
                     <div className="w-16 h-16 bg-[#ececec] border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white flex items-center justify-center shrink-0">
-                      <selectedApp.icon size={36} className={selectedApp.color} />
+                      {selectedApp.customIcon ? <img src={selectedApp.customIcon} alt="icon" className="w-[36px] h-[36px] pointer-events-none" style={{ imageRendering: 'pixelated' }} draggable={false} /> : <selectedApp.icon size={36} className={selectedApp.color} />}
                     </div>
                     <div className="flex-1">
                       <p className="font-bold text-xl leading-none mb-1 text-[#000080]">{selectedApp.name}</p>
@@ -600,7 +600,7 @@ export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onL
                       >
                          <div className="absolute top-0 right-0 bg-red-600 text-white font-bold text-[9px] px-2 py-0.5 animate-pulse uppercase border-b-2 border-l-2 border-red-800">Deal of the Day - 60% Off!</div>
                          <div className="w-16 h-16 bg-white border-2 border-gray-400 flex items-center justify-center shrink-0">
-                           <dealApp.icon size={36} className={dealApp.color} />
+                           {dealApp.customIcon ? <img src={dealApp.customIcon} alt="icon" className="w-[36px] h-[36px] pointer-events-none" style={{ imageRendering: 'pixelated' }} draggable={false} /> : <dealApp.icon size={36} className={dealApp.color} />}
                          </div>
                          <div className="flex flex-col justify-center">
                            <h3 className="font-bold text-[#b8860b] group-hover:underline text-lg">{dealApp.name}</h3>
@@ -619,7 +619,7 @@ export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onL
                     >
                       <div className="w-14 h-14 bg-[#ececec] border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white flex items-center justify-center shrink-0 shadow-inner group-hover:bg-white transition-colors relative">
                         {app.ageRestricted && <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[8px] font-bold shadow-sm">18+</div>}
-                        <app.icon size={28} className={app.color} />
+                        {app.customIcon ? <img src={app.customIcon} alt="icon" className="w-[28px] h-[28px] pointer-events-none" style={{ imageRendering: 'pixelated' }} draggable={false} /> : <app.icon size={28} className={app.color} />}
                       </div>
                       <div className="flex-1 flex flex-col justify-center min-w-0">
                         <div className="flex justify-between items-start mb-0.5">

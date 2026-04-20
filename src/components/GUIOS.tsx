@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useDragControls } from "motion/react";
 import { X, Folder, FileText, Monitor, Terminal as TerminalIcon, Cpu, Settings, Eye, MessageSquare, Activity, Globe, HardDrive, ChevronRight, LogOut, FolderOpen, Package, Store, Ghost, Gamepad2, Mail, Phone, ShieldCheck, Search, Play, Disc3, Volume2, VolumeX, PenTool, Tv } from "lucide-react";
 import { SignOutScreen } from "./SignOutScreen";
 import { ChatBot } from "./ChatBot";
@@ -62,6 +62,7 @@ import { ScreensaverOverlay, useScreensaverIdle, type ScreensaverType } from "./
 import { VesperaAssistant } from "./VesperaAssistant";
 import { AgentVPlusSetupWizard } from "./AgentVPlusSetupWizard";
 import { VSweeper } from "./VSweeper";
+import { NeuralSolitaire } from "./NeuralSolitaire";
 import { VesperaChat } from "./VesperaChat";
 import { VMessengerSetup } from "./VMessengerSetup";
 import { ReleaseRadarSetup } from "./ReleaseRadarSetup";
@@ -111,6 +112,42 @@ const InitDialog: React.FC<{
     </div>
   </div>
 );
+// ────────────────────────────────────────────────────────────────────────────
+
+const DesktopWindow = React.memo(({
+  winId,
+  dragConstraints,
+  onDragEnd,
+  onMouseDown,
+  initial,
+  animate,
+  transition,
+  className,
+  style,
+  children
+}: any) => {
+  const dragControls = useDragControls();
+  return (
+    <motion.div
+      key={winId}
+      drag
+      dragListener={false}
+      dragControls={dragControls}
+      dragMomentum={false}
+      dragConstraints={dragConstraints}
+      dragElastic={0}
+      onDragEnd={onDragEnd}
+      onMouseDown={onMouseDown}
+      initial={initial}
+      animate={animate}
+      transition={transition}
+      className={className}
+      style={style}
+    >
+      {children(dragControls)}
+    </motion.div>
+  );
+});
 
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -200,6 +237,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     { id: "findfiles", title: "Find Files", x: 140, y: 70, width: 480, height: 420, isOpen: false },
     { id: "media_player", title: "VERSA Media Agent 2.0", x: 130, y: 60, width: 440, height: 520, isOpen: false },
     { id: "vsweeper", title: "V-Sweeper", x: 160, y: 120, width: 240, height: 330, isOpen: false },
+    { id: "neural_solitaire", title: "Neural Solitaire", x: 80, y: 40, width: 730, height: 580, minWidth: 600, minHeight: 460, isOpen: false },
     { id: "axis_paint_setup", title: "Axis Paint 2.0 Setup", x: 180, y: 100, width: 620, height: 460, isOpen: false },
     { id: "axis_paint", title: "Axis Paint 2.0", x: 100, y: 60, width: 720, height: 560, isOpen: false },
     { id: "retrotv", title: "Meridian. TV", x: 150, y: 80, width: 800, height: 600, isOpen: false },
@@ -1214,6 +1252,8 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         return <VMessengerSetup vfs={vfs} onComplete={() => closeWindow("v_messenger_setup", { stopPropagation: () => {} } as any)} onCancel={() => closeWindow("v_messenger_setup", { stopPropagation: () => {} } as any)} />;
       case "vsweeper":
         return <VSweeper vfs={vfs} onClose={() => closeWindow("vsweeper", { stopPropagation: () => {} } as any)} neuralBridgeActive={neuralBridgeActive} />;
+      case "neural_solitaire":
+        return <NeuralSolitaire />;
       case "scandisk":
         return <DiskScanCheck vfs={vfs} neuralBridgeActive={neuralBridgeActive} />;
       case "dialup":
@@ -1498,6 +1538,41 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   const theme = taskbarThemes[tTheme] || taskbarThemes['motif'];
   const chromeTheme = WORKSPACE_MENU_THEME_COLORS[tTheme] || WORKSPACE_MENU_THEME_COLORS['motif'];
 
+  // ── Taskbar layout ─────────────────────────────────────────────────────────
+  const taskbarPosition = (vfs.displaySettings?.taskbarPosition || 'bottom') as 'top' | 'bottom' | 'left' | 'right';
+  const taskbarSize = Math.max(40, Math.min(80, Number(vfs.displaySettings?.taskbarSize) || 56));
+  const taskbarSpanFull = vfs.displaySettings?.taskbarSpanFull === true;
+  const isVerticalTaskbar = taskbarPosition === 'left' || taskbarPosition === 'right';
+
+  // Work area for maximized windows — excludes whichever edge the taskbar occupies
+  const tbReserve = taskbarSize + (taskbarSpanFull ? 2 : 10); // taskbar px + gap (smaller if full span)
+  const maxWinX = taskbarPosition === 'left' ? (tbReserve - 2) : -2;
+  const maxWinY = taskbarPosition === 'top'  ? (tbReserve - 2) : -2;
+  const maxWinW = isVerticalTaskbar  ? (deskWidth  - tbReserve + 4) : (deskWidth  + 4);
+  const maxWinH = (taskbarPosition === 'bottom' || taskbarPosition === 'top')
+    ? (deskHeight - tbReserve + (taskbarSpanFull ? 4 : 0))
+    : (deskHeight + 4);
+
+  // Inline-style object for the outer taskbar div — handles all 4 edges
+  const taskbarPositionStyle: React.CSSProperties = (() => {
+    const base: React.CSSProperties = {
+      position: 'absolute',
+      zIndex: 9999,
+      boxShadow: '4px 4px 0px rgba(0,0,0,0.5)',
+      transition: 'all 0.7s ease-out',
+    };
+    if (!taskbarVisible) return { ...base, opacity: 0, pointerEvents: 'none',
+      ...(taskbarPosition === 'bottom' ? { bottom: -80, left: taskbarSpanFull ? -2 : '50%', transform: taskbarSpanFull ? 'none' : 'translateX(-50%)', width: taskbarSpanFull ? 'calc(100% + 4px)' : undefined, height: taskbarSize } :
+          taskbarPosition === 'top'    ? { top: -80,    left: taskbarSpanFull ? -2 : '50%', transform: taskbarSpanFull ? 'none' : 'translateX(-50%)', width: taskbarSpanFull ? 'calc(100% + 4px)' : undefined, height: taskbarSize } :
+          taskbarPosition === 'left'   ? { left: -80,   top: taskbarSpanFull ? -2 : '50%',  transform: taskbarSpanFull ? 'none' : 'translateY(-50%)', height: taskbarSpanFull ? 'calc(100% + 4px)' : undefined, width: taskbarSize } :
+                                         { right: -80,  top: taskbarSpanFull ? -2 : '50%',  transform: taskbarSpanFull ? 'none' : 'translateY(-50%)', height: taskbarSpanFull ? 'calc(100% + 4px)' : undefined, width: taskbarSize })
+    };
+    if (taskbarPosition === 'bottom') return { ...base, opacity: 1, bottom: taskbarSpanFull ? -2 : 8, left: taskbarSpanFull ? -2 : '50%', transform: taskbarSpanFull ? 'none' : 'translateX(-50%)', height: taskbarSize, width: taskbarSpanFull ? 'calc(100% + 4px)' : undefined, maxWidth: taskbarSpanFull ? 'none' : '98%' };
+    if (taskbarPosition === 'top')    return { ...base, opacity: 1, top: taskbarSpanFull ? -2 : 8,    left: taskbarSpanFull ? -2 : '50%', transform: taskbarSpanFull ? 'none' : 'translateX(-50%)', height: taskbarSize, width: taskbarSpanFull ? 'calc(100% + 4px)' : undefined, maxWidth: taskbarSpanFull ? 'none' : '98%' };
+    if (taskbarPosition === 'left')   return { ...base, opacity: 1, left: taskbarSpanFull ? -2 : 8,   top: taskbarSpanFull ? -2 : '50%',  transform: taskbarSpanFull ? 'none' : 'translateY(-50%)', width: taskbarSize,  height: taskbarSpanFull ? 'calc(100% + 4px)' : undefined, maxHeight: taskbarSpanFull ? 'none' : '98%' };
+    /* right */                       return { ...base, opacity: 1, right: taskbarSpanFull ? -2 : 8,  top: taskbarSpanFull ? -2 : '50%',  transform: taskbarSpanFull ? 'none' : 'translateY(-50%)', width: taskbarSize,  height: taskbarSpanFull ? 'calc(100% + 4px)' : undefined, maxHeight: taskbarSpanFull ? 'none' : '98%' };
+  })();
+
   return (
     <div className={`w-full h-full flex items-center justify-center font-sans overflow-hidden ${screenMode === 'Full' ? 'bg-[#5f8787]' : 'bg-black'}`}>
       <div 
@@ -1744,8 +1819,14 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
 
         {/* Desktop Icons — hidden during init, then fade + stagger in */}
         <div 
-          className={`absolute inset-0 p-6 pb-20 flex flex-col gap-4 flex-wrap max-h-full transition-opacity duration-700 ${iconsVisible ? 'opacity-100' : 'opacity-0'}`}
-          style={{ pointerEvents: iconsVisible ? 'auto' : 'none' }}
+          className={`absolute inset-0 p-6 flex flex-col gap-4 flex-wrap max-h-full transition-opacity duration-700 ${iconsVisible ? 'opacity-100' : 'opacity-0'}`}
+          style={{ 
+            pointerEvents: iconsVisible ? 'auto' : 'none',
+            paddingBottom: taskbarPosition === 'bottom' ? tbReserve : undefined,
+            paddingTop: taskbarPosition === 'top' ? tbReserve : undefined,
+            paddingLeft: taskbarPosition === 'left' ? tbReserve : undefined,
+            paddingRight: taskbarPosition === 'right' ? tbReserve : undefined,
+          }}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault();
@@ -2002,14 +2083,11 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
             const isBeingResized = resizing?.id === win.id;
             
             return (
-            <motion.div
+            <DesktopWindow
               key={win.id}
-              drag
-              dragListener={!win.isMaximized && !resizing && !isPersistentMinimized}
-              dragMomentum={false}
+              winId={win.id}
               dragConstraints={win.isMaximized ? false : desktopRef}
-              dragElastic={0}
-              onDragEnd={(e, info) => {
+              onDragEnd={(e: any, info: any) => {
                 // Ensure some part of the window (at least the title bar) stays on screen
                 // motion.div handles dragging within constraints, but we need to update state
                 // info.point is absolute, but win.x/y are relative to parent
@@ -2025,10 +2103,10 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
               onMouseDown={() => bringToFront(win.id)}
               initial={{ x: win.x, y: win.y }}
               animate={{ 
-                x: isPersistentMinimized ? -9999 : (win.isMaximized ? -2 : win.x), 
-                y: isPersistentMinimized ? 0 : (win.isMaximized ? -2 : win.y), 
-                width: isPersistentMinimized ? 1 : (win.isMaximized ? (deskWidth + 4) : (win.width || 384)), 
-                height: isPersistentMinimized ? 1 : (win.isMaximized ? (deskHeight - 70) : (win.height || 'auto')),
+                x: isPersistentMinimized ? -9999 : (win.isMaximized ? maxWinX : win.x), 
+                y: isPersistentMinimized ? 0 : (win.isMaximized ? maxWinY : win.y), 
+                width: isPersistentMinimized ? 1 : (win.isMaximized ? maxWinW : (win.width || 384)), 
+                height: isPersistentMinimized ? 1 : (win.isMaximized ? maxWinH : (win.height || 'auto')),
                 scale: 1,
                 opacity: isPersistentMinimized ? 0 : 1
               }}
@@ -2036,25 +2114,32 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
               className={`absolute bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden box-border ${vfs.displaySettings?.plusTheme === 'cyber_nature' ? 'plus-window-open-nature' : vfs.displaySettings?.plusTheme === 'corporate_void' ? 'plus-window-open-void' : ''}`}
               style={{ zIndex: isPersistentMinimized ? 0 : 100 + index, top: 0, left: 0, pointerEvents: isPersistentMinimized ? "none" : "auto" }}
             >
-              {/* Resize handles — only on non-maximized windows */}
-              {!win.isMaximized && !isPersistentMinimized && win.id !== 'vsweeper' && (
+              {(dragControls: any) => (
                 <>
-                  {/* Edges */}
-                  <div onMouseDown={e => startResize(e, win.id, 'n')}  style={{ position:'absolute', top:-4,    left:8,    right:8,   height:8,  cursor:'ns-resize',   zIndex:10 }} />
-                  <div onMouseDown={e => startResize(e, win.id, 's')}  style={{ position:'absolute', bottom:-4, left:8,    right:8,   height:8,  cursor:'ns-resize',   zIndex:10 }} />
-                  <div onMouseDown={e => startResize(e, win.id, 'w')}  style={{ position:'absolute', top:8,    left:-4,   bottom:8,  width:8,   cursor:'ew-resize',   zIndex:10 }} />
-                  <div onMouseDown={e => startResize(e, win.id, 'e')}  style={{ position:'absolute', top:8,    right:-4,  bottom:8,  width:8,   cursor:'ew-resize',   zIndex:10 }} />
-                  {/* Corners */}
-                  <div onMouseDown={e => startResize(e, win.id, 'nw')} style={{ position:'absolute', top:-4,    left:-4,   width:12,  height:12, cursor:'nwse-resize', zIndex:11 }} />
-                  <div onMouseDown={e => startResize(e, win.id, 'ne')} style={{ position:'absolute', top:-4,    right:-4,  width:12,  height:12, cursor:'nesw-resize', zIndex:11 }} />
-                  <div onMouseDown={e => startResize(e, win.id, 'sw')} style={{ position:'absolute', bottom:-4, left:-4,   width:12,  height:12, cursor:'nesw-resize', zIndex:11 }} />
-                  <div onMouseDown={e => startResize(e, win.id, 'se')} style={{ position:'absolute', bottom:-4, right:-4,  width:12,  height:12, cursor:'nwse-resize', zIndex:11 }} />
-                </>
-              )}
-              {/* Motif-style Titlebar — colors follow Task Menu theme */}
-              <div
-                onDoubleClick={() => { if (win.id !== 'vsweeper') maximizeWindow(win.id, {} as any) }}
-                className={`px-2 py-1 flex justify-between items-center ${!win.isMaximized ? 'cursor-move' : ''} border-b-2 border-gray-800 transition-colors duration-75`}
+                  {/* Resize handles — only on non-maximized windows */}
+                  {!win.isMaximized && !isPersistentMinimized && win.id !== 'vsweeper' && (
+                    <>
+                      {/* Edges */}
+                      <div onMouseDown={e => startResize(e, win.id, 'n')}  style={{ position:'absolute', top:-4,    left:8,    right:8,   height:8,  cursor:'ns-resize',   zIndex:10 }} />
+                      <div onMouseDown={e => startResize(e, win.id, 's')}  style={{ position:'absolute', bottom:-4, left:8,    right:8,   height:8,  cursor:'ns-resize',   zIndex:10 }} />
+                      <div onMouseDown={e => startResize(e, win.id, 'w')}  style={{ position:'absolute', top:8,    left:-4,   bottom:8,  width:8,   cursor:'ew-resize',   zIndex:10 }} />
+                      <div onMouseDown={e => startResize(e, win.id, 'e')}  style={{ position:'absolute', top:8,    right:-4,  bottom:8,  width:8,   cursor:'ew-resize',   zIndex:10 }} />
+                      {/* Corners */}
+                      <div onMouseDown={e => startResize(e, win.id, 'nw')} style={{ position:'absolute', top:-4,    left:-4,   width:12,  height:12, cursor:'nwse-resize', zIndex:11 }} />
+                      <div onMouseDown={e => startResize(e, win.id, 'ne')} style={{ position:'absolute', top:-4,    right:-4,  width:12,  height:12, cursor:'nesw-resize', zIndex:11 }} />
+                      <div onMouseDown={e => startResize(e, win.id, 'sw')} style={{ position:'absolute', bottom:-4, left:-4,   width:12,  height:12, cursor:'nesw-resize', zIndex:11 }} />
+                      <div onMouseDown={e => startResize(e, win.id, 'se')} style={{ position:'absolute', bottom:-4, right:-4,  width:12,  height:12, cursor:'nwse-resize', zIndex:11 }} />
+                    </>
+                  )}
+                  {/* Motif-style Titlebar — colors follow Task Menu theme */}
+                  <div
+                    onPointerDown={(e) => {
+                      if (!win.isMaximized && !resizing && !isPersistentMinimized) {
+                        dragControls.start(e);
+                      }
+                    }}
+                    onDoubleClick={() => { if (win.id !== 'vsweeper') maximizeWindow(win.id, {} as any) }}
+                    className={`px-2 py-1 flex justify-between items-center ${!win.isMaximized ? 'cursor-move' : ''} border-b-2 border-gray-800 transition-colors duration-75`}
                 style={
                   isActive && neuralBridgeActive && Math.random() > 0.95
                     ? { backgroundColor: '#7f1d1d', color: '#fecaca' }
@@ -2090,10 +2175,15 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 </div>
               </div>
               {/* Window Content */}
-              <div className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white m-1 overflow-hidden flex flex-col bg-[#c0c0c0]">
+              <div 
+                className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white m-1 overflow-hidden flex flex-col bg-[#c0c0c0]"
+                onPointerDown={(e) => e.stopPropagation()}
+              >
                 {renderWindowContent(win.id)}
               </div>
-            </motion.div>
+              </>
+              )}
+            </DesktopWindow>
             );
           })}
         </div>
@@ -2101,7 +2191,8 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
 
       {/* Motif/CDE Inspired Centered Panel (1991-1994 UNIX style) — slides up when desktop is ready */}
       <div 
-        className={`absolute left-1/2 -translate-x-1/2 h-16 border-2 flex items-center p-1.5 gap-2 z-[9999] shadow-[4px_4px_0px_rgba(0,0,0,0.5)] transition-all duration-700 ease-out ${theme.bgOuter} ${theme.borderOuter} ${taskbarVisible ? 'bottom-2 opacity-100' : '-bottom-20 opacity-0'} max-w-[98%] whitespace-nowrap overflow-visible`}
+        className={`border-2 flex p-1.5 gap-2 overflow-visible transition-all duration-700 ease-out ${theme.bgOuter} ${theme.borderOuter} ${isVerticalTaskbar ? 'flex-col items-center' : 'items-center'}`}
+        style={taskbarPositionStyle}
         onContextMenu={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -2115,7 +2206,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         }}
       >
         {/* Dock Left Applet */}
-        <TaskbarAppletSlot side="dock_left" vfs={vfs} chromeTheme={chromeTheme} />
+        {!taskbarSpanFull && <TaskbarAppletSlot side="dock_left" vfs={vfs} chromeTheme={chromeTheme} />}
         
         {/* Left: Clock / Status (Recessed) */}
         {vfs.displaySettings?.taskbarShowClock !== false && (() => {
@@ -2125,9 +2216,9 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           const is12Hour = vfs.displaySettings?.clockFormat === '12h';
           
           return (
-            <div className={`h-full flex items-center gap-1 border-2 p-1 ${theme.bgRecessed} ${theme.borderRecessed}`}>
+            <div className={`${isVerticalTaskbar ? 'w-full py-1' : 'h-full'} flex items-center gap-1 border-2 p-1 ${theme.bgRecessed} ${theme.borderRecessed}`}>
               <div 
-                className={`h-full px-2 border-2 ${tTheme === 'dark' ? 'border-t-[#222] border-l-[#222] border-b-[#555] border-r-[#555]' : 'border-t-[#2a3f5c] border-l-[#2a3f5c] border-b-[#ffffff] border-r-[#ffffff]'} flex flex-col items-center justify-center ${fontClass} text-xs min-w-[60px]`}
+                className={`${isVerticalTaskbar ? 'w-full py-2 min-w-0 text-[10px] leading-tight break-words text-center' : 'h-full px-2 min-w-[60px] text-xs'} border-2 ${tTheme === 'dark' ? 'border-t-[#222] border-l-[#222] border-b-[#555] border-r-[#555]' : 'border-t-[#2a3f5c] border-l-[#2a3f5c] border-b-[#ffffff] border-r-[#ffffff]'} flex flex-col items-center justify-center ${fontClass}`}
                 style={{ backgroundColor: bgCol, color: textCol }}
               >
                 <span className="font-bold">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: is12Hour })}</span>
@@ -2415,6 +2506,10 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
               }
               
               // App / action items
+              let customImgSrc = null;
+              if (item.action && APP_DICTIONARY[item.action] && APP_DICTIONARY[item.action].customIcon) {
+                customImgSrc = APP_DICTIONARY[item.action].customIcon;
+              }
               const IconComp = item.icon && ICON_MAP[item.icon] ? ICON_MAP[item.icon] : FileText;
               const isShutdown = item.type === 'shutdown';
               
@@ -2427,7 +2522,11 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = isShutdown ? '#cc0000' : chromeTheme.hoverBg; e.currentTarget.style.color = chromeTheme.hoverText; }}
                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = isShutdown ? '#cc0000' : chromeTheme.bodyText; }}
                 >
-                  <IconComp size={16} className="shrink-0" />
+                  {customImgSrc ? (
+                    <img src={customImgSrc} alt="icon" className="w-[16px] h-[16px] pointer-events-none drop-shadow-sm shrink-0" style={{ imageRendering: 'pixelated' }} draggable={false} />
+                  ) : (
+                    <IconComp size={16} className="shrink-0" />
+                  )}
                   <span className="break-words leading-tight text-left text-sm">{item.label}</span>
                 </button>
               );
@@ -2435,13 +2534,28 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           };
           
           return (
-            <div className={`relative h-full flex items-center justify-center border-2 p-1 ${theme.bgRecessed} ${theme.borderRecessed}`}>
+            <div className={`relative ${isVerticalTaskbar ? 'w-full' : 'h-full'} flex items-center justify-center border-2 p-1 shrink-0 ${theme.bgRecessed} ${theme.borderRecessed}`}>
               <button 
                 onClick={() => setMenuOpen(!menuOpen)}
-                className={`h-full px-4 font-bold flex items-center justify-center gap-2 border-2 ${menuOpen ? `${theme.bgRecessed} ${theme.borderRecessed} ${theme.textMain}` : `${theme.bgButton} ${theme.borderButton} ${theme.textMain} ${theme.activeClass}`}`}
+                className={`${isVerticalTaskbar ? 'w-full py-3 flex-col' : 'h-full px-4'} font-bold flex items-center justify-center gap-2 border-2 ${menuOpen ? `${theme.bgRecessed} ${theme.borderRecessed} ${theme.textMain}` : `${theme.bgButton} ${theme.borderButton} ${theme.textMain} ${theme.activeClass}`}`}
               >
                 <Monitor size={20} className={neuralBridgeActive && Math.random() > 0.9 ? "text-red-400" : (theme.textMain.includes('black') ? 'text-black' : "text-white")} />
-                <span className="text-sm tracking-wider">Vespera</span>
+                {isVerticalTaskbar ? (
+                  taskbarSize >= 48 && (
+                    <span 
+                      className="text-sm tracking-wider font-bold uppercase mt-1 mb-1 relative" 
+                      style={{ 
+                        writingMode: 'vertical-rl', 
+                        transform: taskbarPosition === 'left' ? 'rotate(180deg)' : 'none', 
+                        textOrientation: 'mixed' 
+                      }}
+                    >
+                      Vespera
+                    </span>
+                  )
+                ) : (
+                  <span className="text-sm tracking-wider">Vespera</span>
+                )}
               </button>
 
               {/* Workspace Pop-up Menu */}
@@ -2449,11 +2563,11 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 {menuOpen && (
                   <motion.div 
                     data-task-menu="true"
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: taskbarPosition === 'top' ? -10 : 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
+                    exit={{ opacity: 0, y: taskbarPosition === 'top' ? -10 : 10 }}
                     transition={{ duration: 0.12 }}
-                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-60 flex flex-col z-[9999]"
+                    className={`absolute w-60 flex flex-col z-[9999] ${taskbarPosition === 'bottom' ? 'bottom-full mb-2 left-1/2' : taskbarPosition === 'top' ? 'top-full mt-2 left-1/2' : taskbarPosition === 'left' ? 'left-full ml-2 top-1/2' : 'right-full mr-2 top-1/2'}`}
                     style={{
                       backgroundColor: chromeTheme.bodyBg,
                       borderWidth: 2,
@@ -2465,6 +2579,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                       boxShadow: '4px 4px 0px rgba(0,0,0,0.5)',
                       // Adjust main menu position if it would go off screen
                       transform: (() => {
+                        if (isVerticalTaskbar) return 'translateY(-50%)'; // Center it vertically relative to the button
                         const menuWidth = 240; // w-60 = 15rem = 240px
                         const wouldOverflowLeft = window.innerWidth / 2 - menuWidth / 2 < 0;
                         const wouldOverflowRight = window.innerWidth / 2 + menuWidth / 2 > window.innerWidth;
@@ -2509,7 +2624,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         })()}
 
         {/* Right: App Dock (Recessed) */}
-        <div className={`h-full flex items-center gap-1 border-2 p-1 ${theme.bgRecessed} ${theme.borderRecessed}`}>
+        <div className={`${isVerticalTaskbar ? 'w-full flex-col min-h-0' : 'h-full min-w-0'} flex items-center gap-1 border-2 p-1 overflow-y-auto ${theme.bgRecessed} ${theme.borderRecessed}`}>
           {(() => {
             const activeWindowId = windows.filter(w => w.isOpen && !w.isMinimized).pop()?.id;
             
@@ -2523,6 +2638,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
               baseDockApps.push({ 
                 id, 
                 icon: meta.icon, 
+                customIcon: meta.customIcon,
                 color: meta.color, 
                 title: meta.defaultTitle,
                 action: id === 'browser' ? handleLaunchBrowser : undefined 
@@ -2544,6 +2660,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 baseDockApps.push({
                   id: win.id,
                   icon: meta.icon,
+                  customIcon: meta.customIcon,
                   color: meta.color,
                   title: win.title || meta.defaultTitle
                 });
@@ -2613,11 +2730,15 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                   }}
                   onDragEnd={() => setDraggedDockId(null)}
                   onClick={() => app.action ? app.action() : toggleWindow(app.id)}
-                  className={`relative h-full w-12 flex flex-col items-center justify-center border-2 transition-none ${isTop ? `${theme.bgRecessed} ${theme.borderRecessed}` : `${theme.bgButton} ${theme.borderButton} ${theme.activeClass}`} ${draggedDockId === app.id ? 'opacity-50' : 'opacity-100'}`}
+                  className={`relative shrink-0 flex flex-col items-center justify-center border-2 transition-none ${isVerticalTaskbar ? 'w-full h-12' : 'h-full w-12'} ${isTop ? `${theme.bgRecessed} ${theme.borderRecessed}` : `${theme.bgButton} ${theme.borderButton} ${theme.activeClass}`} ${draggedDockId === app.id ? 'opacity-50' : 'opacity-100'}`}
                   title={app.title}
                 >
-                  <app.icon size={20} className={isOpen && !isTop ? app.color : (isTop ? (theme.textMain.includes('black') ? 'text-black' : 'text-white') : 'text-gray-200')} />
-                  {isOpen && <div className={`absolute bottom-0.5 w-4 h-0.5 ${isTop ? (theme.textMain.includes('black') ? 'bg-black' : 'bg-white') : 'bg-gray-300'}`} />}
+                  {app.customIcon ? (
+                    <img src={app.customIcon} alt="icon" className={`w-[24px] h-[24px] pointer-events-none drop-shadow-md ${!isOpen || isTop ? '' : 'filter brightness-75'}`} style={{ imageRendering: 'pixelated' }} draggable={false} />
+                  ) : (
+                    <app.icon size={20} className={isOpen && !isTop ? app.color : (isTop ? (theme.textMain.includes('black') ? 'text-black' : 'text-white') : 'text-gray-200')} />
+                  )}
+                  {isOpen && <div className={`absolute ${isVerticalTaskbar ? 'right-0.5 top-1/2 -translate-y-1/2 w-0.5 h-4' : 'bottom-0.5 w-4 h-0.5'} ${isTop ? (theme.textMain.includes('black') ? 'bg-black' : 'bg-white') : 'bg-gray-300'}`} />}
                 </button>
               );
             });
@@ -2627,9 +2748,9 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         {/* Tray: Internet, playback volume, spectrum when Media Agent is playing */}
         <div
           ref={taskbarTrayRef}
-          className={`relative h-full flex items-stretch gap-0.5 border-2 p-1 shrink-0 ${theme.bgRecessed} ${theme.borderRecessed}`}
+          className={`relative ${isVerticalTaskbar ? 'w-full flex-col' : 'h-full'} flex items-stretch gap-0.5 border-2 p-1 shrink-0 ${theme.bgRecessed} ${theme.borderRecessed}`}
         >
-          <div className="relative h-full flex items-stretch">
+          <div className={`relative ${isVerticalTaskbar ? 'w-full' : 'h-full'} flex items-stretch`}>
             <button
               type="button"
               title="Internet"
@@ -2638,13 +2759,13 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 setVolumeTrayOpen(false);
                 setInternetTrayOpen((o) => !o);
               }}
-              className={`h-full w-9 flex items-center justify-center border-2 ${theme.bgButton} ${theme.borderButton} ${theme.activeClass}`}
+              className={`${isVerticalTaskbar ? 'w-full py-2' : 'h-full w-9'} flex items-center justify-center border-2 ${theme.bgButton} ${theme.borderButton} ${theme.activeClass}`}
             >
               <Globe size={18} className={theme.textMain.includes('black') ? 'text-black' : 'text-white'} />
             </button>
             {internetTrayOpen && (
               <div
-                className="absolute bottom-[calc(100%+6px)] right-0 z-[10001] flex flex-col min-w-[188px] bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] py-1"
+                className={`absolute z-[10001] flex flex-col min-w-[188px] bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] py-1 ${taskbarPosition === 'bottom' ? 'bottom-[calc(100%+6px)] right-0' : taskbarPosition === 'top' ? 'top-[calc(100%+6px)] right-0' : taskbarPosition === 'left' ? 'left-[calc(100%+6px)] top-0' : 'right-[calc(100%+6px)] top-0'}`}
                 style={{
                   ['--vm-hover-bg' as string]: chromeTheme.hoverBg,
                   ['--vm-hover-fg' as string]: chromeTheme.hoverText,
@@ -2694,7 +2815,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
             )}
           </div>
 
-          <div className="relative h-full flex items-stretch">
+          <div className={`relative ${isVerticalTaskbar ? 'w-full' : 'h-full'} flex items-stretch`}>
             <button
               type="button"
               title="Volume"
@@ -2703,7 +2824,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 setInternetTrayOpen(false);
                 setVolumeTrayOpen((o) => !o);
               }}
-              className={`h-full w-9 flex items-center justify-center border-2 ${theme.bgButton} ${theme.borderButton} ${theme.activeClass}`}
+              className={`${isVerticalTaskbar ? 'w-full py-2' : 'h-full w-9'} flex items-center justify-center border-2 ${theme.bgButton} ${theme.borderButton} ${theme.activeClass}`}
             >
               {taskbarMedia.volume < 0.04 ? (
                 <VolumeX size={18} className={theme.textMain.includes('black') ? 'text-black' : 'text-white'} />
@@ -2712,7 +2833,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
               )}
             </button>
             {volumeTrayOpen && (
-              <div className="absolute bottom-[calc(100%+6px)] right-0 z-[10001] w-[248px] box-border bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] px-2.5 py-2">
+              <div className={`absolute z-[10001] w-[248px] box-border bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] px-2.5 py-2 ${taskbarPosition === 'bottom' ? 'bottom-[calc(100%+6px)] right-0' : taskbarPosition === 'top' ? 'top-[calc(100%+6px)] right-0' : taskbarPosition === 'left' ? 'left-[calc(100%+6px)] top-0' : 'right-[calc(100%+6px)] top-0'}`}>
                 <div className="text-[10px] font-bold text-black mb-1.5">Playback volume</div>
                 <div className="flex items-center gap-1.5 w-full min-w-0">
                   <VolumeX size={14} className="text-gray-600 shrink-0 w-[14px]" aria-hidden />
@@ -2883,15 +3004,17 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         </div>
 
         {/* Dock Right Applet */}
-        <TaskbarAppletSlot 
-          side="dock_right" 
-          vfs={vfs} 
-          chromeTheme={chromeTheme} 
-          collapsed={
-            ((vfs.displaySettings?.pinnedApps?.length || 7) + 
-            windows.filter(w => w.isOpen && !(vfs.displaySettings?.pinnedApps || ['files', 'browser', 'workbench', 'analyzer', 'chat', 'control_panel', 'xtype']).includes(w.id)).length) > 7
-          } 
-        />
+        {!taskbarSpanFull && (
+          <TaskbarAppletSlot 
+            side="dock_right" 
+            vfs={vfs} 
+            chromeTheme={chromeTheme} 
+            collapsed={
+              ((vfs.displaySettings?.pinnedApps?.length || 7) + 
+              windows.filter(w => w.isOpen && !(vfs.displaySettings?.pinnedApps || ['files', 'browser', 'workbench', 'analyzer', 'chat', 'control_panel', 'xtype']).includes(w.id)).length) > 7
+            } 
+          />
+        )}
       </div>
 
         {/* Mail Notification Toast */}
@@ -2903,8 +3026,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 60, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="absolute z-[9999] cursor-pointer"
-              style={{ bottom: 44, right: 8 }}
+              className={`absolute z-[9999] cursor-pointer ${taskbarPosition === 'right' ? 'top-8 right-[calc(80px+8px)]' : taskbarPosition === 'top' ? 'top-[calc(80px+8px)] right-8' : taskbarPosition === 'left' ? 'top-8 left-[calc(80px+8px)]' : 'bottom-[calc(80px+8px)] right-8'}`}
               onClick={() => {
                 setMailToast(null);
                 if (mailToastTimerRef.current) clearTimeout(mailToastTimerRef.current);
