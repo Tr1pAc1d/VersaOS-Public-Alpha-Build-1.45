@@ -134,10 +134,17 @@ export const RHIDTerminal: React.FC<RHIDTerminalProps> = ({ neuralBridgeActive }
           "  ping <host>   Ping a host",
           "  man <cmd>     Manual pages",
           "  echo <text>   Print text",
+          "  ver           OS & kernel version",
+          "  neofetch      System info (fancy)",
+          "  start <app>   Launch a GUI application",
+          "  open <app>    Alias for start",
           "  clear         Clear screen",
           "  history       Command history",
           "  license       Display license info",
           "  exit          Close terminal",
+          "",
+          "  Apps: browser, files, paint, solitaire, sweeper, media, tv,",
+          "        workbench, notepad, defrag, scandisk, taskmgr, chat",
           ""
         );
         break;
@@ -347,6 +354,67 @@ export const RHIDTerminal: React.FC<RHIDTerminalProps> = ({ neuralBridgeActive }
       case 'exit':
         lines.push("logout");
         break;
+
+      case 'ver':
+      case 'version':
+        lines.push("Linux vespera 2.0.36-rhid #1 SMP Tue Oct 14 03:22:01 EDT 1996 i486");
+        lines.push("RHID Terminal v4.03.22.1 — Vespera Systems Corp.");
+        break;
+
+      case 'neofetch': {
+        lines.push(
+          "        .-.-.        thorne@vespera",
+          "       (o o)         ---------------",
+          "       | O |         OS: Vespera OS 1.45 (RHID subsystem)",
+          "      /|---|\\        Kernel: 2.0.36-rhid",
+          "     / |   | \\       Uptime: 94 days, 3 hours",
+          "    /  |   |  \\      CPU: Intel 486DX @ 50MHz",
+          "       |   |         Memory: 5120MB / 32768MB",
+          "      /|   |\\        Shell: bash 2.0.0",
+          "     / |   | \\       Terminal: RHID v4.03.22.1",
+          ""
+        );
+        break;
+      }
+
+      case 'start':
+      case 'open': {
+        // Map common names to window IDs
+        const APP_ALIASES: Record<string, string> = {
+          'explorer': 'files', 'files': 'files', 'filemgr': 'files',
+          'browser': 'browser', 'navigator': 'browser', 'ie': 'browser',
+          'paint': 'axis_paint', 'axispaint': 'axis_paint',
+          'notepad': 'versa_edit', 'versaedit': 'versa_edit',
+          'workbench': 'workbench', 'terminal': 'workbench',
+          'solitaire': 'neural_solitaire', 'neural_solitaire': 'neural_solitaire',
+          'minesweeper': 'vsweeper', 'vsweeper': 'vsweeper', 'sweeper': 'vsweeper',
+          'media': 'media_player', 'winamp': 'media_player', 'mediaplayer': 'media_player',
+          'tv': 'retrotv', 'meridian': 'retrotv', 'retrotv': 'retrotv',
+          'defrag': 'defrag', 'scandisk': 'scandisk',
+          'taskmgr': 'task_manager', 'taskmanager': 'task_manager',
+          'control': 'control_panel', 'controlpanel': 'control_panel',
+          'sysinfo': 'about', 'about': 'about',
+          'vstore': 'vstore', 'help': 'help',
+          'chat': 'chat', 'assistant': 'chat',
+          'connect': 'remote_desktop', 'vesperaconnect': 'remote_desktop',
+          'catmario': 'w93_catmario', 'syobon': 'w93_catmario',
+          'skifree': 'w93_skifree',
+          'halflife3': 'w93_halflife3', 'hl3': 'w93_halflife3',
+          'sirtet': 'w93_sirtet', 'tetris': 'w93_sirtet',
+          'castlegafa': 'w93_castlegafa', 'gafa': 'w93_castlegafa',
+        };
+        const appArg = (args[0] || '').toLowerCase().replace(/\.exe$/, '');
+        const appId = APP_ALIASES[appArg] || appArg;
+        if (appId) {
+          window.dispatchEvent(new CustomEvent('launch-app', { detail: appId }));
+          lines.push(`Starting ${appId}...`);
+        } else {
+          lines.push(`${command}: missing program name`);
+          lines.push(`Usage: ${command} <program>`);
+          lines.push(`Example: ${command} browser`);
+        }
+        break;
+      }
 
       default:
         lines.push(`bash: ${command}: command not found`);

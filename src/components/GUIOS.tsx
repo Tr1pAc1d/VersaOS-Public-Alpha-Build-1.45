@@ -77,6 +77,7 @@ import {
   VERSA_MEDIA_PLAYER_SET_VOLUME_EVENT,
 } from "../utils/mediaPlayerBridge";
 import { WeatherChannelApp } from "./WeatherChannelApp";
+import { W93AppLauncher } from "./W93AppLauncher";
 
 // ── Post-Login Init helper components ───────────────────────────────────────
 
@@ -1342,6 +1343,16 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         );
       case "aw_release_radar":
         return <ReleaseRadar />;
+      case "w93_catmario":
+        return <W93AppLauncher appUrl="/w93/games/CatMario/index.html" />;
+      case "w93_skifree":
+        return <W93AppLauncher appUrl="/w93/games/SkiFree/index.html" />;
+      case "w93_halflife3":
+        return <W93AppLauncher appUrl="/w93/games/HalfLife3/index.html" />;
+      case "w93_sirtet":
+        return <W93AppLauncher appUrl="/w93/games/Sirtet/index.html" />;
+      case "w93_castlegafa":
+        return <W93AppLauncher appUrl="/w93/games/CastleGafa/index.html" />;
       case "task_manager":
         return <TaskManager
           windows={windows}

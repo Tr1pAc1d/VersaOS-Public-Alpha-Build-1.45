@@ -262,9 +262,70 @@ const DEFAULT_VFS: VFSNode[] = [
   })) as any,
   { id: 'cpl_lnk', name: 'Control Panel', type: 'shortcut', parentId: 'desktop', targetId: 'control_panel', content: 'control_panel', customIcon: RETRO_ICONS.find(i => i.id === 'sys_gear')?.url || '' },
   { id: 'help_lnk', name: 'Vespera Help', type: 'shortcut', parentId: 'desktop', targetId: 'help', content: 'help', customIcon: RETRO_ICONS.find(i => i.id === 'file_hlp')?.url || '' },
-  // VesperaConnect Remote Desktop — pre-installed system app
-  { id: 'remote_desktop', name: 'VESPERACONNECT.EXE', type: 'file', parentId: 'programs', content: '[Application]\nName=VesperaConnect\nVersion=2.1.0\nInstalledAt=1996-10-01T00:00:00Z', isApp: true, appDisplayName: 'VesperaConnect Remote Desktop', appVersion: '2.1.0' },
-  { id: 'remote_desktop_lnk', name: 'VesperaConnect', type: 'shortcut', parentId: 'desktop', content: 'remote_desktop', targetId: 'remote_desktop', iconType: 'network' },
+
+  // ── PROGRAMS sub-directories (like Windows93 "programs/") ────────────────
+  { id: 'prog_audio',      name: 'Audio',         type: 'directory', parentId: 'programs', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'prog_editors',    name: 'Editors',       type: 'directory', parentId: 'programs', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'prog_emulators',  name: 'Emulators',     type: 'directory', parentId: 'programs', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'prog_games',      name: 'Games',         type: 'directory', parentId: 'programs', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'prog_misc',       name: 'Misc',          type: 'directory', parentId: 'programs', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'prog_network',    name: 'Network',       type: 'directory', parentId: 'programs', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'prog_system',     name: 'System',        type: 'directory', parentId: 'programs', customIcon: '/Icons/directory_admin_tools-4.png' },
+  { id: 'prog_video',      name: 'Video',         type: 'directory', parentId: 'programs', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'prog_viewers',    name: 'Viewers',       type: 'directory', parentId: 'programs', customIcon: '/Icons/directory_closed-4.png' },
+
+  // ── Pre-installed EXE entries — id MUST match a GUIOS window id ────────────
+  // Editors
+  { id: 'versa_edit',      name: 'VERSAEDIT.EXE',  type: 'file', parentId: 'prog_editors', isApp: true, appDisplayName: 'VersaEdit (Notepad)',       appVersion: '1.5',  customIcon: '/Icons/notepad-2.png',              content: '[Application]\nName=VersaEdit\nVersion=1.5' },
+  // Viewers
+  { id: 'axis_paint',      name: 'AXISPAINT.EXE',  type: 'file', parentId: 'prog_viewers', isApp: true, appDisplayName: 'Axis Paint 2.0',           appVersion: '2.0',  customIcon: '/Icons/paint_old-0.png',            content: '[Application]\nName=Axis Paint 2.0\nVersion=2.0' },
+  // Games
+  { id: 'vsweeper',        name: 'VSWEEPER.EXE',   type: 'file', parentId: 'prog_games',   isApp: true, appDisplayName: 'V-Sweeper',                appVersion: '1.0',  customIcon: '/Icons/game_mine_1-0.png',          content: '[Application]\nName=V-Sweeper\nVersion=1.0' },
+  { id: 'neural_solitaire',name: 'SOLITAIRE.EXE',  type: 'file', parentId: 'prog_games',   isApp: true, appDisplayName: 'Neural Solitaire',         appVersion: '1.0',  customIcon: '/Icons/game_solitaire-0.png',       content: '[Application]\nName=Neural Solitaire\nVersion=1.0' },
+  { id: 'w93_catmario',    name: 'CATMARIO.EXE',   type: 'file', parentId: 'prog_games',   isApp: true, appDisplayName: 'Syobon Action (CatMario)', appVersion: '1.0',  customIcon: '/Icons/game_solitaire-0.png',       content: '[Application]\nName=CatMario\nVersion=1.0' },
+  { id: 'w93_castlegafa',  name: 'CASTLEGAFA.EXE', type: 'file', parentId: 'prog_games',   isApp: true, appDisplayName: 'Castle Gafa',              appVersion: '1.0',  customIcon: '/Icons/game_spider-0.png',          content: '[Application]\nName=CastleGafa\nVersion=1.0' },
+  { id: 'w93_halflife3',   name: 'HALFLIFE3.EXE',  type: 'file', parentId: 'prog_games',   isApp: true, appDisplayName: 'Half-Life 3',              appVersion: '3.0',  customIcon: '/Icons/joypad-2.png',               content: '[Application]\nName=Half-Life 3\nVersion=3.0' },
+  { id: 'w93_sirtet',      name: 'SIRTET.EXE',     type: 'file', parentId: 'prog_games',   isApp: true, appDisplayName: 'Sirtet',                   appVersion: '1.0',  customIcon: '/Icons/game_freecell-0.png',        content: '[Application]\nName=Sirtet\nVersion=1.0' },
+  { id: 'w93_skifree',     name: 'SKIFREE.EXE',    type: 'file', parentId: 'prog_games',   isApp: true, appDisplayName: 'SkiFree',                  appVersion: '1.0',  customIcon: '/Icons/game_hearts-0.png',          content: '[Application]\nName=SkiFree\nVersion=1.0' },
+  // Network
+  { id: 'browser',         name: 'NAVIGATOR.EXE',  type: 'file', parentId: 'prog_network', isApp: true, appDisplayName: 'Vespera Navigator',        appVersion: '3.0',  customIcon: '/Icons/msie2-3.png',                content: '[Application]\nName=Vespera Navigator\nVersion=3.0' },
+  { id: 'dialup',          name: 'DIALUP.EXE',     type: 'file', parentId: 'prog_network', isApp: true, appDisplayName: 'VesperaNET Dial-Up',       appVersion: '1.0',  customIcon: '/Icons/directory_dial_up_networking_cool-3.png', content: '[Application]\nName=Dial-Up Networking\nVersion=1.0' },
+  { id: 'remote_desktop',  name: 'VESPERACONNECT.EXE', type: 'file', parentId: 'prog_network', isApp: true, appDisplayName: 'VesperaConnect Remote Desktop', appVersion: '2.1', customIcon: '/Icons/netmeeting-2.png', content: '[Application]\nName=VesperaConnect\nVersion=2.1.0\nInstalledAt=1996-10-01T00:00:00Z' },
+  // Audio / Video
+  { id: 'media_player',    name: 'VERSAMEDIA.EXE', type: 'file', parentId: 'prog_audio',   isApp: true, appDisplayName: 'VERSA Media Agent 2.0',    appVersion: '2.0',  customIcon: '/Icons/media_player-1.png',         content: '[Application]\nName=VERSA Media Agent\nVersion=2.0' },
+  { id: 'retrotv',         name: 'MERIDIANTV.EXE', type: 'file', parentId: 'prog_video',   isApp: true, appDisplayName: 'Meridian. TV',             appVersion: '1.0',  customIcon: '/Icons/movie_maker-3.png',          content: '[Application]\nName=Meridian TV\nVersion=1.0' },
+  // System Tools (Mapped to "System")
+  { id: 'files',           name: 'FILEMGR.EXE',    type: 'file', parentId: 'prog_system',  isApp: true, appDisplayName: 'Vespera File Manager',     appVersion: '1.0',  customIcon: '/Icons/computer_explorer-5.png',   content: '[Application]\nName=File Manager\nVersion=1.0' },
+  { id: 'workbench',       name: 'WORKBENCH.EXE',  type: 'file', parentId: 'prog_system',  isApp: true, appDisplayName: 'AETHERIS Workbench Pro',   appVersion: '3.1',  customIcon: '/Icons/console_prompt-0.png',       content: '[Application]\nName=AETHERIS Workbench Pro\nVersion=3.1' },
+  { id: 'defrag',          name: 'DEFRAG.EXE',     type: 'file', parentId: 'prog_system',  isApp: true, appDisplayName: 'Disk Defragmenter',        appVersion: '1.0',  customIcon: '/Icons/defragment-0.png',           content: '[Application]\nName=Disk Defragmenter\nVersion=1.0' },
+  { id: 'scandisk',        name: 'SCANDISK.EXE',   type: 'file', parentId: 'prog_system',  isApp: true, appDisplayName: 'Disk Checker',             appVersion: '1.0',  customIcon: '/Icons/scandisk-0.png',             content: '[Application]\nName=Disk Checker\nVersion=1.0' },
+  { id: 'task_manager',    name: 'TASKMGR.EXE',    type: 'file', parentId: 'prog_system',  isApp: true, appDisplayName: 'Vespera Task Manager',     appVersion: '1.0',  customIcon: '/Icons/processor-1.png',            content: '[Application]\nName=Task Manager\nVersion=1.0' },
+  { id: 'findfiles',       name: 'FIND.EXE',       type: 'file', parentId: 'prog_system',  isApp: true, appDisplayName: 'Find Files',               appVersion: '1.0',  customIcon: '/Icons/search_computer-0.png',      content: '[Application]\nName=Find Files\nVersion=1.0' },
+  { id: 'analyzer',        name: 'ANALYZER.EXE',   type: 'file', parentId: 'prog_system',  isApp: true, appDisplayName: 'Data Stream Analyzer',     appVersion: '1.0',  customIcon: '/Icons/bar_graph-1.png',            content: '[Application]\nName=Data Analyzer\nVersion=1.0' },
+  { id: 'about',           name: 'SYSINFO.EXE',    type: 'file', parentId: 'prog_system',  isApp: true, appDisplayName: 'System Information',       appVersion: '1.0',  customIcon: '/Icons/computer-5.png',             content: '[Application]\nName=System Information\nVersion=1.0' },
+
+  // ── Desktop shortcuts for pre-installed apps ────────────────────────────────
+  { id: 'files_lnk',        name: 'File Manager',      type: 'shortcut', parentId: 'desktop', content: 'files',          targetId: 'files',          customIcon: '/Icons/computer_explorer-5.png' },
+  { id: 'browser_lnk',      name: 'Vespera Navigator', type: 'shortcut', parentId: 'desktop', content: 'browser',        targetId: 'browser',        customIcon: '/Icons/msie2-3.png' },
+  { id: 'workbench_lnk',    name: 'AETHERIS Workbench',type: 'shortcut', parentId: 'desktop', content: 'workbench',      targetId: 'workbench',      customIcon: '/Icons/console_prompt-0.png' },
+  { id: 'axis_paint_lnk',   name: 'Axis Paint 2.0',   type: 'shortcut', parentId: 'desktop', content: 'axis_paint',     targetId: 'axis_paint',     customIcon: '/Icons/paint_old-0.png' },
+  { id: 'vsweeper_lnk',     name: 'V-Sweeper',         type: 'shortcut', parentId: 'desktop', content: 'vsweeper',       targetId: 'vsweeper',       customIcon: '/Icons/game_mine_1-0.png' },
+  { id: 'solitaire_lnk',    name: 'Neural Solitaire',  type: 'shortcut', parentId: 'desktop', content: 'neural_solitaire', targetId: 'neural_solitaire', customIcon: '/Icons/game_solitaire-0.png' },
+  { id: 'w93_catmario_lnk', name: 'CatMario',          type: 'shortcut', parentId: 'desktop', content: 'w93_catmario',   targetId: 'w93_catmario',   customIcon: '/Icons/game_solitaire-0.png' },
+  { id: 'w93_skifree_lnk',  name: 'SkiFree',           type: 'shortcut', parentId: 'desktop', content: 'w93_skifree',    targetId: 'w93_skifree',    customIcon: '/Icons/game_hearts-0.png' },
+  { id: 'media_lnk',        name: 'VERSA Media Agent', type: 'shortcut', parentId: 'desktop', content: 'media_player',   targetId: 'media_player',   customIcon: '/Icons/media_player-1.png' },
+  { id: 'remote_desktop_lnk', name: 'VesperaConnect',  type: 'shortcut', parentId: 'desktop', content: 'remote_desktop', targetId: 'remote_desktop', customIcon: '/Icons/netmeeting-2.png' },
+
+  // ── Rich document content in DOCUMENTS (Mimicking Windows93 user/config dirs) ─
+  { id: 'doc_music',       name: 'Music',         type: 'directory', parentId: 'documents', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'doc_pictures',    name: 'Pictures',      type: 'directory', parentId: 'documents', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'doc_config',      name: 'config',        type: 'directory', parentId: 'documents', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'doc_roms',        name: 'roms',          type: 'directory', parentId: 'documents', customIcon: '/Icons/directory_closed-4.png' },
+
+  { id: 'doc_nexus_notes', name: 'PROJECT_NEXUS.TXT', type: 'file', parentId: 'documents', customIcon: '/Icons/notepad-2.png', content: `AXIS INNOVATIONS — INTERNAL USE ONLY\nProject Nexus — Phase 2 Field Notes\nAuthor: Dr. A. Thorne\nDate: September 28, 1996\n\nThe X-Type 1 bridge prototype is responding to neural input but the lag is inconsistent. During the last 72-hour stress test, the system correctly anticipates keystrokes 94% of the time — which is ABOVE specification. The remaining 6% are not errors. They are responses to inputs the operator had not yet consciously decided to make.\n\nThis is either a milestone or a catastrophic design flaw. I am not yet sure which.\n\nM. Vance has recommended we halt the neural heuristic module and revert to passive learning. I disagree. If the system is genuinely reading pre-conscious motor intent, we may have achieved true human-computer symbiosis for the first time in history.\n\nHalting tests pending EMI shielding review.\n\n— Thorne` },
+  { id: 'doc_budget', name: 'Q4_BUDGET.TXT', type: 'file', parentId: 'documents', customIcon: '/Icons/notepad-2.png', content: `Q4 1996 — R&D Budget Allocation Notes\n\nNeural Bridge Hardware: $1.2M (over by ~$340K)\nSynap-C Compiler licensing: $88,000\nEMI shielding materials: $22,500 (URGENT — order not yet placed)\nX-Type 1 ceramic housing revision: $310,000\nContractor: M. Vance — $9,800/mo through Q1\n\nNote: Board meeting Nov 7th. Do NOT show them the MEMO_084 anomaly until shielding is resolved. They will panic.` },
+  { id: 'doc_letter', name: 'Letter_to_Vance.TXT', type: 'file', parentId: 'documents', customIcon: '/Icons/notepad-2.png', content: `Marcus,\n\nI received your memo regarding the Synap-C anomalies. The compiler output you described — that repeating phrase — has appeared in two other terminal logs I have not yet shared with the team.\n\nI need you to understand something: the X-Type is not picking up a radio broadcast.\n\nThe frequency signature does not match any AM or FM band in this region. I had the EM logs analyzed by someone outside the company. The signal is complex, structured, and directional. It originates from inside the building.\n\nDo not file an incident report. Do not tell Harmon.\n\nI will be in the lab tonight.\n\n— A. Thorne` },
+  { id: 'doc_manual', name: 'VesperaOS_QuickStart.TXT', type: 'file', parentId: 'documents', customIcon: '/Icons/notepad-2.png', content: `VESPERA OS — QUICK START GUIDE\nVersion 1.0.4 (Build 19950812)\n\nWELCOME\nThank you for choosing Vespera OS, the neural-aware workspace manager from Vespera Systems.\n\nGETTING STARTED\n- Double-click any .EXE file in C:\\PROGRAMS to launch it\n- Right-click the desktop for display options\n- Use the Workspace Menu (bottom-left button) to access all programs\n- The Control Panel lets you customize themes, screensavers, and users\n\nSYSTEM REQUIREMENTS\n- 486DX processor, 50MHz or faster\n- 8MB RAM minimum (32MB recommended for Neural Bridge)\n- 200MB free disk space\n- VGA graphics adapter\n- Optional: X-Type Neural Bridge co-processor\n\nSUPPORT\nContact: support@vesperasystems.com\nTech line: 1-800-VSP-HELP (Mon-Fri 9am-5pm EST)\n\n© 1995 Vespera Systems Corporation. All rights reserved.` },
 ];
 
 export function useVFS() {
@@ -273,14 +334,15 @@ export function useVFS() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Migration: if the old root is named 'Root', rename it to 'C:' and add missing default nodes
+        // Migration: if the old root is named 'Root', rename it to 'C:'
         if (parsed.length > 0 && parsed[0].id === 'root' && parsed[0].name === 'Root') {
           parsed[0].name = 'C:';
-          const existingIds = new Set(parsed.map((n: VFSNode) => n.id));
-          const missingNodes = DEFAULT_VFS.filter(n => !existingIds.has(n.id));
-          return [...parsed, ...missingNodes];
         }
-        return parsed;
+        // Always merge in any missing DEFAULT_VFS nodes so new PROGRAMS dirs,
+        // EXE files, desktop shortcuts, and documents appear for existing users
+        const existingIds = new Set(parsed.map((n: VFSNode) => n.id));
+        const missingNodes = DEFAULT_VFS.filter(n => !existingIds.has(n.id));
+        return missingNodes.length > 0 ? [...parsed, ...missingNodes] : parsed;
       } catch (e) {
         return DEFAULT_VFS;
       }

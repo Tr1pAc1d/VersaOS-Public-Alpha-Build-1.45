@@ -55,8 +55,23 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
 
   const currentDirNode = vfs.getNode(currentDir);
 
-  const TECHNICAL_EXTENSIONS = ['.DLL', '.SYS', '.CFG', '.INI', '.VXD', '.INF'];
+  const TECHNICAL_EXTENSIONS = ['.DLL', '.SYS', '.VXD', '.INF', '.DRV'];
   const PROTECTED_EXTENSIONS = ['.DLL', '.SYS', '.VXD'];
+
+  // File-type router: returns the app window ID that should open this file, or null
+  const getDefaultApp = (node: VFSNode): string | null => {
+    // Executable app nodes — launch directly by node id
+    if (node.isApp && node.name.toUpperCase().endsWith('.EXE') && onLaunchApp) return node.id;
+    const name = node.name.toUpperCase();
+    if (name.endsWith('.TXT') || name.endsWith('.LOG') || name.endsWith('.BAT') ||
+        name.endsWith('.CFG') || name.endsWith('.INI')) return 'versa_edit';
+    if (name.endsWith('.HTM') || name.endsWith('.HTML')) return 'browser';
+    if (name.endsWith('.BMP') || name.endsWith('.PNG') || name.endsWith('.JPG') ||
+        name.endsWith('.GIF') || name.endsWith('.ICO')) return 'axis_paint';
+    if (name.endsWith('.MP3') || name.endsWith('.WAV') || name.endsWith('.MID') ||
+        name.endsWith('.OGG')) return 'media_player';
+    return null;
+  };
 
   // Resolve absolute path
   const getAbsolutePath = (nodeId: string): string => {
@@ -140,45 +155,73 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
     if (node.type === 'directory') {
       setCurrentDir(node.id);
       setSelectedNode(null);
-    } else if (node.type === 'shortcut') {
+      return;
+    }
+
+    if (node.type === 'shortcut') {
       if (isPickerMode) {
         onOpenFile(node.id);
       } else if (node.content && onLaunchApp) {
         onLaunchApp(node.content);
       }
-    } else {
-      if (isPickerMode) {
-        onOpenFile(node.id);
-        return;
-      }
-      const upperName = node.name.toUpperCase();
-      
-      if (upperName.endsWith('.TXT') || upperName.endsWith('.LOG')) {
-        onOpenFile(node.id);
-        return;
-      }
-
-      const isTechnical = TECHNICAL_EXTENSIONS.some(ext => upperName.endsWith(ext));
-
-      if (isTechnical) {
-        setAssociationModal({ isOpen: true, nodeId: node.id, fileName: node.name });
-        return;
-      }
-
-      if (node.name.endsWith('.EXE') && currentDirNode?.name === 'DOWNLOADS' && onLaunchApp) {
-        if (node.name === 'AETHERIS_NET_MON_SETUP.EXE') {
-          onLaunchApp('netmon_setup');
-        } else if (node.name === 'RHID_SUBSYSTEM_SETUP.EXE') {
-          onLaunchApp('rhid_setup');
-        } else if (node.name === 'AW_RELEASE_RADAR_SETUP.EXE') {
-          onLaunchApp('aw_release_radar_setup');
-        } else {
-          onLaunchApp(node.id); // Default to opening it as an app if it's an exe (handled by GUIOS if configured)
-        }
-      } else {
-        onOpenFile(node.id);
-      }
+      return;
     }
+
+    // Plain file handling
+    if (isPickerMode) {
+      onOpenFile(node.id);
+      return;
+    }
+
+    const upperName = node.name.toUpperCase();
+
+    // 1. Executable app — launch the associated app window
+    if (node.isApp && upperName.endsWith('.EXE') && onLaunchApp) {
+      onLaunchApp(node.id);
+      return;
+    }
+
+    // 2. Legacy DOWNLOADS folder special-cases (setup wizards)
+    if (upperName.endsWith('.EXE') && currentDirNode?.name === 'DOWNLOADS' && onLaunchApp) {
+      if (node.name === 'AETHERIS_NET_MON_SETUP.EXE') {
+        onLaunchApp('netmon_setup');
+      } else if (node.name === 'RHID_SUBSYSTEM_SETUP.EXE') {
+        onLaunchApp('rhid_setup');
+      } else if (node.name === 'AW_RELEASE_RADAR_SETUP.EXE') {
+        onLaunchApp('aw_release_radar_setup');
+      } else if (onLaunchApp) {
+        onLaunchApp(node.id);
+      }
+      return;
+    }
+
+    // 3. File-type router — open with the right built-in app
+    const defaultApp = getDefaultApp(node);
+    if (defaultApp) {
+      if (defaultApp === 'versa_edit') {
+        onOpenFile(node.id); // VersaEdit opened via onOpenFile which sets activeFileId
+      } else if (onLaunchApp) {
+        onLaunchApp(defaultApp);
+      }
+      return;
+    }
+
+    // 4. Protected system files — show access denied
+    const isProtected = PROTECTED_EXTENSIONS.some(ext => upperName.endsWith(ext));
+    if (isProtected) {
+      setAssociationModal({ isOpen: true, nodeId: node.id, fileName: node.name });
+      return;
+    }
+
+    // 5. Other technical files — show association dialog
+    const isTechnical = TECHNICAL_EXTENSIONS.some(ext => upperName.endsWith(ext));
+    if (isTechnical) {
+      setAssociationModal({ isOpen: true, nodeId: node.id, fileName: node.name });
+      return;
+    }
+
+    // 6. Fallback — open in VersaEdit
+    onOpenFile(node.id);
   };
 
   const handleProgramSelect = (programId: string) => {
