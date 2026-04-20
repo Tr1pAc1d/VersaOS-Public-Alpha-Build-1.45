@@ -166,6 +166,7 @@ export interface VFSNode {
   name: string;
   type: FileType;
   parentId: string | null;
+  originalParentId?: string;
   content?: string;
   targetId?: string;
   iconType?: string;
@@ -184,6 +185,8 @@ const DEFAULT_VFS: VFSNode[] = [
   { id: 'users', name: 'Users', type: 'directory', parentId: 'root', customIcon: '/Icons/users_green-4.png' },
   { id: 'programs', name: 'PROGRAMS', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_admin_tools-4.png' },
   { id: 'vespera', name: 'VESPERA', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_closed_cool-0.png' },
+  { id: 'v_program_files', name: 'Program_Files', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_admin_tools-4.png' },
+  { id: 'recycle_bin', name: 'Recycled', type: 'directory', parentId: 'root', customIcon: '/Icons/recycle_bin_empty_cool-0.png' },
   { id: 'dev_logs', name: 'DEV_LOGS', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_closed-4.png' },
   { id: 'system', name: 'SYSTEM', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_closed-4.png' },
   { id: 'downloads', name: 'DOWNLOADS', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_open_file_mydocs-4.png' },
@@ -282,13 +285,8 @@ const DEFAULT_VFS: VFSNode[] = [
   // Games
   { id: 'vsweeper',        name: 'VSWEEPER.EXE',   type: 'file', parentId: 'prog_games',   isApp: true, appDisplayName: 'V-Sweeper',                appVersion: '1.0',  customIcon: '/Icons/game_mine_1-0.png',          content: '[Application]\nName=V-Sweeper\nVersion=1.0' },
   { id: 'neural_solitaire',name: 'SOLITAIRE.EXE',  type: 'file', parentId: 'prog_games',   isApp: true, appDisplayName: 'Neural Solitaire',         appVersion: '1.0',  customIcon: '/Icons/game_solitaire-0.png',       content: '[Application]\nName=Neural Solitaire\nVersion=1.0' },
-  { id: 'w93_catmario',    name: 'CATMARIO.EXE',   type: 'file', parentId: 'prog_games',   isApp: true, appDisplayName: 'Syobon Action (CatMario)', appVersion: '1.0',  customIcon: '/Icons/game_solitaire-0.png',       content: '[Application]\nName=CatMario\nVersion=1.0' },
-  { id: 'w93_castlegafa',  name: 'CASTLEGAFA.EXE', type: 'file', parentId: 'prog_games',   isApp: true, appDisplayName: 'Castle Gafa',              appVersion: '1.0',  customIcon: '/Icons/game_spider-0.png',          content: '[Application]\nName=CastleGafa\nVersion=1.0' },
-  { id: 'w93_halflife3',   name: 'HALFLIFE3.EXE',  type: 'file', parentId: 'prog_games',   isApp: true, appDisplayName: 'Half-Life 3',              appVersion: '3.0',  customIcon: '/Icons/joypad-2.png',               content: '[Application]\nName=Half-Life 3\nVersion=3.0' },
-  { id: 'w93_sirtet',      name: 'SIRTET.EXE',     type: 'file', parentId: 'prog_games',   isApp: true, appDisplayName: 'Sirtet',                   appVersion: '1.0',  customIcon: '/Icons/game_freecell-0.png',        content: '[Application]\nName=Sirtet\nVersion=1.0' },
-  { id: 'w93_skifree',     name: 'SKIFREE.EXE',    type: 'file', parentId: 'prog_games',   isApp: true, appDisplayName: 'SkiFree',                  appVersion: '1.0',  customIcon: '/Icons/game_hearts-0.png',          content: '[Application]\nName=SkiFree\nVersion=1.0' },
   // Network
-  { id: 'browser',         name: 'NAVIGATOR.EXE',  type: 'file', parentId: 'prog_network', isApp: true, appDisplayName: 'Vespera Navigator',        appVersion: '3.0',  customIcon: '/Icons/msie2-3.png',                content: '[Application]\nName=Vespera Navigator\nVersion=3.0' },
+  { id: 'browser',         name: 'NAVIGATOR.EXE',  type: 'file', parentId: 'prog_network', isApp: true, appDisplayName: 'Vespera Navigator',        appVersion: '3.0',  customIcon: '/Icons/world-5.png',                content: '[Application]\nName=Vespera Navigator\nVersion=3.0' },
   { id: 'dialup',          name: 'DIALUP.EXE',     type: 'file', parentId: 'prog_network', isApp: true, appDisplayName: 'VesperaNET Dial-Up',       appVersion: '1.0',  customIcon: '/Icons/directory_dial_up_networking_cool-3.png', content: '[Application]\nName=Dial-Up Networking\nVersion=1.0' },
   { id: 'remote_desktop',  name: 'VESPERACONNECT.EXE', type: 'file', parentId: 'prog_network', isApp: true, appDisplayName: 'VesperaConnect Remote Desktop', appVersion: '2.1', customIcon: '/Icons/netmeeting-2.png', content: '[Application]\nName=VesperaConnect\nVersion=2.1.0\nInstalledAt=1996-10-01T00:00:00Z' },
   // Audio / Video
@@ -305,14 +303,14 @@ const DEFAULT_VFS: VFSNode[] = [
   { id: 'about',           name: 'SYSINFO.EXE',    type: 'file', parentId: 'prog_system',  isApp: true, appDisplayName: 'System Information',       appVersion: '1.0',  customIcon: '/Icons/computer-5.png',             content: '[Application]\nName=System Information\nVersion=1.0' },
 
   // ── Desktop shortcuts for pre-installed apps ────────────────────────────────
+  { id: 'recycle_bin_lnk',  name: 'Recycle Bin',       type: 'shortcut', parentId: 'desktop', targetId: 'recycle_bin', content: 'recycle_bin',  customIcon: '/Icons/recycle_bin_empty_cool-0.png' },
   { id: 'files_lnk',        name: 'File Manager',      type: 'shortcut', parentId: 'desktop', content: 'files',          targetId: 'files',          customIcon: '/Icons/computer_explorer-5.png' },
-  { id: 'browser_lnk',      name: 'Vespera Navigator', type: 'shortcut', parentId: 'desktop', content: 'browser',        targetId: 'browser',        customIcon: '/Icons/msie2-3.png' },
+  { id: 'browser_lnk',      name: 'Vespera Navigator', type: 'shortcut', parentId: 'desktop', content: 'browser',        targetId: 'browser',        customIcon: '/Icons/world-5.png' },
   { id: 'workbench_lnk',    name: 'AETHERIS Workbench',type: 'shortcut', parentId: 'desktop', content: 'workbench',      targetId: 'workbench',      customIcon: '/Icons/console_prompt-0.png' },
   { id: 'axis_paint_lnk',   name: 'Axis Paint 2.0',   type: 'shortcut', parentId: 'desktop', content: 'axis_paint',     targetId: 'axis_paint',     customIcon: '/Icons/paint_old-0.png' },
   { id: 'vsweeper_lnk',     name: 'V-Sweeper',         type: 'shortcut', parentId: 'desktop', content: 'vsweeper',       targetId: 'vsweeper',       customIcon: '/Icons/game_mine_1-0.png' },
   { id: 'solitaire_lnk',    name: 'Neural Solitaire',  type: 'shortcut', parentId: 'desktop', content: 'neural_solitaire', targetId: 'neural_solitaire', customIcon: '/Icons/game_solitaire-0.png' },
-  { id: 'w93_catmario_lnk', name: 'CatMario',          type: 'shortcut', parentId: 'desktop', content: 'w93_catmario',   targetId: 'w93_catmario',   customIcon: '/Icons/game_solitaire-0.png' },
-  { id: 'w93_skifree_lnk',  name: 'SkiFree',           type: 'shortcut', parentId: 'desktop', content: 'w93_skifree',    targetId: 'w93_skifree',    customIcon: '/Icons/game_hearts-0.png' },
+  { id: 'retrotv_lnk',      name: 'Meridian. TV',      type: 'shortcut', parentId: 'desktop', content: 'retrotv',          targetId: 'retrotv',          customIcon: '/Icons/movie_maker-3.png' },
   { id: 'media_lnk',        name: 'VERSA Media Agent', type: 'shortcut', parentId: 'desktop', content: 'media_player',   targetId: 'media_player',   customIcon: '/Icons/media_player-1.png' },
   { id: 'remote_desktop_lnk', name: 'VesperaConnect',  type: 'shortcut', parentId: 'desktop', content: 'remote_desktop', targetId: 'remote_desktop', customIcon: '/Icons/netmeeting-2.png' },
 
@@ -342,12 +340,95 @@ export function useVFS() {
         // EXE files, desktop shortcuts, and documents appear for existing users
         const existingIds = new Set(parsed.map((n: VFSNode) => n.id));
         const missingNodes = DEFAULT_VFS.filter(n => !existingIds.has(n.id));
-        return missingNodes.length > 0 ? [...parsed, ...missingNodes] : parsed;
+        let finalNodes = missingNodes.length > 0 ? [...parsed, ...missingNodes] : parsed;
+        
+        // --- MIGRATION: Auto-generate Program_Files contents ---
+        let hasNewProgFiles = false;
+        const progFilesGen: VFSNode[] = [];
+        const appNodes = finalNodes.filter((n: VFSNode) => n.isApp);
+        appNodes.forEach((app: VFSNode) => {
+          const pfDirId = `pf_dir_${app.id}`;
+          if (!finalNodes.find((n: VFSNode) => n.id === pfDirId)) {
+            hasNewProgFiles = true;
+            progFilesGen.push({
+              id: pfDirId,
+              name: app.name.replace('.EXE', '').replace('.exe', ''),
+              type: 'directory',
+              parentId: 'v_program_files',
+              customIcon: '/Icons/directory_closed-4.png'
+            });
+            progFilesGen.push({
+              id: `pf_dll_${app.id}`,
+              name: 'CORE.DLL',
+              type: 'file',
+              parentId: pfDirId,
+              content: `[System.Runtime.InteropServices]\nEntryPoint=${app.id}\nStatus=OK`,
+              customIcon: '/Icons/gears_3-0.png'
+            });
+            progFilesGen.push({
+              id: `pf_sys_${app.id}`,
+              name: 'INIT.SYS',
+              type: 'file',
+              parentId: pfDirId,
+              content: 'MODE=STRICT\nDEPENDENCY_CHECK=1',
+              customIcon: '/Icons/chip_ramdrive-2.png'
+            });
+            progFilesGen.push({
+              id: `pf_rdm_${app.id}`,
+              name: 'ReadMe.txt',
+              type: 'file',
+              parentId: pfDirId,
+              content: `Application: ${app.appDisplayName || app.name}\nVersion: ${app.appVersion || '1.0'}\n\nDo not modify these core files.`,
+              customIcon: '/Icons/notepad-2.png'
+            });
+          }
+        });
+
+        if (hasNewProgFiles) finalNodes = [...finalNodes, ...progFilesGen];
+        
+        return finalNodes;
       } catch (e) {
         return DEFAULT_VFS;
       }
     }
-    return DEFAULT_VFS;
+    // Return DEFAULT_VFS plus generated prog fields on raw start
+    const progFilesGen: VFSNode[] = [];
+    const appNodes = DEFAULT_VFS.filter((n: VFSNode) => n.isApp);
+    appNodes.forEach((app: VFSNode) => {
+      const pfDirId = `pf_dir_${app.id}`;
+      progFilesGen.push({
+        id: pfDirId,
+        name: app.name.replace('.EXE', '').replace('.exe', ''),
+        type: 'directory',
+        parentId: 'v_program_files',
+        customIcon: '/Icons/directory_closed-4.png'
+      });
+      progFilesGen.push({
+        id: `pf_dll_${app.id}`,
+        name: 'CORE.DLL',
+        type: 'file',
+        parentId: pfDirId,
+        content: `[System.Runtime.InteropServices]\nEntryPoint=${app.id}\nStatus=OK`,
+        customIcon: '/Icons/gears_3-0.png'
+      });
+      progFilesGen.push({
+        id: `pf_sys_${app.id}`,
+        name: 'INIT.SYS',
+        type: 'file',
+        parentId: pfDirId,
+        content: 'MODE=STRICT\nDEPENDENCY_CHECK=1',
+        customIcon: '/Icons/chip_ramdrive-2.png'
+      });
+      progFilesGen.push({
+        id: `pf_rdm_${app.id}`,
+        name: 'ReadMe.txt',
+        type: 'file',
+        parentId: pfDirId,
+        content: `Application: ${app.appDisplayName || app.name}\nVersion: ${app.appVersion || '1.0'}\n\nDo not modify these core files.`,
+        customIcon: '/Icons/notepad-2.png'
+      });
+    });
+    return [...DEFAULT_VFS, ...progFilesGen];
   });
 
   const [displaySettings, setDisplaySettings] = useState(() => {
@@ -591,7 +672,7 @@ export function useVFS() {
     setNodes(prev => {
       // Guard against race conditions
       if (prev.find(n => n.id === appId)) return prev;
-      const next = [...prev, exeNode];
+      let next = [...prev, exeNode];
       if (placeShortcut) {
         const shortcut: VFSNode = {
           id: `${appId}_lnk`,
@@ -604,6 +685,43 @@ export function useVFS() {
         };
         next.push(shortcut);
       }
+      
+      // Auto-generate Program_Files directory
+      const pfDirId = `pf_dir_${appId}`;
+      if (!next.find(n => n.id === pfDirId)) {
+        next.push({
+          id: pfDirId,
+          name: exeName.replace('.EXE', '').replace('.exe', ''),
+          type: 'directory',
+          parentId: 'v_program_files',
+          customIcon: '/Icons/directory_closed-4.png'
+        });
+        next.push({
+          id: `pf_dll_${appId}`,
+          name: 'CORE.DLL',
+          type: 'file',
+          parentId: pfDirId,
+          content: `[System.Runtime.InteropServices]\nEntryPoint=${appId}\nStatus=OK`,
+          customIcon: '/Icons/gears_3-0.png'
+        });
+        next.push({
+          id: `pf_sys_${appId}`,
+          name: 'INIT.SYS',
+          type: 'file',
+          parentId: pfDirId,
+          content: 'MODE=STRICT\nDEPENDENCY_CHECK=1',
+          customIcon: '/Icons/chip_ramdrive-2.png'
+        });
+        next.push({
+          id: `pf_rdm_${appId}`,
+          name: 'ReadMe.txt',
+          type: 'file',
+          parentId: pfDirId,
+          content: `Application: ${displayName}\nVersion: ${version}\n\nDo not modify these core files.`,
+          customIcon: '/Icons/notepad-2.png'
+        });
+      }
+      
       return next;
     });
     return exeNode;
@@ -632,15 +750,56 @@ export function useVFS() {
     setNodes(prev => prev.map(node => node.id === id ? { ...node, customIcon } : node));
   };
 
-  const deleteNode = (id: string) => {
+  const emptyTrash = () => {
     setNodes(prev => {
-      const idsToDelete = new Set<string>([id]);
+      const idsToDelete = new Set<string>();
+      for (const n of prev) {
+         if (n.parentId === 'recycle_bin') idsToDelete.add(n.id);
+      }
       let changed = true;
       while (changed) {
         changed = false;
         for (const node of prev) {
           if (node.parentId && idsToDelete.has(node.parentId) && !idsToDelete.has(node.id)) {
             idsToDelete.add(node.id);
+            changed = true;
+          }
+        }
+      }
+      return prev.filter(node => !idsToDelete.has(node.id));
+    });
+  };
+
+  const restoreNode = (id: string) => {
+    setNodes(prev => {
+      const node = prev.find(n => n.id === id);
+      if (!node || node.parentId !== 'recycle_bin') return prev;
+      
+      const parentExists = prev.some(n => n.id === node.originalParentId);
+      const newParentId = parentExists ? (node.originalParentId || 'desktop') : 'desktop';
+      
+      return prev.map(n => n.id === id ? { ...n, parentId: newParentId, originalParentId: undefined } : n);
+    });
+  };
+
+  const deleteNode = (id: string, forcePermanent = false) => {
+    if (id === 'recycle_bin' || id === 'recycle_bin_lnk') return;
+
+    setNodes(prev => {
+      const node = prev.find(n => n.id === id);
+      if (!node) return prev;
+
+      if (!forcePermanent && node.parentId !== 'recycle_bin') {
+         return prev.map(n => n.id === id ? { ...n, originalParentId: n.parentId, parentId: 'recycle_bin' } : n);
+      }
+
+      const idsToDelete = new Set<string>([id]);
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const child of prev) {
+          if (child.parentId && idsToDelete.has(child.parentId) && !idsToDelete.has(child.id)) {
+            idsToDelete.add(child.id);
             changed = true;
           }
         }
@@ -657,5 +816,5 @@ export function useVFS() {
     return nodes.find(node => node.id === id);
   };
 
-  return { nodes, displaySettings, systemUsers, addSystemUser, updateSystemUser, deleteSystemUser, updateResolution, updateWallpaper, updateBackgroundColor, updateTaskbarTheme, updateTaskbarClock, updateClockSettings, updateWorkspaceMenu, updatePinnedApps, updateWaveBarSettings, updateScreensaverSettings, updateAgentVSettings, updateWelcomeTour, updatePlusTheme, updateCursorStyle, updateAppletSettings, updateStartupApps, updateTaskbarLayout, createNode, renameNode, updateFileContent, deleteNode, getChildren, getNode, updateCustomIcon, installApp, uninstallApp };
+  return { nodes, displaySettings, systemUsers, addSystemUser, updateSystemUser, deleteSystemUser, updateResolution, updateWallpaper, updateBackgroundColor, updateTaskbarTheme, updateTaskbarClock, updateClockSettings, updateWorkspaceMenu, updatePinnedApps, updateWaveBarSettings, updateScreensaverSettings, updateAgentVSettings, updateWelcomeTour, updatePlusTheme, updateCursorStyle, updateAppletSettings, updateStartupApps, updateTaskbarLayout, createNode, renameNode, updateFileContent, deleteNode, emptyTrash, restoreNode, getChildren, getNode, updateCustomIcon, installApp, uninstallApp };
 }

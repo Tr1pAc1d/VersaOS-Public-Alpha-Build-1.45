@@ -77,7 +77,8 @@ import {
   VERSA_MEDIA_PLAYER_SET_VOLUME_EVENT,
 } from "../utils/mediaPlayerBridge";
 import { WeatherChannelApp } from "./WeatherChannelApp";
-import { W93AppLauncher } from "./W93AppLauncher";
+import { PChords } from "./PChords";
+import { PChordsSetup } from "./PChordsSetup";
 
 // ── Post-Login Init helper components ───────────────────────────────────────
 
@@ -250,7 +251,9 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     { id: "task_manager", title: "Vespera Task Manager", x: 100, y: 60, width: 480, height: 420, minWidth: 420, minHeight: 380, isOpen: false },
     { id: "v_messenger_setup", title: "Vespera Messenger Setup", x: 220, y: 120, width: 500, height: 420, isOpen: false },
     { id: "v_messenger", title: "Vespera Messenger", x: 180, y: 100, width: 420, height: 500, minWidth: 350, minHeight: 400, isOpen: false },
-    { id: "weather_channel", title: "The Weather Channel - Interactive", x: 200, y: 150, width: 640, height: 480, isOpen: false }
+    { id: "weather_channel", title: "The Weather Channel - Interactive", x: 200, y: 150, width: 640, height: 480, isOpen: false },
+    { id: "pchords", title: "PChords", x: 250, y: 100, width: 500, height: 450, minWidth: 400, minHeight: 350, isOpen: false },
+    { id: "pchords_setup", title: "PChords Setup", x: 200, y: 130, width: 560, height: 440, isOpen: false }
   ]);
 
   const vfs = useVFS();
@@ -297,7 +300,8 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   const [needsRecovery, setNeedsRecovery] = useState(false);
   const [remoteDesktopCloseWarning, setRemoteDesktopCloseWarning] = useState(false);
   const [showShortcutWizard, setShowShortcutWizard] = useState(false);
-  const [signingOut, setSigningOut] = useState<null | "login" | "terminal">(null);
+  const [signingOut, setSigningOut] = useState<null | "login" | "terminal" | "shutdown">(null);
+  const [appLaunchError, setAppLaunchError] = useState<{ title: string, message: string } | null>(null);
   const [propertiesModal, setPropertiesModal] = useState<{ id: string, name: string, target: string, type?: string } | null>(null);
   const [screensaverActive, setScreensaverActive] = useState(false);
   const [lastFocusedApp, setLastFocusedApp] = useState<string | null>(null);
@@ -507,6 +511,39 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
 
   const vmailInstalled = installedApps.includes('vmail');
 
+  const arrangeIcons = (by: 'name' | 'type') => {
+    const desktopNodes = vfs.getChildren('desktop').filter(node => node.id !== 'netmon_exe_lnk' && node.id !== 'rhid_exe_lnk');
+    const sorted = [...desktopNodes].sort((a, b) => {
+      if (by === 'name') return a.name.localeCompare(b.name);
+      if (by === 'type') return (a.type || '').localeCompare(b.type || '') || a.name.localeCompare(b.name);
+      return 0;
+    });
+    
+    const allIcons: string[] = [];
+    if (installedApps.includes('netmon')) allIcons.push('netmon_icon');
+    if (installedApps.includes('rhid')) allIcons.push('rhid_icon');
+    if (installedApps.includes('retrotv')) allIcons.push('retrotv_icon');
+    allIcons.push(...sorted.map(n => n.id));
+    
+    const cellW = 80;
+    const cellH = 100;
+    const padX = 24;
+    const padY = 24;
+    
+    let currentX = padX;
+    let currentY = padY;
+    
+    const newPositions: Record<string, {x: number, y: number}> = {};
+    for (const id of allIcons) {
+      newPositions[id] = { x: currentX, y: currentY };
+      currentY += cellH;
+      if (currentY + cellH > deskDimsRef.current.h) {
+        currentY = padY;
+        currentX += cellW;
+      }
+    }
+    setIconPositions(newPositions);
+  };
   // Start/stop background mail delivery based on VMail installation
   useEffect(() => {
     if (vmailInstalled && bootPhase === 99) {
@@ -721,6 +758,26 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     return () => clearInterval(interval);
   }, [neuralBridgeActive]);
 
+  // ── Make desktop fade out sequentially when logging off ──
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (signingOut) {
+      const openW = windows.filter(w => w.isOpen);
+      let appCloseTime = 0;
+      
+      openW.forEach((w, idx) => {
+        appCloseTime = (idx + 1) * 400;
+        setTimeout(() => {
+          setWindows(prev => prev.map(win => win.id === w.id ? { ...win, isOpen: false } : win));
+        }, appCloseTime);
+      });
+      
+      setTimeout(() => setIconsVisible(false), appCloseTime + 400);
+      setTimeout(() => setTaskbarVisible(false), appCloseTime + 1000);
+      setTimeout(() => setWallpaperVisible(false), appCloseTime + 1800);
+    }
+  }, [signingOut]);
+
   const bringToFront = (id: string) => {
     setLastFocusedApp(id);
     setWindows(prev => {
@@ -749,7 +806,32 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     });
   };
 
+  const verifyAppIntegrity = (id: string): boolean => {
+    const appNode = vfs.nodes.find((n: any) => n.id === id && n.isApp);
+    if (!appNode) return true; // not an app, skip check
+    const pfDirId = `pf_dir_${id}`;
+    const pfDir = vfs.nodes.find((n: any) => n.id === pfDirId && n.parentId === 'v_program_files');
+    if (!pfDir) return false;
+    const deps = vfs.nodes.filter((n: any) => n.parentId === pfDirId);
+    return deps.some((d: any) => d.name.toUpperCase().endsWith('.DLL') || d.name.toUpperCase().endsWith('.SYS'));
+  };
+
+  const throwAppIntegrityError = (id: string) => {
+    const appNode = vfs.nodes.find((n: any) => n.id === id);
+    playErrorSound();
+    setAppLaunchError({
+      title: `${appNode?.appDisplayName || appNode?.name || id} - Missing Dependency`,
+      message: `The required system components (.dll, .sys) could not be located in C:\\VESPERA\\Program_Files.\n\nPlease reinstall the application.`
+    });
+  };
+
   const openWindow = (id: string) => {
+    // First verify if this is an application and has its necessary program files
+    if (!verifyAppIntegrity(id)) {
+      throwAppIntegrityError(id);
+      return;
+    }
+
     setWindows(prev => {
       const winIndex = prev.findIndex(w => w.id === id);
       if (winIndex === -1) return prev;
@@ -778,6 +860,16 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
 
   const toggleWindow = (id: string) => {
     playUIClickSound();
+
+    // Dependency check for apps being launched
+    const targetWin = windows.find(w => w.id === id);
+    if (targetWin && !targetWin.isOpen) {
+      if (!verifyAppIntegrity(id)) {
+        throwAppIntegrityError(id);
+        return; // Halt toggle
+      }
+    }
+
     setWindows(prev => {
       const winIndex = prev.findIndex(w => w.id === id);
       if (winIndex === -1) return prev;
@@ -844,6 +936,10 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     const onLaunchApp = (e: Event) => {
       const id = (e as CustomEvent<string>).detail;
       if (typeof id !== "string") return;
+      if (!verifyAppIntegrity(id)) {
+        throwAppIntegrityError(id);
+        return;
+      }
       setWindows((prev) => {
         const winIndex = prev.findIndex((w) => w.id === id);
         if (winIndex === -1) return prev;
@@ -857,7 +953,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     };
     window.addEventListener("launch-app", onLaunchApp);
     return () => window.removeEventListener("launch-app", onLaunchApp);
-  }, []);
+  }, [vfs.nodes]);
 
   // Bridge for ControlPanel to launch the AgentV PLUS! Setup Wizard
   useEffect(() => {
@@ -871,6 +967,11 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     const browserWin = windows.find(w => w.id === "browser");
     if (browserWin?.isOpen) {
       toggleWindow("browser");
+      return;
+    }
+
+    if (!verifyAppIntegrity("browser")) {
+      throwAppIntegrityError("browser");
       return;
     }
 
@@ -914,7 +1015,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   const handleShutDown = () => {
     setMenuOpen(false);
     setSubMenuOpen(false);
-    onShutDown();
+    setSigningOut("shutdown");
   };
 
   const handleSignOut = () => {
@@ -1343,16 +1444,6 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         );
       case "aw_release_radar":
         return <ReleaseRadar />;
-      case "w93_catmario":
-        return <W93AppLauncher appUrl="/w93/games/CatMario/index.html" />;
-      case "w93_skifree":
-        return <W93AppLauncher appUrl="/w93/games/SkiFree/index.html" />;
-      case "w93_halflife3":
-        return <W93AppLauncher appUrl="/w93/games/HalfLife3/index.html" />;
-      case "w93_sirtet":
-        return <W93AppLauncher appUrl="/w93/games/Sirtet/index.html" />;
-      case "w93_castlegafa":
-        return <W93AppLauncher appUrl="/w93/games/CastleGafa/index.html" />;
       case "task_manager":
         return <TaskManager
           windows={windows}
@@ -1360,6 +1451,14 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           onSwitchTo={(id) => { bringToFront(id); setWindows(prev => prev.map(w => w.id === id ? { ...w, isMinimized: false } : w)); }}
           vfs={vfs}
         />;
+      case "pchords_setup":
+        return <PChordsSetup
+          vfs={vfs}
+          onComplete={() => closeWindow("pchords_setup", { stopPropagation: () => {} } as any)}
+          onCancel={() => closeWindow("pchords_setup", { stopPropagation: () => {} } as any)}
+        />;
+      case "pchords":
+        return <PChords />;
       default:
         // Generic Setup Wizard logic for VStore apps
         if (id.endsWith("_setup")) {
@@ -1844,8 +1943,23 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
             const id = e.dataTransfer.getData('text/plain');
             if (id) {
               const rect = e.currentTarget.getBoundingClientRect();
-              const x = e.clientX - rect.left - 40;
-              const y = e.clientY - rect.top - 40;
+              const scale = rect.width / (e.currentTarget as any).offsetWidth || 1;
+              let x = (e.clientX - rect.left) / scale - 40;
+              let y = (e.clientY - rect.top) / scale - 40;
+
+              const cellW = 80;
+              const cellH = 100;
+              const padX = 24;
+              const padY = 24;
+
+              x = Math.round((x - padX) / cellW) * cellW + padX;
+              y = Math.round((y - padY) / cellH) * cellH + padY;
+
+              const maxX = deskDimsRef.current.w - cellW;
+              const maxY = deskDimsRef.current.h - cellH;
+              x = Math.max(padX, Math.min(x, maxX));
+              y = Math.max(padY, Math.min(y, maxY));
+              
               setIconPositions(prev => ({ ...prev, [id]: { x, y } }));
             }
           }}
@@ -1896,32 +2010,17 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
             </button>
           )}
 
-          {installedApps.includes("retrotv") && (
-            <button 
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData('text/plain', 'retrotv_icon');
-              }}
-              style={{
-                position: iconPositions['retrotv_icon'] ? 'absolute' : 'relative',
-                left: iconPositions['retrotv_icon']?.x,
-                top: iconPositions['retrotv_icon']?.y,
-                animationDelay: '100ms',
-              }}
-              className={`flex flex-col items-center gap-1 w-20 p-1 hover:bg-white/10 active:bg-purple-800/50 rounded group ${iconsVisible ? 'animate-icon-pop' : ''}`}
-              onContextMenu={(e) => handleContextMenu(e, 'retrotv_icon')}
-              onDoubleClick={() => openWindow("retrotv")}
-            >
-              <Tv size={32} className="text-purple-600 drop-shadow-md" />
-              <span className="text-white text-xs text-center font-bold drop-shadow-md bg-black/50 px-1 rounded group-hover:bg-purple-800">
-                Meridian. TV
-              </span>
-            </button>
-          )}
+
 
           {vfs.getChildren('desktop')
             .filter(node => node.id !== 'netmon_exe_lnk' && node.id !== 'rhid_exe_lnk')
-            .map((node, nodeIndex) => (
+            .map((node, nodeIndex) => {
+              let renderIcon = node.customIcon;
+              if (node.id === 'recycle_bin_lnk') {
+                const trashItems = vfs.getChildren('recycle_bin');
+                renderIcon = trashItems.length > 0 ? '/Icons/recycle_bin_full_cool-0.png' : '/Icons/recycle_bin_empty_cool-0.png';
+              }
+              return (
             <div 
               key={node.id}
               draggable
@@ -1941,7 +2040,13 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 if (node.type === 'directory') {
                   openWindow("files");
                 } else if (node.type === 'shortcut') {
-                  if (node.content) openWindow(node.content);
+                  if (node.id === 'recycle_bin_lnk') {
+                    setFmDirFocusId('recycle_bin');
+                    setFmDirFocusNonce(n => n + 1);
+                    openWindow('files');
+                  } else if (node.content) {
+                    openWindow(node.content);
+                  }
                 } else {
                   setActiveFileId(node.id);
                   openWindow("versa_edit");
@@ -1954,9 +2059,9 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 }
               }}
             >
-              {node.customIcon ? (
+              {renderIcon ? (
                 <div className="relative">
-                  <img src={node.customIcon} alt="icon" className="w-[32px] h-[32px] drop-shadow-md pointer-events-none" style={{ imageRendering: 'pixelated' }} draggable={false} />
+                  <img src={renderIcon} alt="icon" className="w-[32px] h-[32px] drop-shadow-md pointer-events-none" style={{ imageRendering: 'pixelated' }} draggable={false} />
                   {node.type === 'shortcut' && (
                     <div className="absolute -bottom-1 -left-1 bg-white border border-dotted border-black w-3 h-3 flex items-center justify-center">
                       <div className="w-1 h-1 bg-black" />
@@ -2018,7 +2123,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 </span>
               )}
             </div>
-          ))}
+            )})}
         </div>
 
         {/* Shortcut Wizard */}
@@ -2759,7 +2864,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         {/* Tray: Internet, playback volume, spectrum when Media Agent is playing */}
         <div
           ref={taskbarTrayRef}
-          className={`relative ${isVerticalTaskbar ? 'w-full flex-col' : 'h-full'} flex items-stretch gap-0.5 border-2 p-1 shrink-0 ${theme.bgRecessed} ${theme.borderRecessed}`}
+          className={`relative ${isVerticalTaskbar ? 'w-full flex-col' : 'h-full'} flex items-stretch gap-0.5 border-2 p-1 shrink-0 ${theme.bgRecessed} ${theme.borderRecessed} ${taskbarSpanFull ? (isVerticalTaskbar ? 'mt-auto' : 'ml-auto') : ''}`}
         >
           <div className={`relative ${isVerticalTaskbar ? 'w-full' : 'h-full'} flex items-stretch`}>
             <button
@@ -3231,6 +3336,21 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 >
                   Copy
                 </button>
+                {contextMenu.nodeId === 'recycle_bin_lnk' && (
+                  <>
+                    <button 
+                      className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        vfs.emptyTrash();
+                        setContextMenu(null);
+                      }}
+                    >
+                      Empty Recycle Bin
+                    </button>
+                    <div className="h-[1px] bg-gray-400 mx-1 my-1" />
+                  </>
+                )}
                 <button 
                   className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm"
                   onClick={(e) => {
@@ -3312,6 +3432,27 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                   className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm"
                   onClick={(e) => {
                     e.stopPropagation();
+                    arrangeIcons('name');
+                    setContextMenu(null);
+                  }}
+                >
+                  Arrange Icons by Name
+                </button>
+                <button 
+                  className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    arrangeIcons('type');
+                    setContextMenu(null);
+                  }}
+                >
+                  Arrange Icons by Type
+                </button>
+                <div className="h-0.5 bg-gray-500 border-b border-white my-1 mx-1" />
+                <button 
+                  className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
                     addWindow({ id: 'control_panel', title: 'CRT Control Panel', x: Math.max(0, Math.round((deskDimsRef.current.w - 460) / 2)), y: Math.max(0, Math.round((deskDimsRef.current.h - 600) / 2)), width: 460, height: 600, target: 'display' });
                     setContextMenu(null);
                   }}
@@ -3337,14 +3478,47 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         
       </div>
 
+      {/* Missing Dependencies Error Modal */}
+      {appLaunchError && (
+        <div className="absolute inset-0 z-[10000] flex items-center justify-center bg-black/40">
+          <div className="w-[350px] bg-[#c0c0c0] shadow-[2px_2px_0_#000,-2px_-2px_0_#dfdfdf,2px_-2px_0_#000,-2px_2px_0_#dfdfdf] border-2 border-white flex flex-col p-0.5 pointer-events-auto">
+            <div className="bg-gradient-to-r from-[#000080] to-[#1084d0] px-2 py-1 text-white font-bold tracking-wider relative flex justify-between items-center text-sm">
+              <span className="truncate">{appLaunchError.title}</span>
+              <button 
+                onClick={() => setAppLaunchError(null)} 
+                className="w-4 h-4 bg-[#c0c0c0] border border-white border-b-gray-800 border-r-gray-800 flex items-center justify-center text-black font-bold outline-none font-mono text-[10px] hover:active:border-t-gray-800 hover:active:border-l-gray-800 hover:active:border-b-white hover:active:border-r-white"
+              >
+                X
+              </button>
+            </div>
+            <div className="p-4 flex flex-row gap-4 items-start bg-[#c0c0c0]">
+              <div className="shrink-0 w-8 h-8 rounded-full bg-red-600 border border-t-gray-800 border-l-gray-800 border-b-white border-r-white flex items-center justify-center text-white font-bold text-xl shadow-md">
+                X
+              </div>
+              <p className="text-black text-sm whitespace-pre-wrap">{appLaunchError.message}</p>
+            </div>
+            <div className="p-3 flex justify-center border-t border-gray-400 bg-[#c0c0c0]">
+              <button 
+                onClick={() => setAppLaunchError(null)} 
+                className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-black outline-none active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white focus:outline-dotted focus:outline-1 focus:-outline-offset-4 focus:outline-black font-bold"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sign Out / Sign Out to Terminal overlay */}
       {signingOut && (
         <SignOutScreen
           mode={signingOut}
           neuralBridgeActive={neuralBridgeActive}
+          openAppsCount={windows.filter(w => w.isOpen).length}
           onComplete={() => {
             setSigningOut(null);
             if (signingOut === "login") onSignOut();
+            else if (signingOut === "shutdown") onShutDown();
             else onSignOutToTerminal();
           }}
         />
