@@ -1,0 +1,71 @@
+Business local service
+June 13, 1997 -- On June 11, 1997, the Canadian Radio-television and Telecommunications Commission (CRTC) approved Bell Canada's March 21 proposal to introduce a single monthly price of $45.45 for basic local service for all business customers across Ontario and Québec who use business lines and Private Branch Exchange (PBX) trunks.
+
+The new price, which will be introduced on July 1, 1997 includes Bell Touch-ToneTM service, which is now charged separately at $3.80 for individual business lines and $10.50 for PBX trunks.
+
+As our modernization program for Far North customers will not be completed until mid-1998, prices for customers in the Far North will be $40 per line or PBX trunk per month, including Touch-Tone service.
+Centrex service prices
+The CRTC has also approved Bell's April 10, 1997 Centrex pricing proposal. As a result, beginning July 1, 1997 all Centrex customers across Ontario and Québec will pay similar prices for this service.
+
+The new Centrex prices represent a move away from a price structure that is based on a customer's location (i.e., the size of their local calling area), as well as the number of Public Switched Telephone Network (PSTN) connections, to one in which prices will vary according to the number of voice locals and PSTN connections only.
+
+For additional information about the company's Centrex pricing proposal, see Bell files new Centrex service prices, issued April 11, 1997.
+Bell position
+Single monthly price
+Business customers have told us that their telecommunications services should be priced in a manner that is easy to understand and administer. We believe that the new pricing structure is a more effective response to current market conditions and customer needs. It will also:
+
+    eliminate the price difference between PBX trunks and individual lines -- services which can now perform virtually the same functions; and
+
+    lessen the impact of price increases that would have applied in smaller towns and cities and rural areas, under Bell's previous TelecomLink service proposal (filed in December 1995). 
+
+The new price structure is also consistent with the fact that, by the end of 1997 (mid-1998 in the Far North), all customers -- no matter where they live -- will enjoy similar, fully modern, digital telephone service.
+New prices:
+Individual line and PBX trunks
+Until now, there have been 14 different price levels throughout Ontario and Québec, based on the size of a customer's local calling area and the type of service they use. Customers in larger urban centres pay significantly more than customers in smaller towns and cities, even though the cost to provide service in these smaller communities is higher.
+
+Under the new price plan, individual-line customers in larger cities such as Toronto and Montréal -- as well as those customers who can call these larger cities without paying long distance charges --- will see decreases ranging from $3.05 to $6.35 a month.
+
+Individual business line customers in small- and medium-sized communities will see increases ranging from $0.25 to $15.65 per month.
+
+The vast majority of PBX trunk customers will see a decrease in the monthly price they pay for local telephone service. Changes for PBX customers will range from a $30 decrease in the largest centres to a $2.95 increase in the smallest centres.
+Rate group 3A
+(Far North) As our modernization program for Far North customers will not be completed until mid-1998, prices for customers in the Far North will be $40 a month per line. Two-party customers in rate group 3A will pay $28.20 per month. Four-party customers will pay $20.20 per month.
+Two-party, four-party & message rate
+Two-and four-party customers and message rate customers in all other exchanges will also see increases as follows (prices for two- and four-party service do not include Touch-Tone service):
+
+  	Current
+price range 	New
+price
+Two-party service 	$21.20 to $23.90 	$32.55
+Four-party service 	$16.40 to $28.80 	$23.50
+Message rate service* 	$25.40 to $37.40 	$31.80
+(includes a 155 monthly local call allowance with each additional call charged at 9.2 cents).
+
+*not available in some smaller communities; prices include Touch-Tone service.
+Centrex prices
+Today, Centrex customers pay a total price consisting of two components: the number of voice locals, or lines, from a central office port to employees' desks (based on volume and whether the customer pays monthly or has a contract of one, three or five years); and the number of connections required to place outgoing local calls through the public switched telephone network.
+
+Beginning July 1, 1997, prices for Centrex will vary according to the number of voice locals and PSTN connections only.
+
+Small Centrex customers (i.e., less than 100 voice locals), will generally see minimal increases for their PSTN connections. Large Centrex customers (i.e., 100+ voice locals), will generally see decreases for their PSTN connections.
+
+The prices for PSTN connections will be as follows:
+
+Number of PSTN
+connections 	Monthly price
+first 1-5 	$15.00
+subsequent 6-12 	$25.00
+subsequent 13
+and over 	$25.00
+
+The prices for Centrex locals, or lines, will be as follows:
+
+Number of locals 	Monthly price 	1-year contract 	3-year contract 	5-year contract
+Small (1-100 locals) (Single-wire centre) 	$38.00 	$36.10 	$34.20 	$32.30
+Large (101+ locals) (Single-wire centre) 	$38.00 	$31.85 	$23.75 	$22.05
+Large (1,000-15,000 locals) (Multi-wire centre) 	$40.00 	$33.85 	$25.75 	$24.05
+Very large (15,001+ locals) (Multi-wire centre) 	$40.00 	$32.45 	$25.00 	$23.20
+Customer notification
+Customers will be notified of the new prices via a short informational message on their July phone bills.
+Revenue impact
+The new business local service pricing structure is revenue neutral. The new prices will neither increase nor decrease the total revenues Bell generates from basic business telephone service (including Centrex). 

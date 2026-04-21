@@ -1,0 +1,3 @@
+Author: MarketJS
+Version 0.2.1
+Price: Free

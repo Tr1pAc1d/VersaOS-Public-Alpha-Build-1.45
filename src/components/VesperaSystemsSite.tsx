@@ -114,8 +114,8 @@ export const VesperaSystemsSite: React.FC<VesperaPageProps> = (props) => {
       </div>
 
       {/* Marquee */}
-      <div className="bg-[#000080] text-white text-sm py-1 overflow-hidden whitespace-nowrap border-b-2 border-gray-400 select-none hidden sm:block">
-        <marquee scrollamount="5" className="font-bold">
+      <div className="bg-[#000080] text-white text-sm border-b-2 border-gray-400 select-none hidden sm:block w-full overflow-hidden leading-loose">
+        <marquee scrollamount="5" className="font-bold pt-1">
           Welcome to the Vespera Systems Corporate Portal! *** NEW: Vespera OS 1.0.4 is now available for enterprise customers! *** Check out our new Web Directory! ***
         </marquee>
       </div>

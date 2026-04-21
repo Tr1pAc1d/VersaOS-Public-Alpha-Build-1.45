@@ -38,6 +38,21 @@ let ambientEl: HTMLAudioElement | null = null;
 let wizardLoopEl: HTMLAudioElement | null = null;
 const queue: QueuedItem[] = [];
 
+let globalVolumeScale = 1;
+let globalMuted = false;
+
+export function setGlobalVolumeScale(vol: number) {
+  globalVolumeScale = vol;
+  if (ambientEl) ambientEl.volume = 0.12 * globalVolumeScale;
+  if (wizardLoopEl) wizardLoopEl.volume = 0.35 * globalVolumeScale;
+}
+
+export function setGlobalMuted(muted: boolean) {
+  globalMuted = muted;
+  if (ambientEl) ambientEl.muted = muted;
+  if (wizardLoopEl) wizardLoopEl.muted = muted;
+}
+
 function flushQueue() {
   while (queue.length > 0) {
     const item = queue.shift();
@@ -49,7 +64,8 @@ function tryStartAmbient() {
   if (!ambientRequested || ambientEl) return;
   const a = new Audio(SOUNDS.humLoop);
   a.loop = true;
-  a.volume = 0.12;
+  a.volume = 0.12 * globalVolumeScale;
+  a.muted = globalMuted;
   void a.play().then(() => {
     ambientEl = a;
   }).catch(() => {
@@ -80,7 +96,8 @@ function enqueue(src: string, volume: number) {
 function playSoundNow(src: string, volume: number) {
   try {
     const audio = new Audio(src);
-    audio.volume = volume;
+    audio.volume = Math.max(0, Math.min(1, volume * globalVolumeScale));
+    audio.muted = globalMuted;
     const p = audio.play();
     if (p !== undefined) {
       p.catch(() => enqueue(src, volume));
@@ -134,7 +151,8 @@ export function startVStoreInstallWizardMusic() {
   stopVStoreInstallWizardMusic();
   const a = new Audio(SOUNDS.vstoreWizard);
   a.loop = true;
-  a.volume = 0.35;
+  a.volume = 0.35 * globalVolumeScale;
+  a.muted = globalMuted;
   void a.play().then(() => {
     wizardLoopEl = a;
   }).catch(() => {

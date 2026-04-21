@@ -12,6 +12,7 @@ interface TerminalProps {
   onActivateBridge: () => void;
 }
 
+type HistoryEntry = { text: string; type?: 'input' | 'output' | 'error' | 'success'};
 export const Terminal: React.FC<TerminalProps> = ({ 
   onReboot, 
   guiEnabled, 
@@ -20,7 +21,7 @@ export const Terminal: React.FC<TerminalProps> = ({
   neuralBridgeActive,
   onActivateBridge
 }) => {
-  const [history, setHistory] = useState<string[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [input, setInput] = useState("");
   const { ls, cd, cat, getPrompt } = useFileSystem();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -34,7 +35,7 @@ export const Terminal: React.FC<TerminalProps> = ({
   const handleCommand = (cmd: string) => {
     const trimmed = cmd.trim();
     if (!trimmed) {
-      setHistory((prev) => [...prev, getPrompt()]);
+      setHistory((prev) => [...prev, { text: getPrompt(), type: 'input' }]);
       return;
     }
 
@@ -42,7 +43,7 @@ export const Terminal: React.FC<TerminalProps> = ({
     if (trimmed.startsWith("h? ")) {
       const targetCmd = trimmed.slice(3).toLowerCase();
       const helpText = OS_CONFIG.HELP_DATA[targetCmd as keyof typeof OS_CONFIG.HELP_DATA];
-      setHistory((prev) => [...prev, `${getPrompt()}${cmd}`, helpText || `No help available for: ${targetCmd}`]);
+      setHistory((prev) => [...prev, { text: `${getPrompt()}${cmd}`, type: 'input' }, { text: helpText || `No help available for: ${targetCmd}`, type: 'success'}]);
       return;
     }
 
@@ -64,12 +65,38 @@ export const Terminal: React.FC<TerminalProps> = ({
       case "clear":
         setHistory([]);
         return;
+      case "js":
+      case "eval":
+      case "script": {
+        const scriptCode = cmd.substring(command.length).trim();
+        if (!scriptCode) {
+          output = "ERROR: Missing script body. Usage: js [code]";
+          break;
+        }
+        try {
+          // A rudimentary secure evaluation context restricted purely to the browser state.
+          
+          // Try executing as standalone function (handles function declarations, IIFEs, statements).
+          let evaluated;
+          try {
+            evaluated = new Function(scriptCode)();
+          } catch(e1) {
+            // Fallback for raw expressions like "1 + 1" which fail new Function("1+1")() but work in eval
+            evaluated = eval(scriptCode);
+          }
+
+          output = evaluated === undefined ? "" : String(evaluated);
+        } catch (err: any) {
+          output = `Execution Error: ${err.message || 'Unknown exception'}`;
+        }
+        break;
+      }
       case "help":
         if (args[0]) {
           const helpText = OS_CONFIG.HELP_DATA[args[0].toLowerCase() as keyof typeof OS_CONFIG.HELP_DATA];
           output = helpText || `No help available for: ${args[0]}`;
         } else {
-          output = "Available commands:\nls [dir] - List directory contents (alias: dir)\ncd [dir] - Change directory\ncat [file] - Read file content (alias: type)\nclear - Clear terminal\nwhoami - Display current user\ndate - Display system date\nmem - Display memory status\nver - Display OS version\ntutorial - Start navigation guide\nreboot - Restart system\nstartgui - Launch Desktop Environment\nxtype [args] - Neural Bridge interface\nhelp [cmd] - Show help for a command (or use h? [cmd])";
+          output = "Available commands:\nls [dir] - List directory contents (alias: dir)\ncd [dir] - Change directory\ncat [file] - Read file content (alias: type)\nclear - Clear terminal\njs [code] - Evaluate generic JS execution strings (Open-DOS Subsystem Feature)\nwhoami - Display current user\ndate - Display system date\nmem - Display memory status\nver - Display OS version\ntutorial - Start navigation guide\nreboot - Restart system\nstartgui - Launch Desktop Environment\nxtype [args] - Neural Bridge interface\nhelp [cmd] - Show help for a command (or use h? [cmd])";
         }
         break;
       case "tutorial":
@@ -119,7 +146,11 @@ export const Terminal: React.FC<TerminalProps> = ({
         output = `Command not found: ${command}. Type 'help' for assistance.`;
     }
 
-    setHistory((prev) => [...prev, `${getPrompt()}${cmd}`, output].filter(Boolean));
+    
+    const isError = output.toLowerCase().includes("error") || output.includes("Command not found");
+    const outputItem = output ? [{ text: output, type: isError ? 'error' : 'success' as const }] : [];
+    setHistory((prev) => [...prev, { text: `${getPrompt()}${cmd}`, type: 'input' }, ...outputItem]);
+  
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -140,21 +171,31 @@ export const Terminal: React.FC<TerminalProps> = ({
         ref={scrollRef}
         className="flex-1 overflow-y-auto mb-4 space-y-1 scroll-smooth"
       >
-        {history.map((line, i) => (
-          <div key={i} className="whitespace-pre-wrap break-all">
-            {line}
+        {history.map((item, i) => (
+          <div 
+            key={i} 
+            className={`whitespace-pre-wrap break-all ${item.type === 'error' ? 'text-red-500' : item.type === 'success' ? 'text-cyan-400' : 'text-[#00ff41]'}`}
+          >
+            {item.text}
           </div>
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} className="flex items-center">
-        <span className="mr-2 shrink-0">{getPrompt()}</span>
-        <input
+      <form onSubmit={handleSubmit} className="flex items-start">
+        <span className="mr-2 shrink-0 pt-0.5">{getPrompt()}</span>
+        <textarea
           autoFocus
-          type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="flex-1 bg-transparent border-none outline-none text-[#00ff41] caret-block"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleCommand(input);
+              setInput("");
+            }
+          }}
+          rows={Math.max(1, input.split('\n').length)}
+          className="flex-1 bg-transparent border-none outline-none text-[#00ff41] caret-block resize-none overflow-hidden pb-1 pt-0.5"
           spellCheck={false}
         />
       </form>

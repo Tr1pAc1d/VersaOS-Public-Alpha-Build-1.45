@@ -1,0 +1,24 @@
+iStar Internet Inc. and Bell Canada to form significant network relationship
+Networking deal signals maturation in Canadian Internet industry by strengthening iSTAR's national network and ability to deliver business solutions
+
+(OTTAWA, July 10, 1997) -- iSTAR internet Inc. and Bell Canada today announced a relationship that will significantly increase the performance of iSTAR's national Internet network with a move to Bell's fully managed, highly available, public Asynchronous Transfer Mode (ATM) network. The deal sees iSTAR "migrating" from its existing DS3 telecommunications infrastructure to Bell's managed ATM backbone and local access. This agreement would significantly increase iSTAR's network bandwidth while improving network reliability, redundancy and performance.
+
+"Virtually all of our corporate customers are asking for network redundancy and increased bandwidth as they deploy enterprise-wide Internet computing applications," says Craig Wallace, President and CEO of iSTAR. "Migration of our telecommunications infrastructure to Bell's state-of-the-art technology is a significant step towards addressing our customers' requirements while providing a solid infrastructure for future innovations."
+
+The deal fuels iSTAR's aggressive push into the delivery of network-based business solutions including corporate Intranets and electronic commerce. iSTAR's existing dial, dedicated access and web-hosting customers will benefit significantly from the network upgrade.
+
+"As two Canadian businesses, we are looking forward to this relationship," says Terry Jarman, Group Vice-President, Business Development, Bell Canada, "and Bell is aggressively working with iSTAR to help further their competitiveness in this industry. By working with iSTAR and our Stentor partners across Canada, we will provide a managed end-to-end network solution for Canadian businesses. At the same time, both companies recognize that as we execute our business strategies we will still be competing in certain market segments."
+
+As part of the agreement, Bell Canada will provide $20 million of telecommunications services over the next eighteen months for the option of an equity investment in the form of convertible debentures.
+
+"Telecommunication costs are the single greatest expense within the Internet business. Transferring significant network costs to convertible debentures with Bell will have a positive impact on iSTAR's cash-flow over the next 18 months," says John A. Brough, iSTAR's Chief Financial Officer.
+
+iSTAR is also currently considering alternative additional sources of financing. "The financing is intended to provide the company with additional short-term working capital until the full benefit of this arrangement with Bell is realized," says John A. Brough.
+
+An important aspect of this agreement will be the positive impact on iSTAR's customers. By moving to Bell's managed ATM network from a DS3 environment, iSTAR expects to improve the performance of its national network, already rated as one of the best networks in North America. In addition, Bell's Managed Network Services offer a complete fail-safe, highly redundant network, virtually assuring 100 per cent telecommunications "up-time".
+
+Bell Canada, the largest Canadian telecommunications operating company, markets a full range of state-of-the-art products and services to more than seven million business and residence customers in Ontario and Québec. Bell Canada is a member of Stentor - an alliance of Canada's major telecommunications companies.
+
+iSTAR has eight major computing centres across the country that form the foundation of their outsourced computing applications business. These centres, along with the 40 POPs (points of presence), will continue to support the company's dial, dedicated access, web-hosting and business solutions offerings.
+
+iSTAR Internet Inc. is Canada's leading Internet solutions company providing advanced Internet services for businesses, institutions and individuals. iSTAR provides customers with a broad range of networking expertise and web-based products and services including iCOMMERCE and iNTRANET business solutions with high-speed connection to the Internet through a national backbone network. iSTAR shares trade on the Toronto Stock Exchange under the symbol WWW. More information on iSTAR can be found on the web at http://www.istar.ca. 

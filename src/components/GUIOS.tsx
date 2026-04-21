@@ -22,10 +22,12 @@ import {
   startPlusAmbient,
   stopPlusAmbient,
   setPlusAmbientMuted,
+  setGlobalVolumeScale,
+  setGlobalMuted,
 } from "../utils/audio";
 import { PLUS_THEMES } from "../utils/plusThemes";
 import { useVMail } from "../contexts/VMailContext";
-import { APP_DICTIONARY } from "../utils/appDictionary";
+import { APP_DICTIONARY, getCompatibleApps } from "../utils/appDictionary";
 import { useVFS, VFSNode, WorkspaceMenuItem, DEFAULT_WORKSPACE_MENU, WORKSPACE_MENU_THEME_COLORS } from "../hooks/useVFS";
 import { VersaFileManager } from "./VersaFileManager";
 import { VesperaWrite } from "./VesperaWrite";
@@ -37,9 +39,11 @@ import { DiskDefrag } from "./DiskDefrag";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { RHIDSetupWizard, RHIDIcon } from "./RHIDSetupWizard";
 import { RHIDTerminal } from "./RHIDTerminal";
+import { OpenDOSPrompt } from "./OpenDOSPrompt";
 import { VStore } from "./VStore";
 import { PackManSetup } from "./PackManSetup";
 import { PackMan } from "./PackMan";
+import { LeaveMeAlone } from "./LeaveMeAlone";
 import { VMailSetup } from "./VMailSetup";
 import { VMail } from "./VMail";
 import { GenericSetupWizard } from "./GenericSetupWizard";
@@ -47,6 +51,8 @@ import { GenericAppPlaceholder } from "./GenericAppPlaceholder";
 import { AxisPaintSetup } from "./AxisPaintSetup";
 import { AxisPaint } from "./AxisPaint";
 import { WelcomeTour } from "./WelcomeTour";
+import { VolumeControl } from "./VolumeControl";
+import { VersaView } from "./VersaView";
 import { VSTORE_APPS } from "../data/vstoreApps";
 
 import { HelpViewer } from "./HelpViewer";
@@ -79,6 +85,10 @@ import {
 import { WeatherChannelApp } from "./WeatherChannelApp";
 import { PChords } from "./PChords";
 import { PChordsSetup } from "./PChordsSetup";
+import { PluginSandbox } from "./PluginSandbox";
+import { ThirdPartySetupWizard } from "./ThirdPartySetupWizard";
+import { getPlugins } from "../utils/systemRegistry";
+import type { AppManifest, InstalledPlugin } from "../types/pluginTypes";
 
 // ── Post-Login Init helper components ───────────────────────────────────────
 
@@ -197,6 +207,9 @@ const ICON_MAP: Record<string, React.FC<{ size?: number; className?: string }>> 
 
 export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActive, neuralBridgeEnabled, neuralBoostEnabled, unrestrictedPollingEnabled, setUnrestrictedPollingEnabled, onShutDown, onSignOut, onSignOutToTerminal, screenMode, setScreenMode, currentUser }) => {
   const { strictDialUp, linkStatus, isLinkUp } = useNetworkLink();
+  const [fatalError, setFatalError] = useState<{title: string, message: string, type?: string} | null>(null);
+  const [systemWarnings, setSystemWarnings] = useState<Array<{id: string, title: string, message: string, pluginId?: string}>>([]);
+  
   const [windows, setWindows] = useState<{ 
     id: string; 
     title: string; 
@@ -224,6 +237,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     { id: "netmon_setup", title: "AETHERIS Setup Wizard", x: 300, y: 150, width: 500, height: 400, isOpen: false },
     { id: "uninstall_wizard", title: "Vespera Uninstall Wizard", x: 300, y: 150, width: 500, height: 400, isOpen: false, target: "", nodeId: "" },
     { id: "workbench", title: "AETHERIS Workbench Pro - [C:\\VESPERA\\SRC\\DIAGNOSTIC.SC]", x: 60, y: 30, width: 750, height: 550, isOpen: false },
+      { id: "open_dos", title: "Open-DOS Subsystem", x: 80, y: 40, width: 640, height: 480, isOpen: false },
     { id: "versa_edit", title: "VersaEdit", x: 150, y: 150, width: 600, height: 450, isOpen: false },
     { id: "defrag", title: "Disk Defragmenter - Drive C:", x: 180, y: 120, width: 500, height: 480, isOpen: false },
     { id: "rhid_setup", title: "RHID Terminal Setup", x: 280, y: 120, width: 520, height: 440, isOpen: false },
@@ -231,6 +245,8 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     { id: "vstore", title: "VStore Software Exchange", x: 80, y: 50, width: 750, height: 500, isOpen: false },
     { id: "packman_setup", title: "Pac-Man Setup", x: 200, y: 150, width: 550, height: 420, isOpen: false },
     { id: "packman", title: "Pac-Man (x86)", x: 120, y: 90, width: 366, height: 580, isOpen: false },
+    { id: "leave_me_alone_setup", title: "Leave Me Alone Setup", x: 200, y: 130, width: 550, height: 420, isOpen: false },
+    { id: "leave_me_alone", title: "Leave Me Alone", x: 140, y: 60, width: 510, height: 728, isOpen: false },
     { id: "vmail_setup", title: "VMail Setup Wizard", x: 220, y: 120, width: 500, height: 380, isOpen: false },
     { id: "vmail", title: "VesperaNET Mail", x: 100, y: 70, width: 720, height: 500, isOpen: false },
     { id: "help", title: "Vespera Help", x: 120, y: 80, width: 640, height: 520, isOpen: false },
@@ -253,7 +269,9 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     { id: "v_messenger", title: "Vespera Messenger", x: 180, y: 100, width: 420, height: 500, minWidth: 350, minHeight: 400, isOpen: false },
     { id: "weather_channel", title: "The Weather Channel - Interactive", x: 200, y: 150, width: 640, height: 480, isOpen: false },
     { id: "pchords", title: "PChords", x: 250, y: 100, width: 500, height: 450, minWidth: 400, minHeight: 350, isOpen: false },
-    { id: "pchords_setup", title: "PChords Setup", x: 200, y: 130, width: 560, height: 440, isOpen: false }
+    { id: "pchords_setup", title: "PChords Setup", x: 200, y: 130, width: 560, height: 440, isOpen: false },
+    { id: "volume_control", title: "Volume Control", x: 180, y: 120, width: 490, height: 320, minWidth: 460, minHeight: 280, isOpen: false },
+    { id: "versa_view", title: "VersaView Image Viewer", x: 140, y: 100, width: 600, height: 500, isOpen: false }
   ]);
 
   const vfs = useVFS();
@@ -283,6 +301,13 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
       setContextMenu({ x: e.clientX, y: e.clientY, nodeId });
     }
   };
+
+  useEffect(() => {
+    if (!contextMenu) {
+      setOpenWithNodeId(null);
+    }
+  }, [contextMenu]);
+
   const [renameValue, setRenameValue] = useState("");
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
   const [runDialogOpen, setRunDialogOpen] = useState(false);
@@ -300,11 +325,16 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   const [needsRecovery, setNeedsRecovery] = useState(false);
   const [remoteDesktopCloseWarning, setRemoteDesktopCloseWarning] = useState(false);
   const [showShortcutWizard, setShowShortcutWizard] = useState(false);
+  const [openWithNodeId, setOpenWithNodeId] = useState<string | null>(null);
+  const [openWithPos, setOpenWithPos] = useState<{ x: number; y: number } | null>(null);
   const [signingOut, setSigningOut] = useState<null | "login" | "terminal" | "shutdown">(null);
   const [appLaunchError, setAppLaunchError] = useState<{ title: string, message: string } | null>(null);
   const [propertiesModal, setPropertiesModal] = useState<{ id: string, name: string, target: string, type?: string } | null>(null);
   const [screensaverActive, setScreensaverActive] = useState(false);
   const [lastFocusedApp, setLastFocusedApp] = useState<string | null>(null);
+
+  // ── Plugin architecture state ───────────────────────────────────────────
+  const [activePluginSetup, setActivePluginSetup] = useState<AppManifest | null>(null);
   const [iconPositions, setIconPositions] = useState<Record<string, {x: number, y: number}>>(() => {
     const saved = localStorage.getItem('desktop_icon_positions');
     return saved ? JSON.parse(saved) : {};
@@ -313,6 +343,47 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   useEffect(() => {
     localStorage.setItem('desktop_icon_positions', JSON.stringify(iconPositions));
   }, [iconPositions]);
+
+  // ── Plugin: hydrate window list from localStorage on mount ──────────────────
+  useEffect(() => {
+    const addPluginWindows = (plugins: InstalledPlugin[]) => {
+      plugins.forEach(p => {
+        const wid = p.windowId;
+        setWindows(prev => {
+          if (prev.find(w => w.id === wid)) return prev;
+          return [...prev, {
+            id: wid,
+            title: p.manifest.name,
+            x: 120, y: 80, width: 640, height: 480,
+            minWidth: 400, minHeight: 300,
+            isOpen: false,
+            type: 'plugin',
+          }];
+        });
+      });
+    };
+
+    // Hydrate on mount
+    addPluginWindows(getPlugins());
+
+    // React to new plugins installed during the session
+    const onInstalled = (e: Event) => {
+      const record = (e as CustomEvent<InstalledPlugin>).detail;
+      setWindows(prev => {
+        if (prev.find(w => w.id === record.windowId)) return prev;
+        return [...prev, {
+          id: record.windowId,
+          title: record.manifest.name,
+          x: 120, y: 80, width: 640, height: 480,
+          minWidth: 400, minHeight: 300,
+          isOpen: false,
+          type: 'plugin',
+        }];
+      });
+    };
+    window.addEventListener('plugin-installed', onInstalled);
+    return () => window.removeEventListener('plugin-installed', onInstalled);
+  }, []);
 
   // Welcome Tour Trigger
   useEffect(() => {
@@ -323,6 +394,101 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
       return () => clearTimeout(timeout);
     }
   }, []);
+
+  // ─── Global Error and BSOD Handler ─────────────────────────────────────────
+  useEffect(() => {
+    let isWritingError = false;
+
+    const handleSystemError = async (e: Event) => {
+      const ev = e as CustomEvent<{ type?: string, title: string, message: string, fatal: boolean, pluginId?: string }>;
+      const d = ev.detail;
+      
+      // Update UI state
+      if (d.fatal) {
+        setFatalError({ title: d.title, message: d.message, type: d.type });
+      } else {
+        setSystemWarnings(w => [...w, { id: Math.random().toString(36).substr(2, 9), ...d }]);
+      }
+
+      // VFS Persistence
+      if (isWritingError) return; // Prevent infinite crash loop if VFS fails
+      isWritingError = true;
+      try {
+        let logsFolder = vfs.getChildren('prog_system').find((n: any) => n.name === 'logs');
+        if (!logsFolder) {
+           vfs.createNode('logs', 'folder', 'prog_system', '');
+           logsFolder = vfs.getChildren('prog_system').find((n: any) => n.name === 'logs');
+        }
+        if (logsFolder) {
+           let errFile = vfs.getChildren(logsFolder.id).find((n: any) => n.name === 'error.log');
+           if (!errFile) {
+             vfs.createNode('error.log', 'file', logsFolder.id, '[System Log Initialized]\\n', undefined, 'file');
+             errFile = vfs.getChildren(logsFolder.id).find((n: any) => n.name === 'error.log');
+           }
+           if (errFile) {
+             const timestamp = new Date().toISOString();
+             const typeStr = d.type ? `[${d.type}]` : '[Error]';
+             const curContent = errFile.content || '';
+             // Log rotation: split by newline, keep last 99, append new line
+             const lines = curContent.split('\\n').filter(Boolean);
+             if (lines.length > 99) {
+               lines.splice(0, lines.length - 99);
+             }
+             const newLog = `${timestamp} ${typeStr} ${d.title}: ${d.message}\\n`;
+             vfs.updateFileContent(errFile.id, lines.join('\\n') + (lines.length > 0 ? '\\n' : '') + newLog);
+           }
+        }
+      } catch (err) {
+        /* Ignore failure during error logging */
+      } finally {
+        isWritingError = false;
+      }
+    };
+
+    window.addEventListener('vespera-system-error', handleSystemError);
+
+    // Global uncaught fallback
+    const handleGlobalError = (msg: any, url: any, lineNo: any, columnNo: any, error: any) => {
+      // Ignore some noise
+      if (typeof msg === 'string' && msg.includes('ResizeObserver')) return false;
+
+      const stack = error?.stack || String(msg);
+      // Heuristic: eval / <anonymous> generally indicates a plugin boundary failure
+      const isPlugin = stack.includes('eval') || stack.includes('anonymous');
+
+      window.dispatchEvent(new CustomEvent('vespera-system-error', {
+        detail: {
+          type: isPlugin ? 'Application Error' : 'System Kernel Exception',
+          title: isPlugin ? 'Plugin Execution Fault' : 'Core OS Fault',
+          message: String(msg),
+          fatal: !isPlugin // Only core faults are fatal
+        }
+      }));
+      return false; // let default handler run too
+    };
+
+    const handleUnhandledRejection = (e: PromiseRejectionEvent) => {
+      const stack = e.reason?.stack || String(e.reason);
+      const isPlugin = stack.includes('eval') || stack.includes('anonymous');
+      window.dispatchEvent(new CustomEvent('vespera-system-error', {
+        detail: {
+          type: isPlugin ? 'Application Error' : 'System Kernel Exception',
+          title: 'Unhandled Promise Rejection',
+          message: String(e.reason?.message || e.reason),
+          fatal: !isPlugin
+        }
+      }));
+    };
+
+    window.onerror = handleGlobalError;
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('vespera-system-error', handleSystemError);
+      window.onerror = null;
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, [vfs]);
 
   // Startup Apps Auto-Launch
   useEffect(() => {
@@ -363,6 +529,11 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
       stopPlusAmbient();
     };
   }, [vfs.displaySettings?.plusTheme, vfs.displaySettings?.plusThemeAmbientMuted]);
+
+  useEffect(() => {
+    setGlobalVolumeScale(vfs.displaySettings?.soundEffectsVolume ?? 1.0);
+    setGlobalMuted(vfs.displaySettings?.systemMuted ?? false);
+  }, [vfs.displaySettings?.soundEffectsVolume, vfs.displaySettings?.systemMuted]);
 
   useEffect(() => {
     if (localStorage.getItem('needsRecovery') === 'true') {
@@ -1339,7 +1510,9 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           />
         );
       case "workbench":
-        return <AetherisWorkbench />;
+          return <AetherisWorkbench />;
+        case "open_dos":
+          return <OpenDOSPrompt onReboot={onReboot} neuralBridgeActive={neuralBridgeActive} neuralBridgeEnabled={neuralBridgeEnabled} />;
       case "versa_edit":
         return <VesperaWrite vfs={vfs} fileId={activeFileId} onClose={() => closeWindow("versa_edit", { stopPropagation: () => {} } as any)} onSave={(content) => {
           if (activeFileId) {
@@ -1366,6 +1539,42 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         return <VersaMediaPlayer />;
       case "vstore":
         return <VStore onInstallApp={(id) => {
+          // ── Community / plugin app: route to ThirdPartySetupWizard ──
+          if (id.startsWith('community_')) {
+            const pluginId = id.replace(/^community_/, '');
+
+            // Primary: look up from the plugin registry (vespera_plugins)
+            let manifest = getPlugins().find(p => p.manifest.id === pluginId)?.manifest;
+
+            // Fallback: read full manifest stored in vstore_community_apps._manifest
+            if (!manifest) {
+              try {
+                const raw = localStorage.getItem('vstore_community_apps');
+                if (raw) {
+                  const list = JSON.parse(raw) as Array<any>;
+                  const stored = list.find((a: any) => a.id === id);
+                  if (stored?._manifest) {
+                    // Re-register so it's in the registry going forward
+                    try { System.registerApp(stored._manifest); } catch { /* ignore dup */ }
+                    manifest = stored._manifest as AppManifest;
+                  }
+                }
+              } catch { /* ignore */ }
+            }
+
+            if (manifest) {
+              setActivePluginSetup(manifest);
+              const winId = `plugin_${pluginId}_setup`;
+              addWindow({
+                id: winId,
+                title: `${manifest.name} Setup`,
+                x: 180, y: 100, width: 580, height: 460,
+              });
+              openWindow(winId);
+              return;
+            }
+          }
+          // ── Standard VStore app: route to GenericSetupWizard ──
           const app = VSTORE_APPS.find(a => a.id === id);
           addWindow({
             id: `${id}_setup`,
@@ -1375,26 +1584,41 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
             width: 560,
             height: 440,
           });
-        }} installedApps={installedApps} onLaunchBrowser={(url?: string) => {
-          // Launch browser with the requested URL or default to Downloads page
+        }} installedApps={installedApps} vfs={vfs}
+        onOpenSetupWizard={(manifest: AppManifest) => {
+          // Open the ThirdPartySetupWizard for a freshly imported plugin
+          setActivePluginSetup(manifest);
+          addWindow({
+            id: `plugin_${manifest.id}_setup`,
+            title: `${manifest.name} Setup`,
+            x: 180, y: 100, width: 580, height: 460,
+          });
+          openWindow(`plugin_${manifest.id}_setup`);
+        }}
+        onLaunchBrowser={(url?: string) => {
           const targetUrl = url || 'http://www.vesperasystems.com/Downloads.html';
           const browserWin = windows.find(w => w.id === "browser");
           if (browserWin?.isOpen) {
-            // Browser already open — just navigate
             bringToFront("browser");
             window.dispatchEvent(new CustomEvent('navigate-browser', { detail: targetUrl }));
           } else {
-            // Launch browser, then navigate after it opens
             handleLaunchBrowser();
             setTimeout(() => {
               window.dispatchEvent(new CustomEvent('navigate-browser', { detail: targetUrl }));
             }, 2000);
           }
         }} />;
+      case "versa_view":
+        const vvNode = vfs.getNode(activeFileId || "");
+        return <VersaView vfs={vfs} fileId={activeFileId || undefined} onClose={() => closeWindow("versa_view", { stopPropagation: () => {} } as any)} />;
       case "packman_setup":
         return <PackManSetup vfs={vfs} onComplete={() => closeWindow("packman_setup", { stopPropagation: () => {} } as any)} onCancel={() => closeWindow("packman_setup", { stopPropagation: () => {} } as any)} />;
       case "packman":
         return <PackMan />;
+      case "leave_me_alone_setup":
+        return <GenericSetupWizard appId="leave_me_alone" appName="Leave Me Alone" appVersion="0.2.1" customIcon="/Games_VStore/Leave Me Alone/Leave_Me_Alone_Icon.png" vfs={vfs} onComplete={() => closeWindow("leave_me_alone_setup", { stopPropagation: () => {} } as any)} onCancel={() => closeWindow("leave_me_alone_setup", { stopPropagation: () => {} } as any)} />;
+      case "leave_me_alone":
+        return <LeaveMeAlone />;
       case "vmail_setup":
         return <VMailSetup vfs={vfs} onComplete={() => closeWindow("vmail_setup", { stopPropagation: () => {} } as any)} onCancel={() => closeWindow("vmail_setup", { stopPropagation: () => {} } as any)} />;
       case "vmail":
@@ -1459,6 +1683,8 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         />;
       case "pchords":
         return <PChords />;
+      case "volume_control":
+        return <VolumeControl />;
       default:
         // Generic Setup Wizard logic for VStore apps
         if (id.endsWith("_setup")) {
@@ -1493,6 +1719,38 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           const nodeId = id.replace("properties_", "");
           return <FileProperties vfs={vfs} nodeId={nodeId} onClose={() => closeWindow(id, { stopPropagation: () => {} } as any)} neuralBridgeActive={neuralBridgeActive} />;
         }
+
+        // ── Third-party plugin setup wizard ─────────────────────────────────────────────
+        if (id.endsWith('_setup') && id.startsWith('plugin_')) {
+          const pluginId = id.replace(/^plugin_/, '').replace(/_setup$/, '');
+          // Prefer registry lookup (works across sessions); fall back to in-flight state
+          const fromRegistry = getPlugins().find(p => p.manifest.id === pluginId);
+          const manifest = fromRegistry?.manifest ?? activePluginSetup;
+          if (manifest) {
+            return (
+              <ThirdPartySetupWizard
+                manifest={manifest}
+                vfs={vfs}
+                onComplete={() => {
+                  setActivePluginSetup(null);
+                  closeWindow(id, { stopPropagation: () => {} } as any);
+                }}
+                onCancel={() => {
+                  setActivePluginSetup(null);
+                  closeWindow(id, { stopPropagation: () => {} } as any);
+                }}
+              />
+            );
+          }
+        }
+
+        // ── Third-party plugin runtime sandbox ──────────────────────────────────────────
+        if (id.startsWith('plugin_')) {
+          // id is `plugin_${manifest.id}`, strip the prefix
+          const pluginId = id.replace(/^plugin_/, '');
+          return <PluginSandbox pluginId={pluginId} />;
+        }
+
         return null;
     }
   };
@@ -1695,9 +1953,9 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           ...(!neuralBridgeActive && vfs.displaySettings?.backgroundColor && wallpaperVisible ? { backgroundColor: vfs.displaySettings.backgroundColor } : {}),
           ...(!neuralBridgeActive && vfs.displaySettings?.wallpaper && wallpaperVisible ? { 
             backgroundImage: `url('${vfs.displaySettings.wallpaper}')`, 
-            backgroundSize: 'cover', 
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
+            backgroundSize: vfs.displaySettings.wallpaperLayout === 'stretch' ? '100% 100%' : (vfs.displaySettings.wallpaperLayout === 'cover' || !vfs.displaySettings.wallpaperLayout ? 'cover' : 'auto'),
+            backgroundPosition: vfs.displaySettings.wallpaperLayout === 'tile' ? 'top left' : 'center',
+            backgroundRepeat: vfs.displaySettings.wallpaperLayout === 'tile' ? 'repeat' : 'no-repeat'
           } : {})
         }}
       >
@@ -2072,7 +2330,15 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 <Folder size={32} className="text-yellow-400 drop-shadow-md" />
               ) : node.type === 'shortcut' ? (
                 <div className="relative">
-                  {node.iconType === 'folder' ? <Folder size={32} className="text-yellow-400 drop-shadow-md" /> :
+                  {renderIcon ? (
+                    <img
+                      src={renderIcon}
+                      alt={node.name}
+                      className="w-8 h-8 object-contain drop-shadow-md"
+                      style={{ imageRendering: 'pixelated' }}
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  ) : node.iconType === 'folder' ? <Folder size={32} className="text-yellow-400 drop-shadow-md" /> :
                    node.iconType === 'system' ? <Settings size={32} className="text-gray-400 drop-shadow-md" /> :
                    node.iconType === 'app' ? <TerminalIcon size={32} className="text-gray-400 drop-shadow-md" /> :
                    node.iconType === 'pen' ? <PenTool size={32} className="text-red-500 drop-shadow-md" /> :
@@ -2940,6 +3206,12 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 setInternetTrayOpen(false);
                 setVolumeTrayOpen((o) => !o);
               }}
+              onDoubleClick={() => {
+                setVolumeTrayOpen(false);
+                if (!windows.find(w => w.id === "volume_control")?.isOpen) {
+                  openWindow("volume_control");
+                }
+              }}
               className={`${isVerticalTaskbar ? 'w-full py-2' : 'h-full w-9'} flex items-center justify-center border-2 ${theme.bgButton} ${theme.borderButton} ${theme.activeClass}`}
             >
               {taskbarMedia.volume < 0.04 ? (
@@ -2950,7 +3222,36 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
             </button>
             {volumeTrayOpen && (
               <div className={`absolute z-[10001] w-[248px] box-border bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] px-2.5 py-2 ${taskbarPosition === 'bottom' ? 'bottom-[calc(100%+6px)] right-0' : taskbarPosition === 'top' ? 'top-[calc(100%+6px)] right-0' : taskbarPosition === 'left' ? 'left-[calc(100%+6px)] top-0' : 'right-[calc(100%+6px)] top-0'}`}>
-                <div className="text-[10px] font-bold text-black mb-1.5">Playback volume</div>
+                <div className="flex justify-between items-end mb-1.5">
+                  <div className="text-[10px] font-bold text-black">Master System Volume</div>
+                  <button 
+                    className="text-[9px] underline text-blue-800 hover:text-blue-600 cursor-pointer p-0 border-none bg-transparent"
+                    onClick={() => {
+                      setVolumeTrayOpen(false);
+                      openWindow('volume_control');
+                    }}
+                  >
+                    Volume Control...
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5 w-full min-w-0 mb-3">
+                  <VolumeX size={14} className="text-gray-600 shrink-0 w-[14px]" aria-hidden />
+                  <div className="flex-1 min-w-0 py-1">
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.02}
+                      value={vfs.displaySettings?.soundEffectsVolume ?? 1.0}
+                      onChange={(e) => vfs.updateSoundSettings(Number(e.target.value), vfs.displaySettings?.systemMuted ?? false)}
+                      className="block w-full max-w-full h-2 min-h-[8px] accent-[#000080] cursor-pointer"
+                      style={{ boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <Volume2 size={14} className="text-gray-600 shrink-0 w-[14px]" aria-hidden />
+                </div>
+
+                <div className="text-[10px] font-bold text-black mb-1.5 pt-2 border-t border-gray-400">Media Playback volume</div>
                 <div className="flex items-center gap-1.5 w-full min-w-0">
                   <VolumeX size={14} className="text-gray-600 shrink-0 w-[14px]" aria-hidden />
                   <div className="flex-1 min-w-0 py-1">
@@ -2967,7 +3268,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                   </div>
                   <Volume2 size={14} className="text-gray-600 shrink-0 w-[14px]" aria-hidden />
                 </div>
-                <p className="text-[9px] text-gray-600 mt-1.5 leading-tight">Adjusts VERSA Media Agent output. Preference is saved.</p>
+                <p className="text-[9px] text-gray-600 mt-1.5 leading-tight mb-2">Adjusts VERSA Media Agent output. Preference is saved.</p>
 
                 {(vfs.displaySettings?.plusTheme && vfs.displaySettings.plusTheme !== 'standard' && PLUS_THEMES[vfs.displaySettings.plusTheme]?.ambientType) ? (
                   <div className="mt-3 border-t border-gray-400 pt-2">
@@ -3313,6 +3614,81 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 >
                   Open
                 </button>
+                <div 
+                  className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm flex justify-between items-center relative cursor-default"
+                  onMouseEnter={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setOpenWithNodeId(contextMenu.nodeId!);
+                    setOpenWithPos({ x: rect.width - 4, y: 0 });
+                  }}
+                  onMouseLeave={() => {
+                    // We handle closing via the main context menu close or if we hover elsewhere
+                  }}
+                >
+                  <span>Open with</span>
+                  <ChevronRight size={14} />
+                  
+                  {openWithNodeId === contextMenu.nodeId && openWithPos && (
+                    <div 
+                      className="absolute bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] z-[201] flex flex-col py-1"
+                      style={{ left: openWithPos.x, top: openWithPos.y, minWidth: 160 }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      {(() => {
+                        const node = vfs.getNode(contextMenu.nodeId!);
+                        const apps = node ? getCompatibleApps(node.name) : [];
+                        if (apps.length === 0) return <div className="px-4 py-1 text-gray-500 italic text-xs">No apps found</div>;
+                        
+                        return apps.map(appId => {
+                          const appInfo = APP_DICTIONARY[appId] || APP_DICTIONARY['default'];
+                          return (
+                            <button
+                              key={appId}
+                              className="text-left px-4 py-1 hover:bg-[#000080] hover:text-white text-black text-sm flex items-center gap-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveFileId(contextMenu.nodeId!);
+                                openWindow(appId);
+                                setContextMenu(null);
+                                setOpenWithNodeId(null);
+                              }}
+                            >
+                              {appInfo.customIcon ? (
+                                <img src={appInfo.customIcon} alt="" className="w-4 h-4" />
+                              ) : (
+                                <appInfo.icon size={14} />
+                              )}
+                              <span>{appInfo.defaultTitle}</span>
+                            </button>
+                          );
+                        });
+                      })()}
+                    </div>
+                  )}
+                </div>
+                {(() => {
+                  const node = vfs.getNode(contextMenu.nodeId!);
+                  if (node && node.type === 'file' && node.content?.startsWith('data:image/')) {
+                    return (
+                      <button 
+                        className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-[#000080] font-bold text-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const a = document.createElement('a');
+                          a.href = node.content as string;
+                          a.download = node.name;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          setContextMenu(null);
+                        }}
+                      >
+                        Export to real OS
+                      </button>
+                    );
+                  }
+                  return null;
+                })()}
                 <button 
                   className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm"
                   onClick={(e) => {
@@ -3506,6 +3882,77 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Global System Warnings */}
+      {systemWarnings.map((warning, index) => {
+        const metaInfo = warning.pluginId ? (APP_DICTIONARY[warning.pluginId] || APP_DICTIONARY['default']) : null;
+        return (
+          <div key={warning.id} className="absolute inset-0 z-[99999] flex items-center justify-center pointer-events-none" style={{ marginTop: index * 24, marginLeft: index * 24 }}>
+            <div className="w-[450px] bg-[#c0c0c0] shadow-[2px_2px_0_#000,-2px_-2px_0_#dfdfdf,2px_-2px_0_#000,-2px_2px_0_#dfdfdf] border-2 border-white flex flex-col p-0.5 pointer-events-auto">
+              <div className="bg-gradient-to-r from-[#000080] to-[#1084d0] px-2 py-1 text-white font-bold tracking-wider flex justify-between items-center text-sm">
+                <span className="truncate">{warning.type || 'System Warning'}</span>
+                <button 
+                  onClick={() => setSystemWarnings(w => w.filter(x => x.id !== warning.id))} 
+                  className="w-4 h-4 bg-[#c0c0c0] border border-white border-b-gray-800 border-r-gray-800 flex items-center justify-center text-black font-bold outline-none font-mono text-[10px] hover:active:border-t-gray-800 hover:active:border-l-gray-800 hover:active:border-b-white hover:active:border-r-white"
+                >X</button>
+              </div>
+              <div className="p-4 flex flex-row gap-4 items-start bg-[#c0c0c0]">
+                <div className="shrink-0 w-8 h-8 flex items-center justify-center">
+                  {metaInfo ? (
+                     metaInfo.customIcon ? (
+                        <img src={metaInfo.customIcon} alt="Icon" className="w-8 h-8 drop-shadow-md" style={{ imageRendering: 'pixelated' }} />
+                     ) : <metaInfo.icon size={32} className={metaInfo.color} />
+                  ) : (
+                     <div className="w-8 h-8 rounded-full bg-yellow-500 border border-t-gray-800 border-l-gray-800 border-b-white border-r-white flex items-center justify-center text-black font-bold text-xl shadow-md">!</div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                  <span className="font-bold text-sm text-black">{warning.title}</span>
+                  <p className="text-black text-xs whitespace-pre-wrap leading-relaxed max-h-[200px] overflow-y-auto">{warning.message}</p>
+                </div>
+              </div>
+              <div className="p-3 flex justify-center border-t border-gray-400 bg-[#c0c0c0]">
+                <button 
+                  onClick={() => setSystemWarnings(w => w.filter(x => x.id !== warning.id))} 
+                  className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-black font-bold active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white focus:outline-dotted focus:outline-1 focus:-outline-offset-4 focus:outline-black"
+                >OK</button>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Global BSOD */}
+      {fatalError && (
+        <div className="absolute inset-0 z-[100000] bg-[#0000aa] flex flex-col font-mono text-white p-8 sm:p-12 select-none overflow-hidden cursor-none pointer-events-auto">
+          <div className="bg-white text-[#0000aa] px-3 py-1 inline-block self-center sm:self-start font-bold mb-10 text-lg uppercase tracking-widest shadow-[4px_4px_0_rgba(0,0,0,0.3)]">
+            Vespera OS Kernel Panel
+          </div>
+          <p className="mb-6 text-sm sm:text-base leading-relaxed">
+            A fatal exception has occurred inside the neural simulation bridge. The current architecture has been aggressively halted to prevent quantum degradation and localized cascade failure.
+          </p>
+          <div className="mb-10 text-sm sm:text-base">
+            <span className="opacity-70 uppercase tracking-widest text-[10px] sm:text-xs">Exception Code:</span>
+            <br/>
+            <span className="text-white mt-1 block">ERR_ {fatalError.type?.replace(/ /g, '_').toUpperCase() || 'FATAL_FAULT'}</span>
+            <br/>
+            <span className="opacity-70 uppercase tracking-widest text-[10px] sm:text-xs">Diagnostic Info:</span>
+            <br/>
+            <span className="text-[#aaffaa] mt-1 block font-bold">{fatalError.title}</span>
+            <span className="mt-2 block whitespace-pre-wrap">{fatalError.message}</span>
+          </div>
+          <div className="mb-10 text-[10px] sm:text-xs opacity-70 leading-loose">
+            * Hardware address 0x011A8B2E FFFF:0000 triggered a page fault.<br/>
+            * Process Explorer.exe halted with exit code 0x0000000A.<br/>
+            * VFS State: PRESERVED.<br/>
+            * React Node Tree: ABORTED.
+          </div>
+          <p className="mt-auto flex items-center gap-3 text-sm sm:text-base">
+            <span className="w-2.5 h-5 bg-white animate-[pulse_1s_steps(2,start)_infinite] block shadow-[0_0_10px_#fff]"></span> 
+            Press F5 or refresh your browser to physically reboot the simulation engine.
+          </p>
         </div>
       )}
 

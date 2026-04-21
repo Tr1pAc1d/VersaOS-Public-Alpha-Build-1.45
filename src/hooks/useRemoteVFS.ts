@@ -363,8 +363,12 @@ export function useRemoteVFS() {
     localStorage.setItem('vespera_remote_display', JSON.stringify(displaySettings));
   }, [displaySettings]);
 
-  const updateWallpaper = (wallpaper: string) => {
-    setDisplaySettings((prev: any) => ({ ...prev, wallpaper }));
+  const updateWallpaper = (wallpaper: string, wallpaperLayout?: string) => {
+    setDisplaySettings((prev: any) => ({ 
+      ...prev, 
+      wallpaper,
+      ...(wallpaperLayout ? { wallpaperLayout } : {}) 
+    }));
   };
 
   const updateBackgroundColor = (backgroundColor: string) => {

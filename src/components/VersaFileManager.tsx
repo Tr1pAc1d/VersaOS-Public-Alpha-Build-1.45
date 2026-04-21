@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Folder, FileText, ArrowUp, Monitor, ShieldAlert } from 'lucide-react';
+import { Folder, FileText, ArrowUp, Monitor, ShieldAlert, ChevronRight } from 'lucide-react';
+import { APP_DICTIONARY, getCompatibleApps } from '../utils/appDictionary';
 import { VFSNode } from '../hooks/useVFS';
 import { RETRO_ICONS } from '../utils/retroIcons';
 import { playDiskLoadSound } from '../utils/audio';
@@ -34,8 +35,13 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
     playDiskLoadSound();
   }, []);
 
+  const lastProcessedNonce = useRef<number>(0);
+
   useEffect(() => {
     if (!focusDirectoryNonce || !focusDirectoryId) return;
+    if (focusDirectoryNonce === lastProcessedNonce.current) return;
+    lastProcessedNonce.current = focusDirectoryNonce;
+    
     const n = vfs.getNode(focusDirectoryId);
     if (n && n.type === 'directory') {
       setCurrentDir((prev) => (prev === focusDirectoryId ? prev : focusDirectoryId));
@@ -49,8 +55,13 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
   const [accessDeniedModal, setAccessDeniedModal] = useState<{ isOpen: boolean, fileName: string }>({ isOpen: false, fileName: '' });
   // File-manager-local context menu
   const [fmCtx, setFmCtx] = useState<{ x: number; y: number; nodeId: string } | null>(null);
+  useEffect(() => {
+    if (!fmCtx) setOpenWithNodeId(null);
+  }, [fmCtx]);
   const [fmRenamingId, setFmRenamingId] = useState<string | null>(null);
   const [fmRenameValue, setFmRenameValue] = useState('');
+  const [openWithNodeId, setOpenWithNodeId] = useState<string | null>(null);
+  const [openWithPos, setOpenWithPos] = useState<{ x: number; y: number } | null>(null);
   const fmAreaRef = useRef<HTMLDivElement>(null);
 
   const currentDirNode = vfs.getNode(currentDir);
@@ -67,7 +78,7 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
         name.endsWith('.CFG') || name.endsWith('.INI')) return 'versa_edit';
     if (name.endsWith('.HTM') || name.endsWith('.HTML')) return 'browser';
     if (name.endsWith('.BMP') || name.endsWith('.PNG') || name.endsWith('.JPG') ||
-        name.endsWith('.GIF') || name.endsWith('.ICO')) return 'axis_paint';
+        name.endsWith('.GIF') || name.endsWith('.ICO') || name.endsWith('.WEBP')) return 'versa_view';
     if (name.endsWith('.MP3') || name.endsWith('.WAV') || name.endsWith('.MID') ||
         name.endsWith('.OGG')) return 'media_player';
     return null;
@@ -407,6 +418,54 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
                 >
                   Open
                 </button>
+                <div 
+                  className="text-left px-4 py-1 hover:bg-[#000080] hover:text-white text-black text-sm flex justify-between items-center relative cursor-default group"
+                  onMouseEnter={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setOpenWithNodeId(ctxNode.id);
+                    setOpenWithPos({ x: rect.width - 4, y: 0 });
+                  }}
+                >
+                  <span>Open with</span>
+                  <ChevronRight size={14} className="opacity-60 group-hover:opacity-100" />
+                  
+                  {openWithNodeId === ctxNode.id && openWithPos && (
+                    <div 
+                      className="absolute bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] z-[201] flex flex-col py-1"
+                      style={{ left: openWithPos.x, top: openWithPos.y, minWidth: 160 }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      {(() => {
+                        const apps = getCompatibleApps(ctxNode.name);
+                        if (apps.length === 0) return <div className="px-4 py-1 text-gray-500 italic text-xs">No apps found</div>;
+                        
+                        return apps.map(appId => {
+                          const appInfo = APP_DICTIONARY[appId] || APP_DICTIONARY['default'];
+                          return (
+                            <button
+                              key={appId}
+                              className="text-left px-4 py-1 hover:bg-[#000080] hover:text-white text-black text-sm flex items-center gap-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenFile(ctxNode.id); // Set active file
+                                if (onLaunchApp) onLaunchApp(appId);
+                                setFmCtx(null);
+                                setOpenWithNodeId(null);
+                              }}
+                            >
+                              {appInfo.customIcon ? (
+                                <img src={appInfo.customIcon} alt="" className="w-4 h-4" />
+                              ) : (
+                                <appInfo.icon size={14} />
+                              )}
+                              <span>{appInfo.defaultTitle}</span>
+                            </button>
+                          );
+                        });
+                      })()}
+                    </div>
+                  )}
+                </div>
                 <div className="h-[1px] bg-gray-400 mx-1 my-1" />
                 {/* Cut / Copy (greyed) */}
                 <button className="text-left px-4 py-1 text-black text-sm opacity-40 cursor-default">Cut</button>
@@ -419,20 +478,53 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
                     setFmCtx(null);
                   }}
                 >
-                  Delete
+                  {currentDir === 'recycle_bin' ? 'Delete permanently' : 'Delete'}
                 </button>
-                <div className="h-[1px] bg-gray-400 mx-1 my-1" />
-                {/* Rename */}
-                <button
-                  className="text-left px-4 py-1 hover:bg-[#000080] hover:text-white text-black text-sm"
-                  onClick={() => {
-                    setFmRenamingId(ctxNode.id);
-                    setFmRenameValue(ctxNode.name);
-                    setFmCtx(null);
-                  }}
-                >
-                  Rename
-                </button>
+                {currentDir === 'recycle_bin' ? (
+                  <button
+                    className="text-left px-4 py-1 hover:bg-[#000080] hover:text-white text-black text-sm"
+                    onClick={() => {
+                      vfs.restoreNode(fmCtx.nodeId);
+                      setFmCtx(null);
+                    }}
+                  >
+                    Restore
+                  </button>
+                ) : (
+                  <>
+                    <div className="h-[1px] bg-gray-400 mx-1 my-1" />
+                    {/* Rename */}
+                    <button
+                      className="text-left px-4 py-1 hover:bg-[#000080] hover:text-white text-black text-sm"
+                      onClick={() => {
+                        setFmRenamingId(ctxNode.id);
+                        setFmRenameValue(ctxNode.name);
+                        setFmCtx(null);
+                      }}
+                    >
+                      Rename
+                    </button>
+                  </>
+                )}
+                {ctxNode.type === 'file' && ctxNode.content?.startsWith('data:image/') && (
+                  <>
+                    <div className="h-[1px] bg-gray-400 mx-1 my-1" />
+                    <button
+                      className="text-left px-4 py-1 hover:bg-[#000080] hover:text-white text-black text-sm font-bold text-[#000080] hover:text-white"
+                      onClick={() => {
+                        const a = document.createElement('a');
+                        a.href = ctxNode.content as string;
+                        a.download = ctxNode.name;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        setFmCtx(null);
+                      }}
+                    >
+                      Export to real OS
+                    </button>
+                  </>
+                )}
                 <div className="h-[1px] bg-gray-400 mx-1 my-1" />
                 {/* Properties — bubble up to GUIOS FileProperties window */}
                 <button

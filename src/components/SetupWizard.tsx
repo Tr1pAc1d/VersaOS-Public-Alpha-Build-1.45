@@ -121,9 +121,12 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ vfs, onComplete, onCan
       {/* Sidebar and Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar */}
-        <div className="w-1/3 bg-[#000080] flex flex-col items-center justify-center p-4 text-white shrink-0">
-          <HardDrive size={64} className="mb-4" />
-          <h2 className="text-xl font-bold text-center">AETHERIS<br/>Setup</h2>
+        <div className="w-1/3 flex flex-col items-center justify-center p-4 text-white shrink-0 relative overflow-hidden" style={{ backgroundImage: 'url("/Vespera Setup Wizard background image.png")', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+          <div className="absolute inset-0 bg-[#000080]/55 pointer-events-none" />
+          <div className="relative z-10 flex flex-col items-center gap-4">
+            <HardDrive size={64} className="mb-2 opacity-90" />
+            <h2 className="text-xl font-bold text-center drop-shadow">AETHERIS<br/>Setup</h2>
+          </div>
         </div>
 
         {/* Right Content */}

@@ -30,7 +30,21 @@ interface TourStep {
   content: (ctx: { onLaunch: (id: string) => void }) => React.ReactNode;
 }
 
+// ── Shared screenshot frame component ──────────────────────────────────────
+const HelpImg = ({ src, caption }: { src: string; caption: string }) => (
+  <div className="p-2 bg-gray-200 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white shadow-md">
+    <img
+      src={src}
+      alt={caption}
+      className="max-w-full h-auto"
+      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+    />
+    <p className="text-[10px] text-gray-600 mt-1 italic text-center">{caption}</p>
+  </div>
+);
+
 const TOUR_STEPS: TourStep[] = [
+  // ── 1. Intro ─────────────────────────────────────────────────────────────
   {
     id: 'intro',
     title: 'Welcome to Vespera OS',
@@ -51,6 +65,8 @@ const TOUR_STEPS: TourStep[] = [
       </div>
     )
   },
+
+  // ── 2. Desktop ───────────────────────────────────────────────────────────
   {
     id: 'desktop',
     title: 'Your Desktop',
@@ -62,6 +78,7 @@ const TOUR_STEPS: TourStep[] = [
         <p>
           The desktop is your primary workspace in Vespera OS. You'll find <strong>shortcut icons</strong> here for commonly used applications like the File Manager, Web Browser, and System Tools.
         </p>
+        <HelpImg src="/Help_Images/More/desktop right click context menu - menu help.png" caption="Right-clicking the desktop opens the Workspace Context Menu." />
         <div className="flex flex-col gap-2 bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-3 shadow-inner">
           <p className="font-bold text-[#000080] mb-1">Desktop Tips:</p>
           <ul className="list-disc pl-5 text-xs text-gray-700 space-y-1">
@@ -71,26 +88,76 @@ const TOUR_STEPS: TourStep[] = [
             <li>Create new <strong>shortcuts</strong> via the Workspace Menu → New → Shortcut.</li>
           </ul>
         </div>
+        <HelpImg src="/Help_Images/More/right clicking task menu - context menu - help menu.png" caption="Right-clicking the Taskbar opens a separate context menu for window and taskbar management." />
         <div className="bg-[#ffffcc] border border-gray-400 p-3 mt-2 shadow-sm text-xs font-mono">
           <strong>TIP:</strong> The Workspace Menu is your fastest route to programs, system tools, and display settings without opening the Start Menu.
         </div>
       </div>
     )
   },
+
+  // ── 3. Taskbar ───────────────────────────────────────────────────────────
+  {
+    id: 'taskbar',
+    title: 'The Taskbar',
+    icon: Monitor,
+    narration: "The taskbar at the bottom of your screen is your mission control. On the left is the Vespera Start Menu. In the center you'll see buttons for every open application. On the right is the system tray with the clock. Vespera OS also has a Full-Span mode that stretches the taskbar across the entire screen edge — great for a traditional desktop feel. And the WaveBar audio visualizer pulses in real time with your system audio!",
+    content: () => (
+      <div className="flex flex-col gap-4 text-sm font-serif leading-relaxed text-black">
+        <h2 className="text-2xl font-bold text-[#000080] border-b-2 border-gray-400 pb-2">Your Mission Control</h2>
+        <p>
+          The <strong>Taskbar</strong> spans the bottom of the screen and is the nerve center of Vespera OS. It hosts the Start Menu, open application buttons, and the system tray.
+        </p>
+        <HelpImg src="/Help_Images/More/task menu when not spanning entire screen and floating - menu help.png" caption="Default floating taskbar — centered at the bottom of the screen." />
+        <HelpImg src="/Help_Images/More/Task Menu Span Entire Screen - Help Menu.png" caption="Full-Span mode stretches the taskbar to cover the entire screen edge." />
+        <HelpImg src="/Help_Images/More/Vespera Wave bar 1 - menu Help.png" caption="The WaveBar audio visualizer animates in real time with your system audio." />
+        <HelpImg src="/Help_Images/More/Position Settings for Task Menu and Bar - Help Menu.png" caption="Taskbar position and layout settings — right-click the taskbar to access." />
+        <div className="bg-[#ffffcc] border border-gray-400 p-3 mt-2 shadow-sm text-xs font-mono">
+          <strong>TIP:</strong> Right-click the Taskbar to access Task Manager quickly, or to open Taskbar Settings and change position and appearance.
+        </div>
+      </div>
+    )
+  },
+
+  // ── 4. Start Menu ────────────────────────────────────────────────────────
+  {
+    id: 'start_menu',
+    title: 'The Start Menu',
+    icon: Monitor,
+    narration: "The Start Menu is your gateway to everything on Vespera OS! Click the Vespera logo in the bottom-left to open it. From there, you can browse Programs to see all installed applications organized into folders — Games, Accessories, Multimedia, System Tools, and more. The clock and system tray show your current time and active background services. You can also pin frequently used programs to the Shortcuts quick-launch area.",
+    content: () => (
+      <div className="flex flex-col gap-4 text-sm font-serif leading-relaxed text-black">
+        <h2 className="text-2xl font-bold text-[#000080] border-b-2 border-gray-400 pb-2">Everything Starts Here</h2>
+        <p>
+          The <strong>Start Menu</strong> (Vespera logo) is your primary launcher. It provides access to all installed programs, system settings, and administrative tools.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <HelpImg src="/Help_Images/Control_Panel/Task_Menu/task_menu_start.png" caption="The Start Menu open at the top level." />
+          <HelpImg src="/Help_Images/Control_Panel/Task_Menu/task_menu_programs.png" caption="Programs submenu showing installed app groups." />
+          <HelpImg src="/Help_Images/Control_Panel/Task_Menu/Task_Menu_System_apps.png" caption="System Tools submenu with admin utilities." />
+          <HelpImg src="/Help_Images/Control_Panel/Task_Menu/task_menu_clock.png" caption="System clock in the taskbar tray." />
+        </div>
+        <HelpImg src="/Help_Images/Control_Panel/Task_Menu/task_menu_Shortcuts.png" caption="Shortcuts quick-launch area for pinned apps." />
+      </div>
+    )
+  },
+
+  // ── 5. Files ─────────────────────────────────────────────────────────────
   {
     id: 'files',
     title: 'Managing Your Files',
     icon: FolderOpen,
-    narration: "Vespera OS uses an advanced Virtual File System to store your documents, images, and settings safely. Use the File Explorer to browse your C drive, create new folders, and manage your personal data. Your key directories include the Desktop folder for workspace items, the Documents folder for your personal files, and the Vespera system directory for core OS configurations. Everything persists across reboots!",
+    narration: "Vespera OS uses an advanced Virtual File System to store your documents, images, and settings safely. Use the File Explorer to browse your C drive, create new folders, and manage your personal data. Your key directories include the Desktop folder for workspace items, the Documents folder for your personal files, and the Vespera system directory for core OS configurations. You can right-click any file to copy, move, rename, or delete it. Everything persists across reboots!",
     content: ({ onLaunch }) => (
       <div className="flex flex-col gap-4 text-sm font-serif leading-relaxed text-black">
         <h2 className="text-2xl font-bold text-[#000080] border-b-2 border-gray-400 pb-2">The Virtual File System</h2>
         <p>
           Vespera OS uses an advanced <strong>Virtual File System (VFS)</strong> to store your documents, images, and settings safely within your local environment.
         </p>
-        <p>
-          Use the <strong>File Explorer</strong> to browse your C:\ drive, create new folders, and manage your personal data. Your files persist seamlessly across reboot cycles.
-        </p>
+        <HelpImg src="/Help_Images/More/File Manager C drive screenshot - help menu.png" caption="File Manager showing the root of the C: drive." />
+        <HelpImg src="/Help_Images/More/File Manager C drive slash vespera - help menu.png" caption="Browsing the C:\Vespera system directory." />
+        <HelpImg src="/Help_Images/More/right clicking a file - context menu - help menu.png" caption="Right-clicking a file shows cut, copy, delete, rename, and properties options." />
+        <HelpImg src="/Help_Images/More/hidden system files screenshot - file manager - menu help.png" caption='Enable "Show hidden files" in View options to reveal protected system files.' />
         <div className="flex flex-col gap-2 bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-3 shadow-inner">
           <p className="font-bold text-[#000080] mb-1">Standard Directories:</p>
           <ul className="list-disc pl-5 text-xs text-gray-700 space-y-1">
@@ -102,20 +169,56 @@ const TOUR_STEPS: TourStep[] = [
       </div>
     )
   },
+
+  // ── 6. Recycle Bin ───────────────────────────────────────────────────────
+  {
+    id: 'recycle_bin',
+    title: 'The Recycle Bin',
+    icon: FolderOpen,
+    narration: "When you delete a file in Vespera OS, it doesn't disappear immediately — it goes to the Recycle Bin! The Bin icon on your desktop changes appearance to show when it contains items. You can open it to review deleted files and restore anything you deleted by mistake. When you're sure you no longer need those files, right-click the Bin and choose Empty Recycle Bin to free up disk space permanently.",
+    content: () => (
+      <div className="flex flex-col gap-4 text-sm font-serif leading-relaxed text-black">
+        <h2 className="text-2xl font-bold text-[#000080] border-b-2 border-gray-400 pb-2">Your Safety Net</h2>
+        <p>
+          The <strong>Recycle Bin</strong> catches all deleted files, giving you a chance to recover them before they're gone for good. It's one of the most important safety features of Vespera OS.
+        </p>
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <HelpImg src="/Help_Images/More/Recycle bin empty - menu help.png" caption="Empty — no deleted files." />
+          </div>
+          <div className="flex-1">
+            <HelpImg src="/Help_Images/More/Recycle bin full - menu help.png" caption="Full — contains deleted files." />
+          </div>
+        </div>
+        <HelpImg src="/Help_Images/More/recycling bin - menu help.png" caption="Inside the Recycle Bin — right-click any file to restore it." />
+        <div className="flex flex-col gap-2 bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-3 shadow-inner">
+          <ul className="list-disc pl-5 text-xs text-gray-700 space-y-1">
+            <li>Delete a file by pressing <strong>Delete</strong> or right-clicking → Delete.</li>
+            <li>Double-click the Recycle Bin to open it and see what's inside.</li>
+            <li>Right-click a file inside the Bin and choose <strong>Restore</strong> to recover it.</li>
+            <li>Right-click the Bin on the Desktop → <strong>Empty Recycle Bin</strong> to permanently delete all contents.</li>
+          </ul>
+        </div>
+      </div>
+    )
+  },
+
+  // ── 7. Network ───────────────────────────────────────────────────────────
   {
     id: 'network',
     title: 'Connecting to VesperaNET',
     icon: Network,
-    narration: "Ready to surf the World Wide Web? Vespera OS features integrated Dial-Up Networking, perfectly configured for connecting to VesperaNET global nodes. First, you'll need to open the Dial-Up Networking application and establish a connection. Once you hear that beautiful modem handshake, you can launch the Vespera Navigator web browser to explore corporate sites, catch up on news, or just cruise the internet!",
+    narration: "Ready to surf the World Wide Web? Vespera OS features integrated Dial-Up Networking, perfectly configured for connecting to VesperaNET global nodes. First, open the Dial-Up Networking application and establish a connection. Once you hear that beautiful modem handshake, you can launch the Vespera Navigator web browser. You can also use VesperaConnect for encrypted remote desktop access to secure archive terminals.",
     content: ({ onLaunch }) => (
       <div className="flex flex-col gap-4 text-sm font-serif leading-relaxed text-black">
         <h2 className="text-2xl font-bold text-[#000080] border-b-2 border-gray-400 pb-2">The Information Superhighway</h2>
         <p>
           Ready to surf the World Wide Web? Vespera OS features integrated <strong>Dial-Up Networking</strong> perfectly configured for connecting to VesperaNET global nodes.
         </p>
-        <p>
-          Once connected, you can utilize the <strong>Vespera Navigator</strong> web browser to explore corporate sites, catch up on news, or cruise the internet.
-        </p>
+        <HelpImg src="/Help_Images/More/VesperaNet Dail-Up Connection - disconnected - menu help.png" caption='Dial-Up Networking — click "Dial Connection" to connect.' />
+        <HelpImg src="/Help_Images/More/VesperaNet Dail-Up Connection - Connected - menu help.png" caption="Successfully connected to VesperaNET — ready to browse!" />
+        <HelpImg src="/Help_Images/More/VesperaConnect - Remote Desktop login screen - Help Menu.png" caption="VesperaConnect — login to a remote terminal over VesperaNET." />
+        <HelpImg src="/Help_Images/More/VesperaConnect - Remote Desktop connected - Help Menu.png" caption="Active VesperaConnect session showing the remote terminal desktop." />
         <div className="bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-3 shadow-inner">
           <p className="font-bold text-[#000080] mb-2">Getting Online:</p>
           <ol className="list-decimal pl-5 space-y-1 text-xs text-gray-700">
@@ -128,6 +231,8 @@ const TOUR_STEPS: TourStep[] = [
       </div>
     )
   },
+
+  // ── 8. VMail ─────────────────────────────────────────────────────────────
   {
     id: 'mail',
     title: 'VMail Communication',
@@ -153,6 +258,8 @@ const TOUR_STEPS: TourStep[] = [
       </div>
     )
   },
+
+  // ── 9. VStore ────────────────────────────────────────────────────────────
   {
     id: 'vstore',
     title: 'The VStore Catalyst',
@@ -164,6 +271,9 @@ const TOUR_STEPS: TourStep[] = [
         <p>
           Need more applications? The <strong>VStore Catalyst</strong> is a cloud-based software repository directly integrated into the operating system. Thousands of shareware and freeware titles are available.
         </p>
+        <HelpImg src="/Help_Images/More/vstore - main menu screenshot - menu help.png" caption="The VStore Catalyst main directory — browse and install software in one click." />
+        <HelpImg src="/Help_Images/More/add or remove programs 1 - help menu.png" caption="Add or Remove Programs — manage all installed applications." />
+        <HelpImg src="/Help_Images/More/add or remove programs example of uninstall wizard - help menu.png" caption="The uninstall wizard walks you through removing an application." />
         <p>
           To purchase premium programs or track your digital download history, you need an active network connection and a VStore account.
         </p>
@@ -178,40 +288,57 @@ const TOUR_STEPS: TourStep[] = [
       </div>
     )
   },
+
+  // ── 10. Multimedia ───────────────────────────────────────────────────────
   {
     id: 'multimedia',
     title: 'Multimedia Capabilities',
     icon: Palette,
-    narration: "Vespera OS isn't just for business! We feature top-of-the-line multimedia capabilities. AxisPaint is a powerful bitmap graphics editor for creating art and UI prototypes. Meridian. TV lets you tune into cable television broadcasts right from your desktop through the integrated Channel Guide. And the WaveBar gives you quick volume controls right from the system tray. Creative professionals rejoice!",
+    narration: "Vespera OS isn't just for business! We feature top-of-the-line multimedia capabilities. AxisPaint is a powerful bitmap graphics editor for creating art and UI prototypes. Meridian. TV lets you tune into cable television broadcasts right from your desktop through the integrated Channel Guide — including the Weather Channel with live radar! And Neural Solitaire is our built-in card game for when you need a break. Creative professionals rejoice!",
     content: ({ onLaunch }) => (
       <div className="flex flex-col gap-4 text-sm font-serif leading-relaxed text-black">
         <h2 className="text-2xl font-bold text-[#000080] border-b-2 border-gray-400 pb-2">Create & Consume</h2>
         <p>
           Vespera OS isn't just for business. We feature top-of-the-line multimedia capabilities seamlessly integrated into the desktop shell.
         </p>
+        <HelpImg src="/Help_Images/More/Meridian TV app - Confirm and connect screen - help menu.png" caption='Meridian.TV — confirm and connect to a broadcast channel.' />
+        <HelpImg src="/Help_Images/More/Meridian Tv App - Screenshot channel - help menu.png" caption="Meridian.TV displaying a live broadcast channel on your desktop." />
+        <HelpImg src="/Help_Images/More/Weather channel app - meridian tv - help menu.png" caption="The Weather Channel viewable through Meridian.TV." />
+        <HelpImg src="/Help_Images/More/Solitare screenshot main menu - help menu.png" caption="Neural Solitaire — the built-in card game." />
         <ul className="list-disc pl-5 space-y-2 mt-2">
           <li><strong>AxisPaint:</strong> A powerful bitmap graphics editor for UI prototyping and artistic endeavors.</li>
-          <li><strong>Meridian. TV:</strong> Tune into cable television broadcasts and explore live programming via the integrated Channel Guide, powered by Meridian Broadcasting Network.</li>
-          <li><strong>VERSA Media Agent:</strong> Play audio files in high-fidelity with full waveform visualization.</li>
+          <li><strong>Meridian.TV:</strong> Tune into cable television broadcasts and the Weather Channel live.</li>
+          <li><strong>Neural Solitaire:</strong> Classic Klondike solitaire with authentic pixel-art cards.</li>
+          <li><strong>VERSA Media Agent:</strong> Play audio files with full waveform visualization.</li>
           <li><strong>WaveBar:</strong> Quick access to volume sliders directly in the system tray.</li>
         </ul>
       </div>
     )
   },
+
+  // ── 11. Customization ────────────────────────────────────────────────────
   {
     id: 'customization',
     title: 'Customizing Your Desktop',
     icon: Settings,
-    narration: "Make Vespera OS truly yours! The Control Panel lets you change everything from your desktop wallpaper to window border themes. Choose from classic Motif UNIX-style borders, a clean Win 95 layout, or exotic colored themes. You can also configure screen resolution, regional settings, and your screensaver. I personally recommend the starfield screensaver — it really makes it feel like you're flying through space!",
+    narration: "Make Vespera OS truly yours! The Control Panel lets you change everything from your desktop wallpaper to window border themes via Plus! Themes. Configure screen resolution, run the screensaver, swap out mouse cursors, and change the taskbar color scheme. You can even assign custom icons to any shortcut. I personally recommend the starfield screensaver — it really makes it feel like you're flying through space!",
     content: ({ onLaunch }) => (
       <div className="flex flex-col gap-4 text-sm font-serif leading-relaxed text-black">
         <h2 className="text-2xl font-bold text-[#000080] border-b-2 border-gray-400 pb-2">Make it Yours</h2>
         <p>
           Vespera OS includes a highly flexible <strong>Control Panel</strong> that allows you to change everything from your desktop wallpaper to window border themes.
         </p>
-        <p>
-          Whether you prefer the classic "Motif" UNIX-style borders, a clean "Win95" layout, or an exotic colored theme, the environment adapts to your workflow. Don't forget to configure screen resolution and regional settings.
-        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <HelpImg src="/Help_Images/More/Screen Saver Options control panel - Help menu.png" caption="Screen saver configuration options." />
+          <HelpImg src="/Help_Images/More/control panel - plus themes options - help menu.png" caption="Plus! Themes for full visual style packs." />
+          <HelpImg src="/Help_Images/More/control panel - cursor options - menu help.png" caption="Mouse cursor customization panel." />
+          <HelpImg src="/Help_Images/More/Properties change icon screenshot - menu help.png" caption="Assign custom icons to any shortcut via Properties." />
+        </div>
+        <HelpImg src="/Help_Images/More/properties change icon choose icon screenshot - menu help.png" caption="The icon picker showing the full Vespera retro icon library." />
+        <div className="grid grid-cols-2 gap-3">
+          <HelpImg src="/Help_Images/Control_Panel/Task_Menu/black_Task_Menu.png" caption="Dark taskbar theme example." />
+          <HelpImg src="/Help_Images/Control_Panel/Task_Menu/teal_task_menu_to_showcase_diff_options.png" caption="Teal taskbar theme example." />
+        </div>
         <div className="flex justify-center mt-4 border-t border-gray-400 pt-4">
           <button
             onClick={() => onLaunch('control_panel')}
@@ -223,28 +350,31 @@ const TOUR_STEPS: TourStep[] = [
       </div>
     )
   },
+
+  // ── 12. System Utilities ─────────────────────────────────────────────────
   {
     id: 'system',
     title: 'System Utilities',
     icon: Shield,
-    narration: "For power users, Vespera OS includes robust administrative tools. The Task Manager is your go-to utility for monitoring system health — it has three tabs. The Applications tab shows every running program and lets you end unresponsive tasks. The Performance tab displays real-time CPU, RAM, and hard disk usage with live graphs that update as you open and close programs. And the Startup tab lets you configure which applications launch automatically when you log in. You can open the Task Manager anytime by right-clicking the taskbar, or by typing 'taskmgr' in the Run dialog. If you ever get lost, you can ask me for help — I'm the Vespera Assistant, always available on your desktop.",
+    narration: "For power users, Vespera OS includes robust administrative tools. The Task Manager is your go-to utility for monitoring system health — it has three tabs. The Applications tab shows every running program and lets you end unresponsive tasks. The Performance tab displays real-time CPU, RAM, and hard disk usage with live graphs. VesperaConnect lets you reach remote terminals. And the System Properties panel gives you deep hardware information.",
     content: ({ onLaunch }) => (
       <div className="flex flex-col gap-4 text-sm font-serif leading-relaxed text-black">
         <h2 className="text-2xl font-bold text-[#000080] border-b-2 border-gray-400 pb-2">Under the Hood</h2>
         <p>
           For power users, Vespera OS includes robust administrative and tracking tools to monitor the environment's health.
         </p>
+        <div className="grid grid-cols-2 gap-3">
+          <HelpImg src="/Help_Images/Control_Panel/System/system_general.png" caption="System Properties — General tab showing OS version and hardware." />
+          <HelpImg src="/Help_Images/Control_Panel/System/system_device_manager.png" caption="Device Manager — view and manage all hardware devices." />
+          <HelpImg src="/Help_Images/Control_Panel/System/system_performance.png" caption="Performance tab — shielding stability and heuristic processor load." />
+          <HelpImg src="/Help_Images/More/add or remove programs 1 - help menu.png" caption="Add or Remove Programs — manage installed applications." />
+        </div>
         <ul className="list-disc pl-5 space-y-2 mt-2">
-          <li><strong>Task Manager:</strong> Monitor running applications, CPU/RAM/HDD usage in real time, and configure startup programs.
-            <ul className="list-disc pl-5 mt-1 text-xs text-gray-600 space-y-0.5">
-              <li><em>Applications Tab:</em> View and manage all running tasks — end or switch to any process.</li>
-              <li><em>Performance Tab:</em> Live CPU graph, RAM usage bar, disk utilization, kernel memory stats, and system uptime.</li>
-              <li><em>Startup Tab:</em> Enable or disable programs that launch automatically at boot.</li>
-            </ul>
-          </li>
+          <li><strong>Task Manager:</strong> Monitor running applications, CPU/RAM/HDD in real time, and configure startup programs.</li>
           <li><strong>Disk Defragmenter:</strong> Reorganize your hard drive sectors for optimal performance.</li>
           <li><strong>ScanDisk:</strong> Check your drive for errors and bad sectors.</li>
           <li><strong>VesperaConnect:</strong> Establish remote desktop sessions to secure archive terminals.</li>
+          <li><strong>Add or Remove Programs:</strong> Manage installed software and run the uninstall wizard.</li>
         </ul>
         <div className="flex justify-center mt-2 border-t border-gray-400 pt-3">
           <button
@@ -263,6 +393,8 @@ const TOUR_STEPS: TourStep[] = [
       </div>
     )
   },
+
+  // ── 13. Keyboard Shortcuts ───────────────────────────────────────────────
   {
     id: 'keyboard',
     title: 'Keyboard Shortcuts',
@@ -286,7 +418,8 @@ const TOUR_STEPS: TourStep[] = [
               <tr className="border-b border-gray-200"><td className="p-2 font-mono font-bold">Edge Drag</td><td className="p-2">Resize a window</td></tr>
               <tr className="border-b border-gray-200 bg-gray-50"><td className="p-2 font-mono font-bold">□ Button</td><td className="p-2">Maximize / Restore window</td></tr>
               <tr className="border-b border-gray-200"><td className="p-2 font-mono font-bold">_ Button</td><td className="p-2">Minimize to taskbar</td></tr>
-              <tr className="bg-gray-50"><td className="p-2 font-mono font-bold">Right-click Desktop</td><td className="p-2">Open Workspace Menu</td></tr>
+              <tr className="border-b border-gray-200 bg-gray-50"><td className="p-2 font-mono font-bold">Right-click Desktop</td><td className="p-2">Open Workspace Menu</td></tr>
+              <tr className="bg-gray-50"><td className="p-2 font-mono font-bold">Right-click Taskbar</td><td className="p-2">Task Manager & Settings</td></tr>
             </tbody>
           </table>
         </div>
@@ -296,37 +429,8 @@ const TOUR_STEPS: TourStep[] = [
       </div>
     )
   },
-  {
-    id: 'security',
-    title: 'Security & Privacy',
-    icon: Shield,
-    narration: "Your security matters. Vespera OS includes the RHID intrusion detection module, which monitors all network activity on this machine. We also recommend practicing safe browsing habits — don't download files from untrusted sources, and always verify the sender of any email before opening attachments. Remember: VesperaNET is always watching... I mean, always protecting you.",
-    content: () => (
-      <div className="flex flex-col gap-4 text-sm font-serif leading-relaxed text-black">
-        <h2 className="text-2xl font-bold text-[#000080] border-b-2 border-gray-400 pb-2">Staying Safe Online</h2>
-        <p>
-          Vespera OS takes your security seriously. Multiple layers of protection are built directly into the operating system.
-        </p>
-        <div className="flex flex-col gap-2 bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-3 shadow-inner">
-          <p className="font-bold text-[#000080] mb-1">Security Layers:</p>
-          <ul className="list-disc pl-5 text-xs text-gray-700 space-y-1">
-            <li><strong>RHID Module:</strong> Real-time network intrusion detection and traffic analysis.</li>
-            <li><strong>Dial-Up Auth Tokens:</strong> Secure handshake protocol for all VesperaNET connections.</li>
-            <li><strong>VFS Sandboxing:</strong> Applications run in isolated virtual file system containers.</li>
-          </ul>
-        </div>
-        <div className="bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-3 shadow-inner mt-2">
-          <p className="font-bold text-[#000080] mb-1">Safe Browsing Practices:</p>
-          <ul className="list-disc pl-5 text-xs text-gray-700 space-y-1">
-            <li>Never download executables from untrusted VesperaNET nodes.</li>
-            <li>Always verify email senders before opening attachments.</li>
-            <li>Report suspicious network activity to your system administrator.</li>
-            <li>Keep the RHID module enabled at all times.</li>
-          </ul>
-        </div>
-      </div>
-    )
-  },
+
+  // ── 14. Goodbye ──────────────────────────────────────────────────────────
   {
     id: 'goodbye',
     title: "You're All Set!",

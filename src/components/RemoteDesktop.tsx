@@ -370,7 +370,13 @@ export const RemoteDesktop: React.FC<RemoteDesktopProps> = ({ onRequestClose }) 
 
       {/* Desktop Area */}
       <div ref={desktopRef} className="flex-1 relative overflow-hidden"
-        style={{ backgroundImage: vfs.displaySettings?.wallpaper ? `url(${vfs.displaySettings.wallpaper})` : undefined, backgroundColor: vfs.displaySettings?.backgroundColor || '#000080', backgroundSize: 'cover', backgroundPosition: 'center' }}
+        style={{ 
+          backgroundImage: vfs.displaySettings?.wallpaper ? `url(${vfs.displaySettings.wallpaper})` : undefined, 
+          backgroundColor: vfs.displaySettings?.backgroundColor || '#000080', 
+          backgroundSize: vfs.displaySettings?.wallpaperLayout === 'stretch' ? '100% 100%' : (vfs.displaySettings?.wallpaperLayout === 'cover' || !vfs.displaySettings?.wallpaperLayout ? 'cover' : 'auto'), 
+          backgroundPosition: vfs.displaySettings?.wallpaperLayout === 'tile' ? 'top left' : 'center',
+          backgroundRepeat: vfs.displaySettings?.wallpaperLayout === 'tile' ? 'repeat' : 'no-repeat'
+        }}
         onContextMenu={e => handleContextMenu(e)}
       >
         {/* Session Watermark */}

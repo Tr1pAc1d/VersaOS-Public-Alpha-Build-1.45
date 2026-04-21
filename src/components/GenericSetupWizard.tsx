@@ -6,6 +6,7 @@ interface GenericSetupWizardProps {
   appId: string;
   appName: string;
   appVersion?: string;
+  customIcon?: string;   // optional path/data-URI for the desktop shortcut icon
   onComplete: () => void;
   onCancel: () => void;
   vfs: any;
@@ -15,6 +16,7 @@ export const GenericSetupWizard: React.FC<GenericSetupWizardProps> = ({
   appId, 
   appName, 
   appVersion = '1.0.4',
+  customIcon,
   onComplete, 
   onCancel, 
   vfs 
@@ -63,8 +65,9 @@ export const GenericSetupWizard: React.FC<GenericSetupWizardProps> = ({
       appName,
       appVersion,
       appId,
-      true, // create desktop shortcut
-      'app' // icon type
+      true,       // create desktop shortcut
+      'app',      // icon type fallback
+      customIcon, // custom icon → applied to shortcut node
     );
 
     onComplete();
@@ -78,12 +81,19 @@ export const GenericSetupWizard: React.FC<GenericSetupWizardProps> = ({
       case 0: // Welcome
         return (
           <div className="flex h-full overflow-hidden">
-            <div className="w-1/3 bg-[#000080] shadow-inner border-r border-gray-400 flex flex-col items-center justify-center gap-4 py-4 shrink-0">
-               <Package size={64} className="text-white opacity-40 mb-2" />
-               <div className="bg-white/10 w-full h-[1px]" />
-               <p className="text-[10px] text-white/40 font-mono rotate-90 whitespace-nowrap mt-8 uppercase tracking-widest leading-none translate-y-4">
-                 VESPERA CORE %ID_{appId.toUpperCase()}
-               </p>
+            <div className="w-1/3 flex flex-col items-center justify-center gap-4 py-4 shrink-0 shadow-inner border-r border-gray-600 relative overflow-hidden" style={{ backgroundImage: 'url("/Vespera Setup Wizard background image.png")', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+               <div className="absolute inset-0 bg-[#000080]/55 pointer-events-none" />
+               <div className="relative z-10 flex flex-col items-center justify-center gap-4 w-full px-4">
+                 {customIcon ? (
+                   <img src={customIcon} className="w-16 h-16 object-contain mb-2 drop-shadow-md" alt="App Icon" style={{ imageRendering: 'pixelated' }} />
+                 ) : (
+                   <Package size={64} className="text-white opacity-60 mb-2" />
+                 )}
+                 <div className="bg-white/20 w-full h-[1px]" />
+                 <p className="text-[10px] text-white/60 font-mono rotate-90 whitespace-nowrap mt-8 uppercase tracking-widest leading-none translate-y-4">
+                   VESPERA CORE %ID_{appId.toUpperCase()}
+                 </p>
+               </div>
             </div>
             <div className="flex-1 flex flex-col p-6 overflow-y-auto">
               <h2 className="text-xl font-bold text-[#000080] mb-2">Welcome to the {appName} Setup</h2>

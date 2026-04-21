@@ -397,8 +397,6 @@ export const RHIDTerminal: React.FC<RHIDTerminalProps> = ({ neuralBridgeActive }
           'vstore': 'vstore', 'help': 'help',
           'chat': 'chat', 'assistant': 'chat',
           'connect': 'remote_desktop', 'vesperaconnect': 'remote_desktop',
-          'catmario': 'w93_catmario', 'syobon': 'w93_catmario',
-          'skifree': 'w93_skifree',
           'halflife3': 'w93_halflife3', 'hl3': 'w93_halflife3',
           'sirtet': 'w93_sirtet', 'tetris': 'w93_sirtet',
           'castlegafa': 'w93_castlegafa', 'gafa': 'w93_castlegafa',

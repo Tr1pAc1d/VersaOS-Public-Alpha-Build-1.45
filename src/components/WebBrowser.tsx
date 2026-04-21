@@ -62,6 +62,45 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
     return done;
   });
 
+  // ── Bookmarks State ─────────────────────────────────────────────
+  const DEFAULT_BOOKMARKS = [
+    { name: 'Vespera Systems', url: 'home' },
+    { name: 'AETHERIS News Network', url: 'vespera:news' },
+    { name: 'Meridian Broadcasting Network', url: 'mbn:home' },
+    { name: 'Atlantic Waves', url: 'atlanticwaves:home' },
+    { name: 'X-Arch Login', url: 'vespera:x-arch' },
+  ];
+  const [bookmarks, setBookmarks] = useState(() => {
+    try {
+      const saved = localStorage.getItem('navigator_bookmarks');
+      if (saved) return JSON.parse(saved);
+      return DEFAULT_BOOKMARKS;
+    } catch { return DEFAULT_BOOKMARKS; }
+  });
+  const [isBookmarkModalOpen, setIsBookmarkModalOpen] = useState(false);
+  const [bookmarkNameInput, setBookmarkNameInput] = useState('');
+
+  const handleAddBookmark = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bookmarkNameInput.trim()) return;
+    
+    // For WayBack Machine proxy URLs, store the target URL directly
+    const targetUrl = activeTab.url === 'home' ? 'home' : activeTab.addressBar;
+    
+    const newB = [...bookmarks, { name: bookmarkNameInput.trim(), url: targetUrl }];
+    setBookmarks(newB);
+    localStorage.setItem('navigator_bookmarks', JSON.stringify(newB));
+    setIsBookmarkModalOpen(false);
+  };
+
+  const handleRemoveBookmark = (e: React.MouseEvent, index: number) => {
+    e.stopPropagation();
+    const newB = [...bookmarks];
+    newB.splice(index, 1);
+    setBookmarks(newB);
+    localStorage.setItem('navigator_bookmarks', JSON.stringify(newB));
+  };
+
   // ── VesperaNET Web Login State ────────────────────────────────────
   const [webLoginModal, setWebLoginModal] = useState(false);
   const [webUser, setWebUser] = useState('');
@@ -112,7 +151,32 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
     localStorage.removeItem('vesperanet_web_session');
   };
   
-  // ── Failing download state ──────────────────────────────────────
+  // ── Internet Options & View Source & Print Spooler State ──────────
+  const [isInternetOptionsOpen, setIsInternetOptionsOpen] = useState(false);
+  const [internetOptionsTab, setInternetOptionsTab] = useState('General');
+  const [homepageInput, setHomepageInput] = useState(() => {
+    return localStorage.getItem('navigator_homepage') || 'http://www.vesperasystems.com/index.html';
+  });
+  
+  const [isViewSourceOpen, setIsViewSourceOpen] = useState(false);
+  
+  const [isPrintSpoolerOpen, setIsPrintSpoolerOpen] = useState(false);
+  const [printProgress, setPrintProgress] = useState(0);
+  const [printError, setPrintError] = useState('');
+
+  // ── Multiple Downloads Manager State ──────────────────────────────
+  interface DownloadJob {
+    id: string;
+    filename: string;
+    size: string;
+    progress: number;
+    phase: 'downloading' | 'error' | 'completed';
+    attempt: number;
+  }
+  const [downloads, setDownloads] = useState<DownloadJob[]>([]);
+  const [isDownloadManagerOpen, setIsDownloadManagerOpen] = useState(false);
+
+  // Still support the legacy single download trigger for backward compatibility
   const [failingDownload, setFailingDownload] = useState<{
     filename: string;
     size: string;
@@ -131,47 +195,75 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
   const startFailingDownload = (filename: string) => {
     const info = FAILING_DOWNLOADS[filename];
     if (!info) return;
-    setFailingDownload(prev => ({ 
-      filename, 
-      size: info.sizeMB, 
-      progress: 0, 
+    setDownloads(prev => [...prev, {
+      id: genId(),
+      filename,
+      size: info.sizeMB,
+      progress: 0,
       phase: 'downloading',
-      attempt: prev?.filename === filename ? prev.attempt + 1 : 1
-    }));
+      attempt: prev.filter(d => d.filename === filename).length + 1
+    }]);
+    setIsDownloadManagerOpen(true);
   };
   
-  // Animate the failing download progress
+  // Animate the multiple failing download progress
   useEffect(() => {
-    if (!failingDownload || failingDownload.phase !== 'downloading') return;
-    
-    // Fail at a random point between 37-62%
-    const failAt = 37 + Math.random() * 25;
+    if (!downloads.some(d => d.phase === 'downloading')) return;
     
     const intervalId = setInterval(() => {
-      setFailingDownload(prev => {
-        if (!prev || prev.phase !== 'downloading') return prev;
-        // Slow down as we approach the fail point
-        const remaining = failAt - prev.progress;
-        const increment = remaining > 15 ? (Math.random() * 4 + 1.5) : (Math.random() * 1.5 + 0.3);
-        const next = prev.progress + increment;
-        if (next >= failAt) {
-          return { ...prev, progress: Math.min(next, failAt), phase: 'error' };
-        }
-        return { ...prev, progress: next };
+      setDownloads(prev => {
+        let changed = false;
+        let playSound = false;
+        const nextState = prev.map(d => {
+          if (d.phase !== 'downloading') return d;
+          
+          const failAt = 37 + Math.random() * 25 + (d.attempt * 5); // Attempt pushes fail point further
+          const remaining = failAt - d.progress;
+          const increment = remaining > 15 ? (Math.random() * 4 + 1.5) : (Math.random() * 1.5 + 0.3);
+          const nextProg = d.progress + increment;
+          changed = true;
+          
+          if (nextProg >= failAt) {
+            playSound = true;
+            return { ...d, progress: Math.min(nextProg, failAt), phase: 'error' };
+          }
+          return { ...d, progress: nextProg };
+        });
+        if (playSound) playDownloadFailedSound();
+        return changed ? nextState : prev;
       });
     }, 600);
     
     return () => clearInterval(intervalId);
-  }, [failingDownload?.filename, failingDownload?.phase, failingDownload?.attempt]);
+  }, [downloads]);
+
+  // ── Print Spooler Logic ───────────────────────────────────────
+  const startPrintJob = () => {
+    setIsPrintSpoolerOpen(true);
+    setPrintProgress(0);
+    setPrintError('');
+  };
 
   useEffect(() => {
-    if (failingDownload?.phase === 'error') {
-      playDownloadFailedSound();
+    if (!isPrintSpoolerOpen || printError) return;
+    if (printProgress >= 82) {
+      const timer = setTimeout(() => {
+        setPrintError('Spooler SubSystem App Error: LPT1 Out of Paper / Win32 Exception');
+        playDownloadFailedSound(); 
+      }, 800);
+      return () => clearTimeout(timer);
     }
-  }, [failingDownload?.phase, failingDownload?.filename, failingDownload?.attempt]);
-  
-  const dismissFailingDownload = () => {
-    setFailingDownload(null);
+    const interval = setInterval(() => {
+      setPrintProgress(p => Math.min(p + (Math.random() * 15 + 5), 82));
+    }, 400);
+    return () => clearInterval(interval);
+  }, [isPrintSpoolerOpen, printProgress, printError]);
+
+  const getSimulatedSourceCode = (url: string) => {
+    if (url === 'home' || url.startsWith('vespera:')) {
+      return `<html>\n  <head>\n    <title>Vespera Web Interface</title>\n    <meta name="generator" content="Vespera SiteWeaver 2.0">\n  </head>\n  <body bgcolor="#c0c0c0" text="#000000">\n    <center>\n      <table border="0" cellpadding="0" cellspacing="0" width="800">\n        <tr>\n          <td>\n            <marquee direction="left" scrollamount="3">Connecting Human Intuition with Computational Power...</marquee>\n            <h1>Welcome to the Vespera Network Services</h1>\n            <hr width="100%">\n            <!-- BEGIN VESPERA SCRIPT APPLET -->\n            <applet code="VesperaSecureProtocol.class" width="1" height="1"></applet>\n            <!-- END VESPERA SCRIPT APPLET -->\n          </td>\n        </tr>\n      </table>\n    </center>\n  </body>\n</html>`;
+    }
+    return `<html>\n  <head><title>Wayback Machine Sandbox</title></head>\n  <body>\n    <!-- Page source blocked by Vespera WebNavigator Sandbox Layer -->\n    <!-- Direct inspection of cross-origin frames is disabled to prevent XSS injection. -->\n    <iframe src="${url}" width="100%" height="100%"></iframe>\n  </body>\n</html>`;
   };
 
   const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0];
@@ -407,7 +499,7 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
   return (
     <div className="flex flex-col h-full w-full bg-[#c0c0c0] text-black font-sans relative overflow-hidden z-0">
       {/* Tabs Bar */}
-      <div className="flex items-end px-2 pt-2 space-x-1 bg-[#b2b2b2] border-b border-gray-500 overflow-x-auto">
+      <div className="flex items-end px-1 pt-1 space-x-1 bg-[#b2b2b2] border-b border-gray-500 overflow-x-auto scrollbar-hide">
         {tabs.map(tab => (
           <div 
             key={tab.id}
@@ -431,76 +523,151 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
         ))}
         <button 
           onClick={addNewTab}
-          className="p-1 mb-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white"
+          className="px-2 py-1 border-2 border-b-0 cursor-pointer bg-[#a0a0a0] border-t-gray-300 border-l-gray-300 border-r-gray-600 active:bg-[#c0c0c0] active:border-t-white active:border-l-white active:border-r-gray-800 text-gray-600 flex items-center justify-center min-w-[28px] hover:text-black"
+          title="New Tab"
         >
-          <Plus size={14} />
+          <Plus size={14} strokeWidth={3} />
         </button>
       </div>
 
       {/* Browser Toolbar - Netscape/IE style */}
-      <div className="flex items-center p-1 px-2 space-x-1 border-b-2 border-b-gray-700 border-t border-t-white bg-[#c0c0c0]">
+      <div className="flex items-center py-0.5 px-1 space-x-0.5 border-b-2 border-b-gray-700 border-t border-t-white bg-[#c0c0c0]">
         {/* Back button */}
         <button
           onClick={goBack}
           disabled={activeTab.historyIndex === 0}
           title="Back"
-          className="flex flex-col items-center justify-center p-1 min-w-[36px] bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white disabled:opacity-40 text-black"
+          className="flex items-center justify-center gap-1 px-2 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white disabled:opacity-40 text-black text-[10px] font-bold"
         >
-          <ArrowLeft size={18} />
-          <span className="text-[9px] font-bold leading-none mt-0.5">Back</span>
+          <ArrowLeft size={13} /><span>Back</span>
         </button>
         {/* Forward button */}
         <button
           onClick={goForward}
           disabled={activeTab.historyIndex === activeTab.history.length - 1}
           title="Forward"
-          className="flex flex-col items-center justify-center p-1 min-w-[36px] bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white disabled:opacity-40 text-black"
+          className="flex items-center justify-center gap-1 px-2 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white disabled:opacity-40 text-black text-[10px] font-bold"
         >
-          <ArrowRight size={18} />
-          <span className="text-[9px] font-bold leading-none mt-0.5">Forward</span>
+          <ArrowRight size={13} /><span>Forward</span>
         </button>
         {/* Stop/Refresh button */}
         <button
           onClick={() => updateActiveTab({ isLoading: false })}
           title="Stop/Refresh"
-          className="flex flex-col items-center justify-center p-1 min-w-[36px] bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-black"
+          className="flex items-center justify-center gap-1 px-2 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-black text-[10px] font-bold"
         >
-          <RefreshCw size={18} className={activeTab.isLoading ? 'animate-spin' : ''} />
-          <span className="text-[9px] font-bold leading-none mt-0.5">Reload</span>
+          <RefreshCw size={13} className={activeTab.isLoading ? 'animate-spin text-blue-900' : ''} />
+          <span>Reload</span>
         </button>
         {/* Home button */}
         <button
-          onClick={() => navigate('home')}
+          onClick={() => navigate(homepageInput)}
           title="Home"
-          className="flex flex-col items-center justify-center p-1 min-w-[36px] bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-black"
+          className="flex items-center justify-center gap-1 px-2 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-black text-[10px] font-bold"
         >
-          <Home size={18} />
-          <span className="text-[9px] font-bold leading-none mt-0.5">Home</span>
+          <Home size={13} /><span>Home</span>
         </button>
 
-        {/* Separator */}
-        <div className="w-px h-8 bg-gray-600 mx-1" />
+        <div className="w-px h-5 bg-gray-600 mx-1" />
+
+        <button
+          onClick={() => setIsInternetOptionsOpen(true)}
+          title="Internet Options"
+          className="flex items-center justify-center gap-1 px-2 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-black text-[10px] font-bold"
+        >
+          <Monitor size={13} className="text-gray-700" /><span>Options</span>
+        </button>
+
+        <button
+          onClick={() => setIsViewSourceOpen(true)}
+          title="View HTML Source"
+          className="flex items-center justify-center gap-1 px-2 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-black text-[10px] font-bold"
+        >
+          <FileDown size={13} className="text-gray-700" /><span>Source</span>
+        </button>
+
+        <button
+          onClick={startPrintJob}
+          title="Print Page"
+          className="flex items-center justify-center gap-1 px-2 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-black text-[10px] font-bold"
+        >
+          <span className="font-serif font-black px-1 leading-none text-xs">P</span><span>Print</span>
+        </button>
+
+        <button
+          onClick={() => setIsDownloadManagerOpen(true)}
+          title="Downloads Manager"
+          className="flex items-center justify-center gap-1 px-2 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-black text-[10px] font-bold"
+        >
+          <HardDrive size={13} className="text-gray-700" /><span>Downloads</span>
+        </button>
+
+        <div className="w-px h-5 bg-gray-600 mx-1" />
 
         {/* Address bar */}
         <form onSubmit={handleAddressSubmit} className="flex-1 flex items-center space-x-1">
-          <span className="text-xs font-bold whitespace-nowrap">Address&nbsp;</span>
+          <span className="text-[10px] font-bold whitespace-nowrap hidden sm:block">Address</span>
           <input
             type="text"
             value={activeTab.addressBar}
             onChange={e => updateActiveTab({ addressBar: e.target.value })}
-            className="flex-1 border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2 py-0.5 text-sm bg-white font-mono"
+            className="flex-1 border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-px text-xs bg-white font-mono"
             placeholder="http://www.vesperasystems.com"
           />
           <button
             type="submit"
-            className="px-3 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-sm font-bold"
+            className="px-2 py-px bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-xs font-bold mr-1"
           >
             Go
           </button>
-          {activeTab.isLoading && (
-            <Hourglass size={14} className="animate-spin text-black ml-1" />
-          )}
         </form>
+
+        {/* The Classic Spinning Logo Indicator */}
+        <div className="w-7 h-7 bg-black border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white flex items-center justify-center shrink-0">
+          <Globe 
+            size={20} 
+            className={`text-blue-500 ${activeTab.isLoading ? 'animate-spin' : ''}`} 
+          />
+        </div>
+      </div>
+      
+      {/* Bookmarks Toolbar */}
+      <div className="flex items-center py-0.5 px-2 space-x-2 border-b-2 border-b-gray-700 bg-[#c0c0c0] text-[10px] font-bold overflow-x-auto whitespace-nowrap scrollbar-hide">
+        <span className="text-gray-700 mr-1 select-none flex items-center">Bookmarks:</span>
+        <button 
+          onClick={() => {
+            let defaultName = "New Bookmark";
+            if (activeTab.url === 'home') defaultName = "Vespera Systems";
+            else if (activeTab.url.startsWith('mbn:')) defaultName = "Meridian Broadcasting";
+            else if (activeTab.url.startsWith('vespera:news')) defaultName = "AETHERIS News";
+            else defaultName = activeTab.addressBar.replace('http://', '').split('/')[0];
+            
+            setBookmarkNameInput(defaultName);
+            setIsBookmarkModalOpen(true);
+          }} 
+          className="flex items-center gap-1 px-1.5 py-0.5 hover:bg-[#a0a0a0] active:bg-[#808080] border border-transparent hover:border-gray-500 text-green-800"
+          title="Bookmark the current page"
+        >
+          <Plus size={10} className="text-green-800" /> Add Page
+        </button>
+        <div className="w-[1px] h-3 bg-gray-500 shrink-0"></div>
+        {bookmarks.map((b: any, i: number) => (
+          <button 
+             key={i} 
+             onClick={() => navigate(b.url)} 
+             className="flex items-center gap-1 pl-1.5 pr-0.5 py-0.5 hover:bg-[#a0a0a0] active:bg-[#808080] border border-transparent hover:border-gray-500 group relative"
+          >
+            <Globe size={10} className="text-blue-800" /> 
+            <span className="mr-1">{b.name}</span>
+            <div 
+              onClick={(e) => handleRemoveBookmark(e, i)}
+              className="hidden group-hover:flex items-center justify-center w-3 h-3 hover:bg-red-500 hover:text-white rounded-sm ml-1"
+              title="Remove Bookmark"
+            >
+              <X size={8} />
+            </div>
+          </button>
+        ))}
       </div>
 
       {strictDialUp && !isLinkUp && (
@@ -518,42 +685,56 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
       )}
 
       {/* Browser Content */}
-      <div className="flex-1 bg-white border-t-2 border-l-2 border-gray-800 border-b-2 border-r-2 border-white m-2 overflow-auto relative flex flex-col">
-        {activeTab.url === 'vespera:news' ? (
-          <AetherisNewsNetwork />
-        ) : activeTab.url === 'vespera:x-arch' ? (
-          <XArchiveSite />
-        ) : activeTab.url === 'vespera:vmail' ? (
-          <VMail onClose={() => navigate('home')} />
-        ) : activeTab.url === 'atlanticwaves:home' ? (
-          <AtlanticWavesSite 
-            onDownload={(filename: string, source: string) => {
-              if (onDownload) onDownload(filename, source);
-            }} 
-          />
-        ) : activeTab.url === 'mbn:home' ? (
-          <MeridianBroadcastingSite />
-        ) : (activeTab.url === 'home' || activeTab.url.startsWith('vespera:')) ? (
-          <VesperaSystemsSite 
-            url={activeTab.url}
-            navigate={navigate}
-            webAccount={webAccount}
-            onLaunchApp={onLaunchApp}
-            onDownload={onDownload}
-            setWebLoginModal={setWebLoginModal}
-            handleWebLogout={handleWebLogout}
-            startFailingDownload={startFailingDownload}
-            xtypeImage={xtypeImage}
-            hasVMail={vfs?.nodes?.some((n: any) => n.id === 'vmail')}
-          />
-        ) : (
-            <iframe 
-              src={activeTab.url} 
-              onLoad={() => updateActiveTab({ isLoading: false })}
-              className="absolute inset-0 w-full h-full border-none bg-white"
-              title="Web Browser"
-            />
-        )}
+      <div className="flex-1 bg-white border-t-2 border-l-2 border-gray-800 border-b-2 border-r-2 border-white m-2 overflow-hidden relative flex flex-col">
+        {tabs.map(tab => (
+          <div 
+            key={tab.id} 
+            className="absolute inset-0 flex flex-col overflow-auto bg-white" 
+            style={{ display: tab.id === activeTabId ? 'flex' : 'none' }}
+          >
+            {tab.url === 'vespera:news' ? (
+              <AetherisNewsNetwork />
+            ) : tab.url === 'vespera:x-arch' ? (
+              <XArchiveSite />
+            ) : tab.url === 'vespera:vmail' ? (
+              <VMail onClose={() => navigate('home')} />
+            ) : tab.url === 'atlanticwaves:home' ? (
+              <AtlanticWavesSite 
+                onDownload={(filename: string, source: string) => {
+                  if (onDownload) onDownload(filename, source);
+                }} 
+              />
+            ) : tab.url === 'mbn:home' ? (
+              <MeridianBroadcastingSite />
+            ) : (tab.url === 'home' || tab.url.startsWith('vespera:')) ? (
+              <VesperaSystemsSite 
+                url={tab.url}
+                navigate={navigate}
+                webAccount={webAccount}
+                onLaunchApp={onLaunchApp}
+                onDownload={onDownload}
+                setWebLoginModal={setWebLoginModal}
+                handleWebLogout={handleWebLogout}
+                startFailingDownload={startFailingDownload}
+                xtypeImage={xtypeImage}
+                hasVMail={vfs?.nodes?.some((n: any) => n.id === 'vmail')}
+              />
+            ) : (
+                <iframe 
+                  src={tab.url} 
+                  onLoad={() => {
+                    if (tab.id === activeTabId) {
+                      updateActiveTab({ isLoading: false });
+                    } else {
+                      setTabs(prev => prev.map(t => t.id === tab.id ? { ...t, isLoading: false } : t));
+                    }
+                  }}
+                  className="absolute inset-0 w-full h-full border-none bg-white"
+                  title="Web Browser"
+                />
+            )}
+          </div>
+        ))}
       </div>
 
       {/* Netscape-style Status Bar */}
@@ -575,90 +756,242 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
         )}
       </div>
       
-      {/* ── Failing Download Dialog ── */}
-      {failingDownload && (
-        <div className="absolute inset-0 z-[200] flex items-center justify-center bg-black/20">
-          {failingDownload.phase === 'downloading' && (
-            <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] w-96 flex flex-col font-sans text-black select-none">
-              <div className="bg-[#000080] text-white px-2 py-1 flex justify-between items-center">
-                <span className="font-bold text-sm">File Download</span>
-                <button onClick={dismissFailingDownload} className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-4 h-4 flex items-center justify-center text-black font-bold text-xs active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">
-                  X
-                </button>
-              </div>
-              <div className="p-4 flex flex-col gap-4">
-                <div className="flex items-start gap-4">
-                  <FileDown size={32} className="text-gray-600 mt-2" />
-                  <div className="flex flex-col gap-1 text-sm">
-                    <p>Saving:</p>
-                    <p className="font-bold">{failingDownload.filename}</p>
-                    <p>from download.vesperasystems.com</p>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <div className="flex justify-between text-xs">
-                    <span>Estimated time left:</span>
-                    <span>{Math.max(1, Math.floor((100 - failingDownload.progress) / 8))} Min {Math.floor(Math.random() * 50 + 10)} Sec ({Math.round(failingDownload.progress)}% of {failingDownload.size})</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span>Download to:</span>
-                    <span>C:\VESPERA\DOWNLOADS</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span>Transfer rate:</span>
-                    <span>{(Math.random() * 3 + 1.5).toFixed(1)} KB/Sec</span>
-                  </div>
-                </div>
-                <div className="w-full h-6 bg-[#c0c0c0] border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-[2px] flex">
-                  {Array.from({ length: 20 }).map((_, i) => (
-                    <div key={i} className={`h-full w-[4.5%] mx-[0.25%] ${i < (failingDownload.progress / 5) ? 'bg-[#000080]' : 'bg-transparent'}`} />
-                  ))}
-                </div>
-                <div className="flex justify-end mt-2">
-                  <button onClick={dismissFailingDownload} className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 px-6 py-1 text-sm active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">
-                    Cancel
-                  </button>
-                </div>
-              </div>
+      {/* ── Add Bookmark Dialog ── */}
+      {isBookmarkModalOpen && (
+        <div className="absolute inset-0 z-[300] flex items-center justify-center bg-transparent">
+          <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 p-1 w-[340px] shadow-[2px_2px_10px_rgba(0,0,0,0.5)] flex flex-col font-sans text-black">
+            <div className="bg-[#000080] text-white px-2 py-1 flex justify-between items-center select-none font-bold text-xs mb-2">
+              <span>Add Bookmark</span>
+              <button 
+                onClick={() => setIsBookmarkModalOpen(false)}
+                className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-4 h-4 flex items-center justify-center text-black active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white"
+              >X</button>
             </div>
-          )}
-          
-          {failingDownload.phase === 'error' && (
-            <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] w-[420px] flex flex-col font-sans text-black select-none">
+            <form onSubmit={handleAddBookmark} className="p-2 flex flex-col gap-3 text-xs">
+               <div className="flex flex-col gap-1">
+                 <label className="font-bold flex items-center gap-2">Name:</label>
+                 <input 
+                   autoFocus 
+                   value={bookmarkNameInput} 
+                   onChange={e => setBookmarkNameInput(e.target.value)} 
+                   className="w-full border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-1" 
+                 />
+               </div>
+               <div className="flex flex-col gap-1">
+                 <label className="font-bold">Location:</label>
+                 <input 
+                   disabled 
+                   value={activeTab.url === 'home' ? 'http://www.vesperasystems.com/index.html' : activeTab.addressBar} 
+                   className="w-full bg-gray-200 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-1 text-gray-500" 
+                 />
+               </div>
+               <div className="flex justify-end gap-2 mt-4 border-t border-gray-400 pt-3">
+                 <button type="button" onClick={() => setIsBookmarkModalOpen(false)} className="px-5 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">Cancel</button>
+                 <button type="submit" className="px-5 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white font-bold">OK</button>
+               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Internet Options Modal ── */}
+      {isInternetOptionsOpen && (
+        <div className="absolute inset-0 z-[300] flex items-center justify-center bg-transparent">
+          <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 p-1 w-[400px] shadow-[2px_2px_10px_rgba(0,0,0,0.5)] flex flex-col font-sans text-black">
+            <div className="bg-[#000080] text-white px-2 py-1 flex justify-between items-center select-none font-bold text-xs mb-2">
+              <span>Internet Options</span>
+              <button 
+                onClick={() => setIsInternetOptionsOpen(false)}
+                className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-4 h-4 flex items-center justify-center text-black active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white"
+              >X</button>
+            </div>
+            
+            {/* Tabs */}
+            <div className="flex px-2 pt-2 -mb-[2px] z-10 relative text-xs">
+               <div onClick={() => setInternetOptionsTab('General')} className={`px-3 py-1 cursor-pointer border-2 border-b-0 ${internetOptionsTab === 'General' ? 'bg-[#c0c0c0] border-t-white border-l-white border-r-gray-800' : 'bg-[#a0a0a0] border-t-gray-300 border-l-gray-300 border-r-gray-600'}`}>General</div>
+               <div onClick={() => setInternetOptionsTab('Security')} className={`px-3 py-1 cursor-pointer border-2 border-b-0 ${internetOptionsTab === 'Security' ? 'bg-[#c0c0c0] border-t-white border-l-white border-r-gray-800' : 'bg-[#a0a0a0] border-t-gray-300 border-l-gray-300 border-r-gray-600'}`}>Security</div>
+            </div>
+            <div className="border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 p-4 bg-[#c0c0c0] text-xs">
+               {internetOptionsTab === 'General' && (
+                 <div className="flex flex-col gap-4">
+                   <div className="border border-gray-400 p-3 pt-4 relative">
+                     <span className="absolute -top-2 left-2 bg-[#c0c0c0] px-1 text-gray-800 font-bold">Home page</span>
+                     <div className="flex items-start gap-3">
+                       <Home size={28} className="text-gray-500 shrink-0 mt-1" />
+                       <div className="flex flex-col flex-1 gap-2">
+                         <p className="text-gray-700">You can change which page to use for your home page.</p>
+                         <div className="flex items-center gap-2">
+                           <label>Address:</label>
+                           <input value={homepageInput} onChange={e => setHomepageInput(e.target.value)} className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-1" />
+                         </div>
+                         <div className="flex gap-2">
+                           <button onClick={() => setHomepageInput(activeTab.url === 'home' ? 'http://www.vesperasystems.com/index.html' : activeTab.addressBar)} className="px-3 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">Use Current</button>
+                           <button onClick={() => setHomepageInput('http://www.vesperasystems.com/index.html')} className="px-3 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">Use Default</button>
+                         </div>
+                       </div>
+                     </div>
+                   </div>
+                   <div className="border border-gray-400 p-3 pt-4 relative">
+                     <span className="absolute -top-2 left-2 bg-[#c0c0c0] px-1 text-gray-800 font-bold">Temporary Internet files</span>
+                     <p className="mb-2 text-gray-700">Pages you view on the Internet are stored in a special folder for quick viewing later.</p>
+                     <div className="flex gap-2 justify-center">
+                       <button onClick={() => {
+                         localStorage.removeItem('navigator_bookmarks');
+                         setBookmarks(DEFAULT_BOOKMARKS);
+                         alert('Cache and history wiped locally.');
+                       }} className="px-3 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">Delete Files...</button>
+                     </div>
+                   </div>
+                 </div>
+               )}
+               {internetOptionsTab === 'Security' && (
+                 <div className="flex flex-col gap-4">
+                   <div className="flex items-center justify-center p-4">
+                     <ShieldCheck size={48} className="text-[#000080]" />
+                   </div>
+                   <p>Select a Web content zone to specify its security settings.</p>
+                   <div className="border border-gray-400 p-2">
+                     <label className="flex items-center gap-2 mb-2"><input type="radio" name="sec" checked readOnly/> High (most secure)</label>
+                     <label className="flex items-center gap-2 mb-2"><input type="radio" name="sec" disabled/> Medium (safe browsing)</label>
+                     <label className="flex items-center gap-2"><input type="radio" name="sec" disabled/> Custom</label>
+                   </div>
+                   <p className="text-gray-500 italic mt-2">ActiveX controls and unsanctioned plugins are blocked by default on Vespera terminals.</p>
+                 </div>
+               )}
+            </div>
+            
+            <div className="flex justify-end gap-2 mt-2 p-1 text-xs">
+              <button onClick={() => {
+                localStorage.setItem('navigator_homepage', homepageInput);
+                setIsInternetOptionsOpen(false);
+              }} className="px-5 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white font-bold">OK</button>
+              <button onClick={() => setIsInternetOptionsOpen(false)} className="px-5 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">Cancel</button>
+              <button disabled className="px-5 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 opacity-50">Apply</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── View Source Modal ── */}
+      {isViewSourceOpen && (
+        <div className="absolute inset-4 z-[300] bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 flex flex-col shadow-[4px_4px_10px_rgba(0,0,0,0.5)]">
+           <div className="bg-[#000080] text-white px-2 py-1 flex justify-between items-center select-none font-bold text-xs">
+              <div className="flex items-center gap-2">
+                <FileDown size={14}/>
+                <span>Source - {activeTab.addressBar}</span>
+              </div>
+              <button 
+                onClick={() => setIsViewSourceOpen(false)}
+                className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-4 h-4 flex items-center justify-center text-black active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white"
+              >X</button>
+            </div>
+            <div className="flex bg-[#c0c0c0] text-xs px-2 py-1 gap-4 border-b border-gray-400">
+               <span className="cursor-pointer hover:bg-[#000080] hover:text-white px-1">File</span>
+               <span className="cursor-pointer hover:bg-[#000080] hover:text-white px-1">Edit</span>
+               <span className="cursor-pointer hover:bg-[#000080] hover:text-white px-1">Search</span>
+               <span className="cursor-pointer hover:bg-[#000080] hover:text-white px-1">Help</span>
+            </div>
+            <div className="flex-1 bg-white p-2">
+               <textarea 
+                 readOnly 
+                 value={getSimulatedSourceCode(activeTab.url)} 
+                 className="w-full h-full resize-none outline-none font-mono text-xs whitespace-pre text-black border-none"
+               />
+            </div>
+        </div>
+      )}
+
+      {/* ── Print Spooler Modal ── */}
+      {isPrintSpoolerOpen && (
+        <div className="absolute inset-0 z-[400] flex items-center justify-center bg-transparent">
+          <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 p-1 w-[350px] shadow-[2px_2px_10px_rgba(0,0,0,0.5)] flex flex-col font-sans text-black select-none">
+            <div className="bg-[#000080] text-white px-2 py-1 flex justify-between items-center font-bold text-xs mb-2">
+              <span>Print Spooler</span>
+            </div>
+            <div className="p-4 flex flex-col gap-4 text-xs text-center border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white m-1 shadow-inner">
+               {!printError ? (
+                 <>
+                   <div className="flex justify-center mb-2 animate-bounce mt-4"><span className="bg-gray-200 border-2 border-gray-800 p-2">🖨️</span></div>
+                   <p className="font-bold text-base">Printing Document to LPT1...</p>
+                   <p className="text-gray-600 mb-2">{activeTab.addressBar}</p>
+                   <div className="w-full h-6 bg-[#c0c0c0] border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-[2px] flex">
+                     {Array.from({ length: 20 }).map((_, i) => (
+                       <div key={i} className={`h-full w-[4.5%] mx-[0.25%] ${i < (printProgress / 5) ? 'bg-[#000080]' : 'bg-transparent'}`} />
+                     ))}
+                   </div>
+                   <p>{Math.round(printProgress)}% completed.</p>
+                 </>
+               ) : (
+                 <>
+                   <div className="flex justify-center mb-2 mt-4"><AlertTriangle size={36} className="text-red-600" /></div>
+                   <p className="font-bold text-red-600 text-sm">{printError}</p>
+                   <p className="mt-2 mb-4">Please check paper tray and printer connection.</p>
+                   <button onClick={() => setIsPrintSpoolerOpen(false)} className="mb-2 mx-auto px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white font-bold">Close</button>
+                 </>
+               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Downloads Manager Modal ── */}
+      {isDownloadManagerOpen && (
+        <div className="absolute inset-0 z-[200] flex items-center justify-center bg-transparent mt-12 mb-12 ml-12">
+            <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[2px_2px_10px_rgba(0,0,0,0.5)] w-[500px] flex flex-col font-sans text-black select-none">
               <div className="bg-[#000080] text-white px-2 py-1 flex justify-between items-center">
-                <span className="font-bold text-sm">Download Error</span>
-                <button onClick={dismissFailingDownload} className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-4 h-4 flex items-center justify-center text-black font-bold text-xs active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">
+                <div className="flex items-center gap-2">
+                  <HardDrive size={14} />
+                  <span className="font-bold text-xs tracking-wide">Download Manager</span>
+                </div>
+                <button onClick={() => setIsDownloadManagerOpen(false)} className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-4 h-4 flex items-center justify-center text-black font-bold text-xs active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">
                   X
                 </button>
               </div>
-              <div className="p-4 flex flex-col gap-3">
-                <div className="flex items-start gap-4">
-                  <AlertTriangle size={32} className="text-yellow-600 mt-1 shrink-0" />
-                  <div className="flex flex-col gap-2 text-sm">
-                    <p className="font-bold">Download failed at {Math.round(failingDownload.progress)}%</p>
-                    <p>An error occurred while downloading <strong>{failingDownload.filename}</strong>:</p>
-                    <div className="bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-2 text-xs font-mono">
-                      <p className="text-red-700 font-bold">ERROR: Connection to download server lost.</p>
-                      <p className="mt-1">Unable to establish a secure connection to</p>
-                      <p>download.vesperasystems.com:443</p>
-                      <p className="mt-1">The server may be temporarily unavailable or</p>
-                      <p>your AETHERIS network configuration may need</p>
-                      <p>to be updated. (Error Code: 0x800C0005)</p>
-                    </div>
-                    <p className="text-xs text-gray-600 italic">Please verify your Internet connection and try again later.</p>
-                  </div>
+              <div className="p-2 flex flex-col">
+                <div className="bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white h-[200px] overflow-y-auto mb-2">
+                  {downloads.length === 0 ? (
+                    <div className="text-gray-500 italic p-2 text-xs">No active or past downloads.</div>
+                  ) : (
+                    <table className="w-full text-xs">
+                      <thead className="bg-[#c0c0c0] border-b-2 border-gray-800 text-left sticky top-0 shadow-sm z-10 text-[10px]">
+                         <tr>
+                            <th className="px-2 py-0.5 border-r border-gray-400 font-normal">File Name</th>
+                            <th className="px-2 py-0.5 border-r border-gray-400 font-normal w-16">Size</th>
+                            <th className="px-2 py-0.5 border-r border-gray-400 font-normal w-16">Status</th>
+                            <th className="px-2 py-0.5 font-normal w-36">Progress</th>
+                         </tr>
+                      </thead>
+                      <tbody>
+                        {downloads.map(d => (
+                           <tr key={d.id} className="border-b border-dashed border-gray-300 hover:bg-[#000080] hover:text-white group">
+                              <td className="px-2 py-1.5 truncate max-w-[150px] font-bold group-hover:text-white">{d.filename}</td>
+                              <td className="px-2 py-1.5 text-gray-600 group-hover:text-gray-300">{d.size}</td>
+                              <td className="px-2 py-1.5">
+                                {d.phase === 'downloading' ? <span className="text-blue-600 font-bold group-hover:text-blue-300 animate-pulse">Running</span> :
+                                 d.phase === 'error' ? <span className="text-red-600 font-bold group-hover:text-red-300">Errors</span> :
+                                 <span className="text-green-600 font-bold group-hover:text-green-300">Complete</span>}
+                              </td>
+                              <td className="px-2 py-1.5">
+                                <div className="w-full h-3 bg-white border border-gray-400 flex">
+                                  <div className={`h-full ${d.phase === 'error' ? 'bg-red-500' : 'bg-[#000080]'}`} style={{ width: `${Math.round(d.progress)}%` }}></div>
+                                </div>
+                              </td>
+                           </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
-                <div className="flex justify-end gap-2 mt-1">
-                  <button onClick={() => startFailingDownload(failingDownload.filename)} className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 px-5 py-1 text-sm font-bold active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">
-                    Retry
+                <div className="flex justify-end gap-2">
+                  <button onClick={() => setDownloads([])} className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 px-4 py-1 text-xs active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">
+                    Clear List
                   </button>
-                  <button onClick={dismissFailingDownload} className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 px-5 py-1 text-sm font-bold active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">
+                  <button onClick={() => setIsDownloadManagerOpen(false)} className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 px-6 py-1 text-xs active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white font-bold">
                     Close
                   </button>
                 </div>
               </div>
             </div>
-          )}
         </div>
       )}
 

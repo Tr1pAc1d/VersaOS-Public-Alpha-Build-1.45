@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Store, Download, CheckCircle2, ArrowLeft, Search, Terminal, AlertTriangle, Globe, Monitor, User, Star, StarHalf, FileSignature, Award, HardDrive } from 'lucide-react';
+import { Store, Download, CheckCircle2, ArrowLeft, Search, Terminal, AlertTriangle, Globe, Monitor, User, Star, StarHalf, FileSignature, Award, HardDrive, Code2, Package } from 'lucide-react';
 import { VSTORE_APPS, VStoreApp, VStoreCategory } from '../data/vstoreApps';
 import { VStoreAuth, VStoreAccount, getAccounts, getSession, saveAccount, setSession } from './VStoreAuth';
 import { VStoreAccountSettings } from './VStoreAccountSettings';
+import { System, validateManifest } from '../utils/systemRegistry';
+import type { AppManifest } from '../types/pluginTypes';
 import {
   playModemDialingSound,
   playVStoreLoadingSound,
@@ -15,6 +17,8 @@ interface VStoreProps {
   onInstallApp: (appId: string) => void;
   installedApps: string[];
   onLaunchBrowser?: (url?: string) => void;
+  vfs?: any;
+  onOpenSetupWizard?: (manifest: AppManifest) => void;
 }
 
 const CATEGORIES: VStoreCategory[] = [ 
@@ -92,7 +96,7 @@ const VStoreBootSequence: React.FC<{ onComplete: () => void, account: VStoreAcco
   );
 };
 
-export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onLaunchBrowser }) => {
+export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onLaunchBrowser, vfs, onOpenSetupWizard }) => {
   const [account, setAccount] = useState<VStoreAccount | null>(null);
   const [showAuth, setShowAuth] = useState(true);
   const [showEula, setShowEula] = useState(false);
@@ -110,9 +114,42 @@ export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onL
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [isBooting, setIsBooting] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+
   const [systemLaunchDialog, setSystemLaunchDialog] = useState(false);
   const [systemWarningDialog, setSystemWarningDialog] = useState(false);
   const [justRegistered, setJustRegistered] = useState(false);
+
+  // ── Developer Portal state ─────────────────────────────────────────────
+  const [showDevPortal, setShowDevPortal] = useState(false);
+  const [devPortalStep, setDevPortalStep] = useState(0);
+  // Step 0 — App Details
+  const [devAppName, setDevAppName] = useState('');
+  const [devAppVersion, setDevAppVersion] = useState('1.0.0');
+  const [devAppAuthor, setDevAppAuthor] = useState('');
+  const [devAppCategory, setDevAppCategory] = useState<VStoreCategory>('Featured Apps');
+  const [devAppDescription, setDevAppDescription] = useState('');
+  const [devAppRequirements, setDevAppRequirements] = useState('');
+  const [devAppSize, setDevAppSize] = useState('');
+  const [devAppPrice, setDevAppPrice] = useState('');
+  // Step 1 — Media & Code
+  const [devIconDataUrl, setDevIconDataUrl] = useState<string>('');
+  const [devIconFileName, setDevIconFileName] = useState('');
+  const [devScreenshotUrl, setDevScreenshotUrl] = useState('');
+  const [devEntryCode, setDevEntryCode] = useState('');
+  // Step 2 — Preview is computed from above
+  // Step 3 — Submission
+  const [devSubmitting, setDevSubmitting] = useState(false);
+  const [devSubmitProgress, setDevSubmitProgress] = useState(0);
+  const [devSubmitLog, setDevSubmitLog] = useState<string[]>([]);
+  const [devSubmitDone, setDevSubmitDone] = useState(false);
+  const [devPortalError, setDevPortalError] = useState<string | null>(null);
+  // Community apps added this session
+  const [communityApps, setCommunityApps] = useState<VStoreApp[]>(() => {
+    try {
+      const raw = localStorage.getItem('vstore_community_apps');
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  });
 
   // Parse session on mount
   useEffect(() => {
@@ -252,17 +289,21 @@ export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onL
     }
   };
 
+  // Merge built-in and community-published apps into one catalog
+  const allApps = [...VSTORE_APPS, ...communityApps];
+
   // Filter apps
-  const filteredApps = VSTORE_APPS.filter(app => {
+  const filteredApps = allApps.filter(app => {
     if (searchQuery) {
-      return app.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      return app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
              app.description.toLowerCase().includes(searchQuery.toLowerCase());
     }
     if (activeCategory === 'All Software') return true;
     if (activeCategory === 'My Downloads') {
       return account && !account.isGuest && account.downloadHistory.includes(app.id);
     }
-    return app.category.includes(activeCategory);
+    const cats = Array.isArray(app.category) ? app.category : [app.category];
+    return cats.includes(activeCategory as VStoreCategory);
   });
 
   return (
@@ -386,14 +427,34 @@ export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onL
             {account && !account.isGuest && (
               <>
                 <div className="h-[1px] bg-[#002d3d] my-1 mx-2" />
-                <li 
+                <li
                   className={`cursor-pointer px-2 py-1.5 flex items-center gap-2 border ${activeCategory === 'My Downloads' && !searchQuery ? 'bg-[#006b8f] text-white font-bold border-[#00a3cc]' : 'hover:bg-[#002d3d] text-[#e0f2fe] border-transparent'}`}
-                  onClick={() => { setActiveCategory('My Downloads'); setSelectedApp(null); setSearchQuery(''); }}
+                  onClick={() => { setActiveCategory('My Downloads'); setSelectedApp(null); setSearchQuery(''); setShowDevPortal(false); }}
                 >
                   <HardDrive size={14} /> My Downloads
                 </li>
               </>
             )}
+
+            {/* Developer Portal — requires registered account */}
+            <div className="h-[1px] bg-[#002d3d] my-1 mx-2" />
+            <li
+              className={`cursor-pointer px-2 py-1.5 flex items-center gap-2 border ${
+                showDevPortal
+                  ? 'bg-[#006b8f] text-white font-bold border-[#00a3cc]'
+                  : 'hover:bg-[#002d3d] text-[#e0f2fe] border-transparent'
+              }`}
+              onClick={() => {
+                setShowDevPortal(true);
+                setSelectedApp(null);
+                setSearchQuery('');
+                setDevPortalStep(0);
+                setDevPortalError(null);
+                setDevSubmitDone(false);
+              }}
+            >
+              <Code2 size={14} /> Developer Portal
+            </li>
           </ul>
 
           {/* User Profile Panel */}
@@ -451,14 +512,482 @@ export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onL
 
         {/* Main Content Area */}
         {showSettings && account ? (
-          <VStoreAccountSettings 
-            account={account} 
-            onUpdateAccount={setAccount} 
-            onClose={() => setShowSettings(false)} 
+          <VStoreAccountSettings
+            account={account}
+            onUpdateAccount={setAccount}
+            onClose={() => setShowSettings(false)}
           />
+        ) : showDevPortal ? (
+          // ── Developer Portal ──────────────────────────────────────
+          (() => {
+            // Account gate
+            if (!account || account.isGuest) {
+              return (
+                <div className="flex-1 bg-[#ececec] border-2 border-t-[#a0a0a0] border-l-[#a0a0a0] border-b-white border-r-white flex flex-col items-center justify-center gap-4 p-8">
+                  <Code2 size={40} className="text-gray-400" />
+                  <p className="text-[#000080] font-bold text-lg">VesperaNET Account Required</p>
+                  <p className="text-xs text-gray-600 text-center max-w-xs">
+                    Publishing software to VStore Catalyst requires a registered VesperaNET member account.
+                    Guest access does not include Developer Portal privileges.
+                  </p>
+                  <button
+                    onClick={() => { setShowAuth(true); }}
+                    className="px-8 py-2 bg-[#000080] text-white border-2 border-t-blue-400 border-l-blue-400 border-b-black border-r-black text-sm font-bold"
+                  >
+                    Sign In / Register
+                  </button>
+                </div>
+              );
+            }
+
+            const STEPS = ['App Details', 'Media & Code', 'Preview Listing', 'Submit'];
+            const devAppId = devAppName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').slice(0, 48) || 'my_app';
+            const previewApp: VStoreApp = {
+              id: `community_${devAppId}`,
+              name: devAppName || 'Untitled App',
+              developer: devAppAuthor || account.displayName,
+              version: devAppVersion || '1.0.0',
+              size: devAppSize || '~1.0 MB',
+              icon: Package,
+              customIcon: devIconDataUrl || undefined,
+              color: 'text-blue-500',
+              category: devAppCategory,
+              description: devAppDescription || 'No description provided.',
+              requirements: devAppRequirements || 'Vespera OS',
+              screenshotUrl: devScreenshotUrl || 'https://placehold.co/400x300/004c66/FFFFFF/png?text=No+Screenshot',
+              functional: true,
+              price: devAppPrice ? parseFloat(devAppPrice) || undefined : undefined,
+              rating: 5,
+              downloadCount: 0,
+              reviews: [],
+            };
+
+            const canNext0 = devAppName.trim() && devAppDescription.trim() && devAppAuthor.trim();
+            const canNext1 = devEntryCode.trim().length > 10;
+
+            const handleSubmit = () => {
+              setDevPortalError(null);
+              if (!canNext0 || !canNext1) {
+                setDevPortalError('Please complete all required fields before submitting.');
+                return;
+              }
+              setDevSubmitting(true);
+              setDevSubmitProgress(0);
+              setDevSubmitLog([]);
+              const logs = [
+                `Validating manifest for "${devAppName}"...`,
+                `Compressing application entry point...`,
+                `Uploading to VStore Catalyst servers...`,
+                `Verifying VesperaNET member credentials (${account.memberId})...`,
+                `Creating application catalog entry...`,
+                `Registering in VStore directory index...`,
+                `Generating install manifest...`,
+                `Publishing to distribution network...`,
+                `Submission complete. Thank you, ${account.displayName}!`,
+              ];
+              let logIdx = 0;
+              let prog = 0;
+              const iv = setInterval(() => {
+                prog += Math.random() * 14 + 6;
+                if (prog >= 100) {
+                  prog = 100;
+                  setDevSubmitProgress(100);
+                  if (logIdx < logs.length) setDevSubmitLog(prev => [...prev, logs[logIdx++]]);
+                  clearInterval(iv);
+
+                  // Build the full plugin manifest (with defaults for optional fields)
+                  const fullManifest = {
+                    id: devAppId,
+                    name: devAppName,
+                    version: devAppVersion || '1.0.0',
+                    description: devAppDescription,
+                    author: devAppAuthor,
+                    iconUrl: devIconDataUrl || '/Icons/application_hourglass-0.png',
+                    entryCode: devEntryCode,
+                    size: devAppSize || '~1.0 MB',
+                    category: devAppCategory,
+                  };
+
+                  // Register with system plugin registry
+                  try {
+                    System.registerApp(fullManifest);
+                  } catch (e) { /* already registered or validation error */ }
+
+                  // Save catalog entry with _manifest embedded for cross-session fallback
+                  const newCommunityApps = [
+                    ...communityApps.filter(a => a.id !== previewApp.id),
+                    { ...previewApp, _manifest: fullManifest } as any,
+                  ];
+                  setCommunityApps(newCommunityApps);
+                  localStorage.setItem('vstore_community_apps', JSON.stringify(newCommunityApps));
+
+                  // Open setup wizard in GUIOS
+                  if (onOpenSetupWizard) {
+                    setTimeout(() => onOpenSetupWizard(fullManifest), 600);
+                  }
+
+                  setTimeout(() => { setDevSubmitting(false); setDevSubmitDone(true); }, 400);
+                  return;
+                }
+                setDevSubmitProgress(prog);
+                if (logIdx < logs.length) setDevSubmitLog(prev => [...prev, logs[logIdx++]]);
+              }, 300);
+            };
+
+            return (
+              <div className="flex-1 bg-[#ececec] text-black border-2 border-t-[#a0a0a0] border-l-[#a0a0a0] border-b-white border-r-white flex flex-col overflow-hidden">
+                {/* Portal header */}
+                <div className="flex items-center gap-3 px-4 py-2 bg-[#c0c0c0] border-b border-gray-400 shrink-0">
+                  <Code2 size={18} className="text-[#000080]" />
+                  <div className="flex-1">
+                    <p className="font-bold text-[#000080] text-sm">VStore Developer Portal</p>
+                    <p className="text-[9px] text-gray-500 font-mono">VSTORE CATALYST • SOFTWARE SUBMISSION • MEMBER: {account.memberId}</p>
+                  </div>
+                  {/* Step breadcrumb */}
+                  <div className="flex items-center gap-1 text-[10px] font-mono">
+                    {STEPS.map((s, i) => (
+                      <React.Fragment key={s}>
+                        <span className={`${
+                          devPortalStep === i ? 'text-[#000080] font-bold underline' :
+                          devPortalStep > i ? 'text-gray-400' : 'text-gray-500'
+                        }`}>{s}</span>
+                        {i < STEPS.length - 1 && <span className="text-gray-400 mx-0.5">›</span>}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </div>
+
+                {devSubmitDone ? (
+                  /* ── Success screen ── */
+                  <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
+                    <CheckCircle2 size={56} className="text-green-600" />
+                    <p className="text-xl font-bold text-[#000080]">Application Published!</p>
+                    <p className="text-sm text-gray-700 text-center">
+                      <strong>{devAppName}</strong> has been submitted to VStore Catalyst and is now available in the catalog.
+                      The setup wizard has been launched to install it on this machine.
+                    </p>
+                    <div className="bg-white border border-gray-400 p-3 text-[10px] font-mono text-gray-700 w-full max-w-sm">
+                      <p className="font-bold mb-1">Submission Summary</p>
+                      <p>App ID: community_{devAppId}</p>
+                      <p>Version: {devAppVersion}</p>
+                      <p>Category: {devAppCategory}</p>
+                      <p>Developer: {devAppAuthor}</p>
+                      <p>VStore Member: {account.memberId}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setDevSubmitDone(false);
+                        setDevPortalStep(0);
+                        setDevAppName(''); setDevAppVersion('1.0.0'); setDevAppAuthor('');
+                        setDevAppDescription(''); setDevAppRequirements(''); setDevAppSize('');
+                        setDevAppPrice(''); setDevIconDataUrl(''); setDevIconFileName('');
+                        setDevScreenshotUrl(''); setDevEntryCode('');
+                        setShowDevPortal(false);
+                      }}
+                      className="px-8 py-2 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-sm font-bold"
+                    >
+                      Back to Catalog
+                    </button>
+                  </div>
+                ) : devSubmitting ? (
+                  /* ─── Submitting screen ─── */
+                  <div className="flex-1 flex flex-col p-6 gap-4 justify-center">
+                    <p className="text-lg font-bold text-[#000080]">Submitting to VStore Catalyst...</p>
+                    <p className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Uploading to distribution network • DO NOT CLOSE</p>
+                    <div className="h-6 bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white overflow-hidden p-[2px] flex gap-[2px]">
+                      {Array.from({ length: 20 }).map((_, i) => (
+                        <div key={i} className={`h-full w-[4.5%] ${i < (devSubmitProgress / 5) ? 'bg-[#000080]' : 'bg-transparent'} transition-colors duration-200`} />
+                      ))}
+                    </div>
+                    <p className="text-[10px] font-mono text-right text-gray-500">{Math.floor(devSubmitProgress)}%</p>
+                    <div className="bg-black text-[#00ff41] font-mono text-[10px] p-3 flex-1 overflow-y-auto border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white">
+                      {devSubmitLog.map((l, i) => <div key={i}>&gt; {l}</div>)}
+                      {devSubmitProgress < 100 && <div className="animate-pulse">&gt; _</div>}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+                    {devPortalError && (
+                      <div className="bg-red-100 border border-red-600 text-red-800 p-2 text-xs font-mono flex gap-2 items-start">
+                        <AlertTriangle size={12} className="shrink-0 mt-0.5" /> {devPortalError}
+                      </div>
+                    )}
+
+                    {/* ── STEP 0: App Details ── */}
+                    {devPortalStep === 0 && (
+                      <>
+                        <div className="bg-[#000080] text-white px-3 py-1.5 text-xs font-bold uppercase tracking-widest">Step 1 of 4 — Application Information</div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="flex flex-col gap-1 col-span-2">
+                            <label className="text-[11px] font-bold text-gray-700">Application Name *</label>
+                            <input value={devAppName} onChange={e => setDevAppName(e.target.value)}
+                              className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white px-2 py-1 text-sm bg-white outline-none"
+                              placeholder="e.g. My Retro Calculator"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[11px] font-bold text-gray-700">Version *</label>
+                            <input value={devAppVersion} onChange={e => setDevAppVersion(e.target.value)}
+                              className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white px-2 py-1 text-xs bg-white outline-none"
+                              placeholder="1.0.0"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[11px] font-bold text-gray-700">Developer / Publisher *</label>
+                            <input value={devAppAuthor} onChange={e => setDevAppAuthor(e.target.value)}
+                              className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white px-2 py-1 text-xs bg-white outline-none"
+                              placeholder="Your name or company"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[11px] font-bold text-gray-700">Category</label>
+                            <select value={devAppCategory} onChange={e => setDevAppCategory(e.target.value as VStoreCategory)}
+                              className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white px-2 py-1.5 text-xs bg-white outline-none"
+                            >
+                              {(['Featured Apps','Games & Entertainment','Productivity','System Utilities','Networking','System','Desktop Applets'] as VStoreCategory[]).map(c => (
+                                <option key={c} value={c}>{c}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[11px] font-bold text-gray-700">Price (USD, leave blank for Free)</label>
+                            <input value={devAppPrice} onChange={e => setDevAppPrice(e.target.value)}
+                              className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white px-2 py-1 text-xs bg-white outline-none"
+                              placeholder="e.g. 9.95"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[11px] font-bold text-gray-700">File Size</label>
+                            <input value={devAppSize} onChange={e => setDevAppSize(e.target.value)}
+                              className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white px-2 py-1 text-xs bg-white outline-none"
+                              placeholder="e.g. 1.2 MB"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1 col-span-2">
+                            <label className="text-[11px] font-bold text-gray-700">Description * <span className="font-normal text-gray-500">(shown in VStore listing)</span></label>
+                            <textarea value={devAppDescription} onChange={e => setDevAppDescription(e.target.value)}
+                              rows={4}
+                              className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-2 text-xs bg-white outline-none resize-none"
+                              placeholder="Describe what your application does..."
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1 col-span-2">
+                            <label className="text-[11px] font-bold text-gray-700">System Requirements</label>
+                            <input value={devAppRequirements} onChange={e => setDevAppRequirements(e.target.value)}
+                              className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white px-2 py-1 text-xs bg-white outline-none"
+                              placeholder="e.g. Vespera OS, 4MB RAM, Mouse"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-end mt-auto pt-3 border-t border-gray-300">
+                          <button
+                            onClick={() => {
+                              if (!canNext0) { setDevPortalError('Application Name, Description, and Developer are required.'); return; }
+                              setDevPortalError(null); setDevPortalStep(1);
+                            }}
+                            className="px-10 py-2 bg-[#000080] text-white border-2 border-t-blue-400 border-l-blue-400 border-b-black border-r-black text-sm font-bold"
+                          >
+                            Next &gt;
+                          </button>
+                        </div>
+                      </>
+                    )}
+
+                    {/* ── STEP 1: Media & Code ── */}
+                    {devPortalStep === 1 && (
+                      <>
+                        <div className="bg-[#000080] text-white px-3 py-1.5 text-xs font-bold uppercase tracking-widest">Step 2 of 4 — Media &amp; Application Code</div>
+
+                        {/* Icon upload */}
+                        <div className="flex flex-col gap-2">
+                          <label className="text-[11px] font-bold text-gray-700">Application Icon <span className="font-normal text-gray-500">(upload a PNG or ICO file)</span></label>
+                          <div className="flex items-center gap-3">
+                            <div className="w-16 h-16 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white flex items-center justify-center shrink-0 overflow-hidden">
+                              {devIconDataUrl ? (
+                                <img src={devIconDataUrl} alt="icon" className="w-12 h-12 object-contain" style={{ imageRendering: 'pixelated' }} />
+                              ) : (
+                                <Package size={28} className="text-gray-400" />
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-2 flex-1">
+                              <label className="px-4 py-1.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-xs font-bold cursor-pointer inline-block text-center">
+                                Browse...
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    setDevIconFileName(file.name);
+                                    const reader = new FileReader();
+                                    reader.onload = ev => setDevIconDataUrl(ev.target?.result as string);
+                                    reader.readAsDataURL(file);
+                                  }}
+                                />
+                              </label>
+                              <p className="text-[10px] text-gray-500 font-mono">
+                                {devIconFileName || 'No file selected'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Screenshot URL */}
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[11px] font-bold text-gray-700">Screenshot URL <span className="font-normal text-gray-500">(optional — shown in app detail view)</span></label>
+                          <input value={devScreenshotUrl} onChange={e => setDevScreenshotUrl(e.target.value)}
+                            className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white px-2 py-1 text-xs bg-white outline-none font-mono"
+                            placeholder="https://example.com/screenshot.png"
+                          />
+                        </div>
+
+                        {/* Entry Code */}
+                        <div className="flex flex-col gap-1 flex-1">
+                          <label className="text-[11px] font-bold text-gray-700">
+                            Application Source Code * <span className="font-normal text-gray-500">— must declare <code>function init(container, System)</code></span>
+                          </label>
+                          <textarea
+                            value={devEntryCode}
+                            onChange={e => { setDevEntryCode(e.target.value); setDevPortalError(null); }}
+                            spellCheck={false}
+                            rows={12}
+                            className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-2 bg-[#1e1e1e] text-[#d4d4d4] outline-none text-[11px] font-mono resize-none leading-relaxed"
+                            placeholder={`function init(container, System) {\n  container.style.cssText = 'font-family:monospace;padding:24px;background:#1a1a2e;color:#e0e0ff;height:100%';\n  container.innerHTML = '<h2>Hello from ' + System.getManifest().name + '!</h2>';\n}`}
+                          />
+                          <p className="text-[9px] text-gray-500 font-mono">See Help → Developer Guide for the full API reference.</p>
+                        </div>
+
+                        <div className="flex justify-between mt-auto pt-3 border-t border-gray-300">
+                          <button onClick={() => { setDevPortalError(null); setDevPortalStep(0); }}
+                            className="px-6 py-2 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-sm font-bold">
+                            &lt; Back
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (!canNext1) { setDevPortalError('Application source code is required and must be more than 10 characters.'); return; }
+                              setDevPortalError(null); setDevPortalStep(2);
+                            }}
+                            className="px-10 py-2 bg-[#000080] text-white border-2 border-t-blue-400 border-l-blue-400 border-b-black border-r-black text-sm font-bold"
+                          >
+                            Preview Listing &gt;
+                          </button>
+                        </div>
+                      </>
+                    )}
+
+                    {/* ── STEP 2: Preview ── */}
+                    {devPortalStep === 2 && (
+                      <>
+                        <div className="bg-[#000080] text-white px-3 py-1.5 text-xs font-bold uppercase tracking-widest">Step 3 of 4 — Preview VStore Listing</div>
+                        <p className="text-xs text-gray-600">This is exactly how your application will appear to users in the VStore Catalyst catalog.</p>
+
+                        {/* Mini VStore card preview */}
+                        <div className="bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-4 flex gap-4">
+                          <div className="w-16 h-16 bg-[#ececec] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 flex items-center justify-center shrink-0 overflow-hidden">
+                            {devIconDataUrl
+                              ? <img src={devIconDataUrl} className="w-12 h-12 object-contain" style={{ imageRendering: 'pixelated' }} alt="icon" />
+                              : <Package size={32} className="text-gray-400" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className="font-bold text-sm text-[#000080]">{previewApp.name}</p>
+                                <p className="text-[11px] text-gray-600">{previewApp.developer} • v{previewApp.version}</p>
+                              </div>
+                              <div className="shrink-0 text-right">
+                                {previewApp.price
+                                  ? <span className="bg-[#000080] text-white px-2 py-0.5 text-[10px] font-bold">${previewApp.price.toFixed(2)}</span>
+                                  : <span className="bg-green-700 text-white px-2 py-0.5 text-[10px] font-bold">FREE</span>}
+                              </div>
+                            </div>
+                            <p className="text-[11px] text-gray-700 mt-1.5 leading-relaxed line-clamp-3">{previewApp.description}</p>
+                            <div className="flex gap-3 mt-2 text-[10px] text-gray-500 font-mono">
+                              <span>Category: {previewApp.category}</span>
+                              <span>Size: {previewApp.size}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {devScreenshotUrl && (
+                          <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white overflow-hidden">
+                            <img src={devScreenshotUrl} alt="screenshot" className="w-full object-cover max-h-48" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          </div>
+                        )}
+
+                        <div className="bg-[#fffbe6] border border-yellow-500 p-3 text-[11px] font-mono text-yellow-900 flex gap-2 items-start">
+                          <AlertTriangle size={12} className="shrink-0 mt-0.5 text-yellow-600" />
+                          <span>By submitting, you confirm this application complies with the VStore Acceptable Use Policy and does not contain malicious code. Your VesperaNET member ID will be recorded with this submission.</span>
+                        </div>
+
+                        <div className="flex justify-between mt-auto pt-3 border-t border-gray-300">
+                          <button onClick={() => { setDevPortalError(null); setDevPortalStep(1); }}
+                            className="px-6 py-2 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-sm font-bold">
+                            &lt; Back
+                          </button>
+                          <button onClick={() => { setDevPortalError(null); setDevPortalStep(3); }}
+                            className="px-10 py-2 bg-[#000080] text-white border-2 border-t-blue-400 border-l-blue-400 border-b-black border-r-black text-sm font-bold">
+                            Continue to Submit &gt;
+                          </button>
+                        </div>
+                      </>
+                    )}
+
+                    {/* ── STEP 3: Submit ── */}
+                    {devPortalStep === 3 && (
+                      <>
+                        <div className="bg-[#000080] text-white px-3 py-1.5 text-xs font-bold uppercase tracking-widest">Step 4 of 4 — Submit Application</div>
+
+                        <div className="bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-4 flex flex-col gap-3">
+                          <p className="text-sm font-bold text-[#000080]">Submission Checklist</p>
+                          {[
+                            { label: 'Application name provided', ok: !!devAppName.trim() },
+                            { label: 'Description provided', ok: !!devAppDescription.trim() },
+                            { label: 'Developer name provided', ok: !!devAppAuthor.trim() },
+                            { label: 'Application code provided', ok: devEntryCode.trim().length > 10 },
+                            { label: 'Icon uploaded', ok: !!devIconDataUrl },
+                          ].map(item => (
+                            <div key={item.label} className="flex items-center gap-2 text-xs">
+                              {item.ok
+                                ? <CheckCircle2 size={14} className="text-green-600 shrink-0" />
+                                : <AlertTriangle size={14} className="text-yellow-600 shrink-0" />}
+                              <span className={item.ok ? 'text-gray-700' : 'text-yellow-800 font-bold'}>{item.label}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-4 text-xs">
+                          <p className="font-bold text-[#000080] mb-2">What happens next?</p>
+                          <ul className="list-disc pl-4 space-y-1 text-gray-700">
+                            <li>Your application is published to the <strong>VStore Catalyst Community</strong> category.</li>
+                            <li>It will appear in the catalog immediately for other users to discover.</li>
+                            <li>The Setup Wizard will launch to install it on <em>this machine</em> right away.</li>
+                            <li>Your VesperaNET ID (<strong>{account.memberId}</strong>) is recorded as the publisher.</li>
+                          </ul>
+                        </div>
+
+                        <div className="flex justify-between mt-auto pt-3 border-t border-gray-300">
+                          <button onClick={() => { setDevPortalError(null); setDevPortalStep(2); }}
+                            className="px-6 py-2 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-sm font-bold">
+                            &lt; Back
+                          </button>
+                          <button
+                            onClick={handleSubmit}
+                            className="px-10 py-2 bg-[#008000] text-white border-2 border-t-green-400 border-l-green-400 border-b-green-900 border-r-green-900 text-sm font-bold flex items-center gap-2"
+                          >
+                            <CheckCircle2 size={16} /> Publish to VStore
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()
         ) : (
           <div className="flex-1 bg-[#ececec] text-black border-2 border-t-[#a0a0a0] border-l-[#a0a0a0] border-b-white border-r-white p-3 overflow-y-auto flex flex-col relative z-0">
-            
+
             {selectedApp ? (
             // App Details View
             <div className="flex flex-col gap-4 h-full relative z-10">
@@ -550,22 +1079,37 @@ export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onL
                     </div>
                   )}
 
-                  <div className={`pt-3 border-t-2 border-gray-300 flex justify-end shrink-0 ${!purchaseError ? 'mt-auto' : ''}`}>
-                    <button 
-                      onClick={() => !installedApps.includes(selectedApp.id) && handleInstallClick(selectedApp)}
-                      disabled={installedApps.includes(selectedApp.id)}
-                      className={`flex items-center gap-2 px-8 py-3 font-bold text-sm border-[3px] shadow-[2px_2px_0_rgba(0,0,0,0.3)] active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white active:shadow-none active:translate-y-[2px] active:translate-x-[2px] transition-all ${
-                        installedApps.includes(selectedApp.id) 
-                          ? 'bg-[#008000] text-white border-t-gray-800 border-l-gray-800 border-b-white border-r-white cursor-default opacity-80 shadow-none translate-y-[2px] translate-x-[2px]'
-                          : 'bg-[#000080] text-white border-t-blue-400 border-l-blue-400 border-b-[#000040] border-r-[#000040] hover:bg-blue-800'
-                      }`}
-                    >
-                      {installedApps.includes(selectedApp.id) ? <CheckCircle2 size={20} /> : <Download size={20} />}
-                      {installedApps.includes(selectedApp.id) ? 'ALREADY INSTALLED' : 
-                        (selectedApp.price && !account?.purchasedApps?.includes(selectedApp.id)) 
-                          ? `AUTHORIZE PURCHASE ($${selectedApp.price.toFixed(2)})` 
+                  {/* Not-yet-available notice for non-functional apps */}
+                  {!selectedApp.functional && (
+                    <div className="mt-auto mb-2 bg-[#fffbe6] border-2 border-[#b8860b] p-3 text-[11px] font-mono text-[#5c4000] flex gap-3 items-start shrink-0">
+                      <AlertTriangle size={16} className="text-[#b8860b] shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold uppercase tracking-wide mb-0.5">Archive Entry — Not Yet Available</p>
+                        <p>This title is catalogued for future release on the Vespera platform. Check back after a system update.</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className={`pt-3 border-t-2 border-gray-300 flex justify-end shrink-0 ${!purchaseError && selectedApp.functional ? 'mt-auto' : ''}`}>
+                    {installedApps.includes(selectedApp.id) ? (
+                      <button disabled className="flex items-center gap-2 px-8 py-3 font-bold text-sm border-[3px] bg-[#008000] text-white border-t-gray-800 border-l-gray-800 border-b-white border-r-white cursor-default opacity-80 shadow-none translate-y-[2px] translate-x-[2px]">
+                        <CheckCircle2 size={20} /> ALREADY INSTALLED
+                      </button>
+                    ) : selectedApp.functional ? (
+                      <button
+                        onClick={() => handleInstallClick(selectedApp)}
+                        className="flex items-center gap-2 px-8 py-3 font-bold text-sm border-[3px] shadow-[2px_2px_0_rgba(0,0,0,0.3)] active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white active:shadow-none active:translate-y-[2px] active:translate-x-[2px] transition-all bg-[#000080] text-white border-t-blue-400 border-l-blue-400 border-b-[#000040] border-r-[#000040] hover:bg-blue-800"
+                      >
+                        <Download size={20} />
+                        {(selectedApp.price && !account?.purchasedApps?.includes(selectedApp.id))
+                          ? `AUTHORIZE PURCHASE ($${selectedApp.price.toFixed(2)})`
                           : 'INITIATE DOWNLOAD'}
-                    </button>
+                      </button>
+                    ) : (
+                      <button disabled className="flex items-center gap-2 px-8 py-3 font-bold text-sm border-[3px] bg-[#808080] text-gray-300 border-t-gray-600 border-l-gray-600 border-b-gray-900 border-r-gray-900 cursor-not-allowed opacity-60">
+                        <Download size={20} /> NOT YET AVAILABLE
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -617,45 +1161,53 @@ export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onL
                       className="group border border-gray-400 bg-white p-3 flex gap-4 hover:bg-[#e6e6fa] hover:border-[#000080] cursor-pointer shadow-sm hover:shadow-md transition-all active:translate-y-px"
                       onClick={() => setSelectedApp(app)}
                     >
-                      <div className="w-14 h-14 bg-[#ececec] border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white flex items-center justify-center shrink-0 shadow-inner group-hover:bg-white transition-colors relative">
+                      {/* Icon box — brighter border for functional apps */}
+                      <div className={`w-14 h-14 border-2 flex items-center justify-center shrink-0 shadow-inner transition-colors relative ${
+                        app.functional
+                          ? 'bg-[#ececec] border-t-gray-800 border-l-gray-800 border-b-white border-r-white group-hover:bg-white'
+                          : 'bg-[#d8d8d8] border-t-gray-600 border-l-gray-600 border-b-gray-400 border-r-gray-400 opacity-70'
+                      }`}>
                         {app.ageRestricted && <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[8px] font-bold shadow-sm">18+</div>}
-                        {app.customIcon ? <img src={app.customIcon} alt="icon" className="w-[28px] h-[28px] pointer-events-none" style={{ imageRendering: 'pixelated' }} draggable={false} /> : <app.icon size={28} className={app.color} />}
+                        {app.customIcon
+                          ? <img src={app.customIcon} alt="icon" className={`w-[28px] h-[28px] pointer-events-none ${!app.functional ? 'grayscale opacity-60' : ''}`} style={{ imageRendering: 'pixelated' }} draggable={false} />
+                          : <app.icon size={28} className={app.functional ? app.color : 'text-gray-400'} />}
                       </div>
+
                       <div className="flex-1 flex flex-col justify-center min-w-0">
                         <div className="flex justify-between items-start mb-0.5">
-                          <h3 className="font-bold text-[13px] text-[#000080] truncate leading-tight group-hover:underline">{app.name}</h3>
+                          <h3 className={`font-bold text-[13px] truncate leading-tight group-hover:underline ${app.functional ? 'text-[#000080]' : 'text-gray-500'}`}>{app.name}</h3>
                         </div>
                         <p className="text-[10px] text-gray-500 mb-0.5 font-mono truncate">{app.developer}</p>
-                        
+
                         <div className="flex items-center gap-1 mb-1.5 h-3">
                           {app.rating ? (
-                            <div className="flex text-yellow-500">
+                            <div className={`flex ${app.functional ? 'text-yellow-500' : 'text-gray-400'}`}>
                               {[...Array(Math.floor(app.rating))].map((_, i) => <Star key={i} size={10} fill="currentColor" />)}
-                              {app.rating % 1 > 0 && <StarHalf size={10} fill="currentColor" className="text-yellow-500" />}
+                              {app.rating % 1 > 0 && <StarHalf size={10} fill="currentColor" />}
                               <span className="text-[9px] text-gray-500 ml-1 mt-[1px] font-mono">({app.downloadCount?.toLocaleString() || 0})</span>
                             </div>
                           ) : (
-                            <span className="text-[9px] text-gray-400 font-mono text-xs">New Release</span>
+                            <span className="text-[9px] text-gray-400 font-mono">New Release</span>
                           )}
                         </div>
-                        
+
                         <div className="flex justify-between items-center mt-auto">
-                           {installedApps.includes(app.id) ? (
+                          {installedApps.includes(app.id) ? (
                             <span className="text-[9px] bg-[#008000] text-white px-1.5 py-0.5 font-bold tracking-wider inline-flex items-center gap-1">
-                               <CheckCircle2 size={10} /> INSTALLED
+                              <CheckCircle2 size={10} /> INSTALLED
                             </span>
                           ) : app.functional ? (
-                            <span className="text-[9px] bg-blue-600 text-white border border-blue-400 px-1.5 py-0.5 font-bold tracking-wider shadow-sm animate-pulse">
-                              [INSTALLABLE]
+                            <span className="text-[9px] bg-[#006000] text-[#90ff90] border border-[#004000] px-1.5 py-0.5 font-bold tracking-wider shadow-sm animate-pulse inline-flex items-center gap-1">
+                              <Download size={8} /> AVAILABLE
                             </span>
                           ) : (
-                            <span className="text-[9px] bg-gray-500 text-gray-100 border border-gray-400 px-1.5 py-0.5 font-bold tracking-wider opacity-60">
-                              [ARCHIVE]
+                            <span className="text-[9px] bg-[#404040] text-gray-400 border border-[#303030] px-1.5 py-0.5 font-bold tracking-wider opacity-70">
+                              COMING SOON
                             </span>
                           )}
                           <span className="text-[9px] text-gray-500 font-mono">
                             {app.price ? (
-                              <span className="text-green-700 font-bold">${app.price.toFixed(2)}</span>
+                              <span className={app.functional ? 'text-green-700 font-bold' : 'text-gray-400 line-through'}>${app.price.toFixed(2)}</span>
                             ) : (
                               app.size
                             )}

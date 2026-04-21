@@ -25,6 +25,7 @@ const APP_RESOURCE_PROFILES: Record<string, { ramKB: number; cpuPercent: number;
   findfiles:      { ramKB: 1024,  cpuPercent: 3,  diskMB: 1,  publisher: 'Vespera Systems',  startupImpact: 'Low' },
   dialup:         { ramKB: 1536,  cpuPercent: 4,  diskMB: 2,  publisher: 'VesperaNET Inc.',  startupImpact: 'Low' },
   packman:        { ramKB: 2048,  cpuPercent: 6,  diskMB: 4,  publisher: 'Vespera Games',    startupImpact: 'Low' },
+  leave_me_alone: { ramKB: 2048,  cpuPercent: 5,  diskMB: 4,  publisher: 'MarketJS',         startupImpact: 'Low' },
   axis_paint:     { ramKB: 3072,  cpuPercent: 5,  diskMB: 6,  publisher: 'Axis Innovations', startupImpact: 'Medium' },
   vsweeper:       { ramKB: 512,   cpuPercent: 1,  diskMB: 0,  publisher: 'Vespera Games',    startupImpact: 'Low' },
   versa_edit:     { ramKB: 768,   cpuPercent: 2,  diskMB: 1,  publisher: 'Vespera Systems',  startupImpact: 'Low' },

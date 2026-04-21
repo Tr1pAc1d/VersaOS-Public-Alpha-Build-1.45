@@ -98,6 +98,28 @@ const WALLPAPERS = [
   { id: 'tech',       name: 'Tech Storm',       url: '/wallpapers/Tech_Storm.png' },
   { id: 'tiles',      name: 'Tiles Abyss',      url: '/wallpapers/Tiles_Abyss.png' },
   { id: 'wow',        name: 'Wow Factor',       url: '/wallpapers/Wow_Factor.png' },
+  { id: 'black_thatch',name: 'Black Thatch',     url: '/wallpapers/Black_Thatch.png' },
+  { id: 'blue_rivets',name: 'Blue Rivets',      url: '/wallpapers/Blue_Rivets.png' },
+  { id: 'bubbles',    name: 'Bubbles',          url: '/wallpapers/Bubbles_(Windows_95).webp' },
+  { id: 'carved',     name: 'Carved Stone',     url: '/wallpapers/Carved_Stone.png' },
+  { id: 'circles',    name: 'Circles',          url: '/wallpapers/Circles_(Windows_95).png' },
+  { id: 'flowers',    name: 'Flowers',          url: '/wallpapers/Flowers.png' },
+  { id: 'forest_95',  name: 'Forest',           url: '/wallpapers/Forest_(Windows_95).webp' },
+  { id: 'gold_weave', name: 'Gold Weave',       url: '/wallpapers/Gold_Weave.png' },
+  { id: 'houndstooth',name: 'Houndstooth',      url: '/wallpapers/Houndstooth.png' },
+  { id: 'metal_links',name: 'Metal Links',      url: '/wallpapers/Metal_Links.png' },
+  { id: 'red_blocks', name: 'Red Blocks',       url: '/wallpapers/Red_Blocks.webp' },
+  { id: 'sandstone',  name: 'Sandstone',        url: '/wallpapers/Sandstone_(Windows_95).webp' },
+  { id: 'stitches',   name: 'Stitches',         url: '/wallpapers/Stitches.webp' },
+  { id: 'triangles',  name: 'Triangles',        url: '/wallpapers/Triangles_(Windows_95).png' },
+  { id: 'waves',      name: 'Waves',            url: '/wallpapers/Waves_(Windows_95).png' },
+  { id: 'tiles_95',   name: 'Tiles (Windows 95)', url: '/wallpapers/Tiles_(Windows_95).png' },
+  { id: 'abstract_tech', name: 'Abstract Tech', url: '/wallpapers/037Gml7gXXsjz1BdLXfOiPe.fit_lim.size_1050x578.v1569505914.jpg' },
+  { id: 'snapshot_25', name: 'Snapshot 25', url: '/wallpapers/Snapshot_25.PNG' },
+  { id: 'raytracing_1', name: '90s Ray Tracing 1', url: '/wallpapers/the-birth-of-digital-art-90s-ray-tracing-v0-9lytxi62gzge1.jpg' },
+  { id: 'raytracing_2', name: '90s Ray Tracing 2', url: '/wallpapers/the-birth-of-digital-art-90s-ray-tracing-v0-m74ns7x1gzge1.jpg' },
+  { id: 'raytracing_3', name: '90s Ray Tracing 3', url: '/wallpapers/the-birth-of-digital-art-90s-ray-tracing-v0-rmd6uvn1gzge1.jpg' },
+  { id: 'retro_geo', name: 'Retro Geometric', url: '/wallpapers/tvuzjokogx84ozmfrchy.jpg' },
 ];
 
 const COLORS = [
@@ -122,6 +144,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   const currentRes = vfs.displaySettings?.resolution || '1024x768';
   const [selectedRes, setSelectedRes] = useState(currentRes);
   const [selectedWallpaper, setSelectedWallpaper] = useState(vfs.displaySettings?.wallpaper || '');
+  const [selectedWallpaperLayout, setSelectedWallpaperLayout] = useState(vfs.displaySettings?.wallpaperLayout || 'cover');
   const [selectedColor, setSelectedColor] = useState(vfs.displaySettings?.backgroundColor || '#5f8787');
   const tTheme = vfs.displaySettings?.taskbarTheme || 'motif';
   const defaultBg = tTheme === 'dark' ? '#000000' : '#c0c0c0';
@@ -193,6 +216,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
     if (!activePanel) {
       setSelectedRes(vfs.displaySettings?.resolution || '1024x768');
       setSelectedWallpaper(vfs.displaySettings?.wallpaper || '');
+      setSelectedWallpaperLayout(vfs.displaySettings?.wallpaperLayout || 'cover');
       setSelectedColor(vfs.displaySettings?.backgroundColor || '#5f8787');
       setSelectedTaskbarTheme(vfs.displaySettings?.taskbarTheme || 'motif');
       setSelectedTaskbarShowClock(vfs.displaySettings?.taskbarShowClock !== false);
@@ -271,7 +295,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
       setClockTextColor(applyClockText);
     }
 
-    if (vfs.updateWallpaper) vfs.updateWallpaper(applyWallpaper);
+    if (vfs.updateWallpaper) vfs.updateWallpaper(applyWallpaper, selectedWallpaperLayout);
     if (vfs.updateBackgroundColor) vfs.updateBackgroundColor(applyBgColor);
     if (vfs.updateTaskbarTheme) vfs.updateTaskbarTheme(applyTaskbarTheme);
     if (vfs.updateTaskbarClock) vfs.updateTaskbarClock(selectedTaskbarShowClock);
@@ -331,6 +355,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   const isApplyEnabled = (
     selectedRes !== (vfs.displaySettings?.resolution || '1024x768') ||
     selectedWallpaper !== (vfs.displaySettings?.wallpaper || '') ||
+    selectedWallpaperLayout !== (vfs.displaySettings?.wallpaperLayout || 'cover') ||
     selectedColor !== (vfs.displaySettings?.backgroundColor || '#5f8787') ||
     selectedTaskbarTheme !== (vfs.displaySettings?.taskbarTheme || 'motif') ||
     selectedTaskbarShowClock !== (vfs.displaySettings?.taskbarShowClock !== false) ||
@@ -451,32 +476,78 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
               </div>
             </div>
             
-            <div className="flex gap-4 min-h-0">
-              <div className={`flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-2 ${isMaximized ? 'h-96' : 'h-32'} transition-all bg-white overflow-y-auto`}>
-                <p className="font-bold text-xs mb-1">Wallpaper</p>
-                {WALLPAPERS.map(wp => (
-                  <div 
-                    key={wp.id} 
-                    onClick={() => setSelectedWallpaper(wp.url)}
-                    className={`px-2 py-1 text-xs cursor-default ${selectedWallpaper === wp.url ? 'bg-[#000080] text-white' : 'hover:bg-[#008080] hover:text-white'}`}
-                  >
-                    {wp.name}
-                  </div>
-                ))}
+            <div className="flex gap-6 flex-1 min-h-0">
+              {/* Left Side: Wallpaper Selection */}
+              <div className="flex-1 flex flex-col min-h-0">
+                <p className="font-bold text-xs mb-1 shrink-0">Wallpaper</p>
+                <div className={`border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-2 bg-white overflow-y-auto flex-1 ${!isMaximized && 'max-h-40'}`}>
+                  {WALLPAPERS.map(wp => (
+                    <div 
+                      key={wp.id} 
+                      onClick={() => setSelectedWallpaper(wp.url)}
+                      className={`px-2 py-1 text-xs cursor-default ${selectedWallpaper === wp.url ? 'bg-[#000080] text-white' : 'hover:bg-[#008080] hover:text-white'}`}
+                    >
+                      {wp.name}
+                    </div>
+                  ))}
+                </div>
               </div>
               
-              <div className={`flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-2 ${isMaximized ? 'h-96' : 'h-32'} transition-all bg-white overflow-y-auto`}>
-                <p className="font-bold text-xs mb-1">Color</p>
-                {COLORS.map(c => (
-                  <div 
-                    key={c.id} 
-                    onClick={() => setSelectedColor(c.hex)}
-                    className={`px-2 py-1 text-xs cursor-default flex items-center gap-2 ${selectedColor === c.hex ? 'bg-[#000080] text-white' : 'hover:bg-[#008080] hover:text-white'}`}
-                  >
-                    <div className="w-3 h-3 border border-gray-500" style={{ backgroundColor: c.hex }} />
-                    {c.name}
+              {/* Right Side: Preview & Color Selector */}
+              <div className="flex-1 flex flex-col items-center pt-2 min-h-0">
+                {/* Monitor Preview */}
+                <div className="relative scale-[0.85] origin-top shrink-0">
+                  <div className="w-[180px] h-[140px] bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 p-2 flex flex-col shadow-[4px_4px_0px_rgba(0,0,0,0.4)]">
+                    <div 
+                      className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white overflow-hidden"
+                      style={{ 
+                        backgroundColor: selectedColor,
+                        backgroundImage: selectedWallpaper ? `url('${selectedWallpaper}')` : 'none',
+                        backgroundSize: selectedWallpaperLayout === 'stretch' ? '100% 100%' : (selectedWallpaperLayout === 'cover' ? 'cover' : 'auto'),
+                        backgroundPosition: selectedWallpaperLayout === 'tile' ? 'top left' : 'center',
+                        backgroundRepeat: selectedWallpaperLayout === 'tile' ? 'repeat' : 'no-repeat'
+                      }}
+                    />
                   </div>
-                ))}
+                  <div className="w-16 h-4 mx-auto bg-[#808080] border-x-2 border-gray-600" />
+                  <div className="w-24 h-4 mx-auto bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800" />
+                </div>
+                
+                {/* Color and Layout Selector */}
+                <div className="w-full mt-2 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-2 bg-[#c0c0c0] shrink-0">
+                  <div className="flex gap-4">
+                    {/* Size Options */}
+                    <div className="w-1/3">
+                      <p className="font-bold text-[10px] mb-1 leading-none">Display Mode</p>
+                      <select 
+                        value={selectedWallpaperLayout}
+                        onChange={(e) => setSelectedWallpaperLayout(e.target.value)}
+                        className="w-full text-[10px] bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white px-1 py-0.5 outline-none"
+                      >
+                        <option value="cover">Normal (Fit)</option>
+                        <option value="stretch">Stretch</option>
+                        <option value="center">Center</option>
+                        <option value="tile">Tile</option>
+                      </select>
+                    </div>
+
+                    {/* Color Swatches */}
+                    <div className="flex-1">
+                      <p className="font-bold text-[10px] mb-1 leading-none">Background Color</p>
+                      <div className="flex gap-2 flex-wrap items-center">
+                        {COLORS.map(c => (
+                          <button 
+                            key={c.id} 
+                            onClick={() => setSelectedColor(c.hex)}
+                            title={c.name}
+                            className={`w-4 h-4 flex items-center justify-center cursor-default ${selectedColor === c.hex ? 'border-2 border-black scale-125' : 'border border-t-gray-300 border-l-gray-300 border-b-black border-r-black hover:border-gray-500'}`}
+                            style={{ backgroundColor: c.hex }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </>
@@ -1932,16 +2003,31 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
                   </div>
                 </div>
 
-                <div className="text-xs text-gray-800 font-bold mb-1">Avatar Preset</div>
-                <div className="flex gap-1 mb-3 overflow-x-auto pb-2 scroller-hidden">
-                  <div 
+                <div className="text-xs text-gray-800 font-bold mb-1">Avatar / Profile Picture</div>
+                {/* User Pics (real photos) */}
+                <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">User Pictures</p>
+                <div className="flex gap-1 mb-2 overflow-x-auto pb-1">
+                  <div
                     onClick={() => vfs.updateSystemUser(selectedUserId!, { profilePic: '' })}
-                    className={`w-8 h-8 shrink-0 flex items-center justify-center border cursor-pointer bg-white ${!selectedSystemUser.profilePic ? 'border-2 border-blue-600' : 'border-gray-400'}`}
+                    className={`w-10 h-10 shrink-0 flex items-center justify-center border cursor-pointer bg-white ${!selectedSystemUser.profilePic ? 'border-2 border-blue-600' : 'border-gray-400'}`}
                   >
-                     <User size={16} className="text-gray-500" />
+                    <User size={20} className="text-gray-400" />
                   </div>
+                  {Array.from({ length: 12 }, (_, i) => `/User Pics/Vespera_d (${i + 1}).jpg`).map((pic) => (
+                    <img
+                      key={pic}
+                      src={pic}
+                      onClick={() => vfs.updateSystemUser(selectedUserId!, { profilePic: pic })}
+                      className={`w-10 h-10 shrink-0 object-cover border cursor-pointer ${selectedSystemUser.profilePic === pic ? 'border-2 border-blue-600' : 'border-gray-400'} hover:opacity-90`}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  ))}
+                </div>
+                {/* Retro icon presets */}
+                <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Icon Presets</p>
+                <div className="flex gap-1 mb-3 overflow-x-auto pb-2 scroller-hidden">
                   {RETRO_ICONS.filter(i => i.id.startsWith('user_') || i.id.startsWith('sys_globe')).map(ico => (
-                    <img 
+                    <img
                       key={ico.id}
                       src={ico.url}
                       onClick={() => vfs.updateSystemUser(selectedUserId!, { profilePic: ico.url })}

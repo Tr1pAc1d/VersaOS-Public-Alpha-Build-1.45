@@ -123,14 +123,15 @@ export const VMessengerSetup: React.FC<VMessengerSetupProps> = ({ vfs, onComplet
     <div className="flex flex-col h-full bg-[#c0c0c0] text-black font-sans text-sm">
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar */}
-        <div className="w-1/3 bg-[#000080] flex flex-col items-center justify-between p-4 text-white shrink-0 shadow-[inset_-2px_0_0_rgba(0,0,0,0.3)]">
-          <div className="flex flex-col items-center mt-8">
+        <div className="w-1/3 flex flex-col items-center justify-between p-4 text-white shrink-0 shadow-[inset_-2px_0_0_rgba(0,0,0,0.3)] relative overflow-hidden" style={{ backgroundImage: 'url("/Vespera Setup Wizard background image.png")', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+          <div className="absolute inset-0 bg-[#000080]/55 pointer-events-none" />
+          <div className="relative z-10 flex flex-col items-center mt-8">
             <MessageSquare size={64} className="mb-4 text-yellow-400" />
             <h2 className="text-xl font-bold text-center tracking-wide drop-shadow-md leading-tight">Vespera<br/>Messenger</h2>
-            <p className="text-xs text-blue-200 mt-2 font-bold bg-[#000040] px-2 py-1 shadow-inner">Setup Wizard</p>
+            <p className="text-xs text-blue-200 mt-2 font-bold bg-[#000040]/80 px-2 py-1 shadow-inner">Setup Wizard</p>
           </div>
           
-          <div className="mb-4 flex flex-col items-center bg-[#000040] p-3 border border-blue-900 shadow-inner w-full">
+          <div className="relative z-10 mb-4 flex flex-col items-center bg-[#000040]/80 p-3 border border-blue-900/60 shadow-inner w-full">
             <div className="text-white font-bold text-lg tracking-widest uppercase">
               vAIM
             </div>

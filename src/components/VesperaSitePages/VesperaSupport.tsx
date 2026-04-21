@@ -21,7 +21,31 @@ export const VesperaSupport: React.FC<VesperaPageProps> = ({ startFailingDownloa
       startFailingDownload?.();
       setResults([{ title: 'INSTALLATION ROUTINE INITIATED...', desc: 'Initiating Aura codec patch over the bridge.' }]);
     } else {
-      setResults([{ title: '0 Matches Found', desc: 'No exact matches found in the Vespera Knowledge Base. Please ensure your physical manual index matches your OS version and try again.' }]);
+      const sizes = ['14 KB', '1.2 MB', '4.5 MB', '450 KB', '2.1 MB', '89 KB', '12 MB', '640 KB', '3.1 MB', '24 KB', '128 KB'];
+      const adjectives = ['Legacy', 'PCI', 'VGA', '16-bit', '32-bit', 'Neural', 'Quantum', 'Vespera', 'Aetheris', 'Generic', 'Enhanced', 'Integrated', 'Optical', 'Analog', 'Digital', 'Sync', 'Async', 'Parallel', 'Serial', 'ATAPI', 'SCSI', 'ISA', 'AGP', 'VLB', 'PCMCIA', 'Token Ring', 'Ethernet'];
+      const nouns = ['Driver', 'Codec', 'Patch', 'Update', 'Firmware', 'BIOS', 'Utility', 'Extension', 'Module', 'Interface', 'Controller', 'Adapter', 'Accelerator', 'Synthesizer', 'Modem', 'Soundcard', 'Framebuffer', 'Bridge', 'Bus Master', 'ROM'];
+      const versions = ['v1.0', 'v2.4a', 'v3.11', 'v4.0', 'v95', 'vNT', 'SP1', 'SP2', 'Beta', 'RC1', 'WHQL', 'Archive', 'OEM', 'Retail'];
+      
+      const genericResults = Array.from({ length: 148 }).map((_, i) => {
+        const rand = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
+        const adj = rand(adjectives);
+        const noun = rand(nouns);
+        const ver = rand(versions);
+        const code = rand(['0x0', '0x2', '0xF', '0x8']) + Math.floor(Math.random() * 10000).toString(16).toUpperCase();
+        
+        const isQueryInjected = Math.random() > 0.65;
+        const titleWords = [adj, isQueryInjected ? q : '', noun, ver];
+        const title = titleWords.filter(Boolean).join(' ').toUpperCase() + ` [SYS_${code}]`;
+        
+        const date = `199${Math.floor(Math.random() * 7)}-0${Math.floor(Math.random() * 9) + 1}-${Math.floor(Math.random() * 18) + 10}`;
+        const desc = `Date: ${date} | Size: ${rand(sizes)} | Category: ${adj} Systems
+Provides architectural compatibility and registry updates for standard ${noun.toLowerCase()} protocols. Overrides existing generic configuration. May require system reboot.`;
+        
+        return { title, desc };
+      });
+      
+      // Sort to make it look like an organized directory index
+      setResults(genericResults.sort((a,b) => a.title.localeCompare(b.title)));
     }
   };
 

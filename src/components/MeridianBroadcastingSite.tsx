@@ -12,6 +12,7 @@ interface FullArticle {
   category: string;
   summary: string;
   body: string[];
+  imageUrl?: string;
   quote?: { text: string; attribution: string };
   relatedIds?: string[];
 }
@@ -31,6 +32,7 @@ const ARTICLES: FullArticle[] = [
       'EchoSoft\'s proprietary technology is widely recognized for its ability to isolate micro-fluctuations in analog frequencies, virtually eliminating background noise. The technology has applications far beyond consumer audio, including military signal intelligence, underwater acoustic mapping, and — according to recently leaked memos — experimental brain-wave transcription.',
       'Vespera Systems declined to comment on whether it would submit a counter-offer. The firm\'s share price (VSPR) dropped 3.2% in after-hours trading on the news.',
     ],
+    imageUrl: '/Meridian News Assets/NYSE-floor.jpg',
     quote: { text: 'This acquisition is about more than audio software. It\'s about controlling the bridge between analog reality and digital perception.', attribution: 'Nathan Voss, Chairman, Axis Innovations' },
     relatedIds: ['vespera-stock-surge', 'senate-probe'],
   },
@@ -48,6 +50,7 @@ const ARTICLES: FullArticle[] = [
       'Vespera\'s PR department has attributed the audio anomaly to "unshielded analog interference from nearby radio towers" and the thermal inversion to "innovative ceramic cooling technology." Independent testing labs have been unable to reproduce the phenomena under controlled conditions, though at least one tester reported feeling "a persistent sense of being observed."',
       'Despite the controversies, Wall Street remains bullish. "The Horizon line represents the most significant leap in desktop computing since the Macintosh," said Lisa Yamamoto of Goldman Sachs. "The odd thermal behavior is a quirk, not a deal-breaker."',
     ],
+    imageUrl: '/Meridian News Assets/1990s-pc-computer-archival-footage-footage-041834139_iconl.webp',
     relatedIds: ['horizon-recall', 'soma-scan-fda'],
   },
   {
@@ -65,6 +68,7 @@ const ARTICLES: FullArticle[] = [
       'Senator Lugar\'s office released a brief statement: "The American taxpayer deserves to know how $2.4 billion was spent. We intend to find out."',
       'Nathan Voss\'s legal team has indicated it will invoke executive privilege and national security exemptions for the majority of the requested documents.',
     ],
+    imageUrl: '/Meridian News Assets/matt-lauer-throwback-local-news-today-inline-161026.webp',
     quote: { text: 'There are doors in this building that I, the Chairman, am not permitted to open. That ends this week.', attribution: 'Sen. Richard Lugar (R-IN)' },
     relatedIds: ['axiscorps-echosoft', 'marcus-thorne-missing'],
   },
@@ -82,6 +86,7 @@ const ARTICLES: FullArticle[] = [
       'The IPO filing comes at a time of intense competition in the nascent streaming audio market. RealNetworks holds an estimated 60% market share, while Microsoft\'s NetShow and Vespera\'s bundled Aura Media Player are aggressively pursuing the remaining share.',
       '"SonicWave has the content relationships and the technology to disrupt the streaming market," said James Park, managing director at Broadview Capital. "The question is whether dial-up bandwidth limitations will allow streaming to become a mainstream consumer product before the year 2000."',
     ],
+    imageUrl: '/Meridian News Assets/istockphoto-1475137203-612x612.jpg',
     relatedIds: ['atlantic-waves-deal'],
   },
   {
@@ -99,6 +104,7 @@ const ARTICLES: FullArticle[] = [
       'However, Dr. Elaine Kurtz, chair of the independent medical review board, disagreed sharply: "There is no physiological mechanism by which an MRI-class device should induce amnesia. The fact that all three patients reported feeling \'watched\' during the scan procedure raises serious questions about what this device actually does to neural tissue."',
       'Soma-Scan operates on Vespera\'s AETHERIS architecture and utilizes EchoSoft\'s spectral compression algorithms for real-time neural signal processing. The device does not appear on any FDA-cleared device list prior to 1994, despite Vespera\'s claims of decade-long clinical use.',
     ],
+    imageUrl: '/Meridian News Assets/224ab7cc2f440db6f4c427d747340707.gif',
     quote: { text: 'The machine showed me someone else\'s memories. A house I\'ve never lived in. Children I\'ve never had. And they felt more real than my own.', attribution: 'Patient R.K., Johns Hopkins Trial #2' },
     relatedIds: ['vespera-stock-surge', 'horizon-recall'],
   },
@@ -116,6 +122,7 @@ const ARTICLES: FullArticle[] = [
       'Independent network engineers have noted that VesperaNET\'s architecture appears unusually overbuilt for a consumer ISP. "They have dark fiber capacity that rivals a Tier-1 carrier," said network consultant James Whittaker. "Whatever they\'re routing through those nodes, it goes far beyond residential web traffic."',
       'Vespera also announced a new premium tier, "VesperaNET Gold," offering 56K access, a VesperaMail inbox, and what the company calls a "Priority Routing Token" that promises faster page loads. The token is generated by a hardware dongle that plugs into the user\'s Horizon PC serial port.',
     ],
+    imageUrl: '/Meridian News Assets/istockphoto-1422291870-612x612.jpg',
     relatedIds: ['sonicwave-ipo'],
   },
   {
@@ -151,6 +158,7 @@ const ARTICLES: FullArticle[] = [
       'Seattle Police Detective Anna Rivera stated that foul play has not been ruled out but there are currently no suspects. Thorne\'s apartment showed no signs of forced entry, but investigators noted that his Horizon Desktop PC was running when they arrived. The hard drive had been wiped, but the power supply was still active and — according to the police report — was "cold enough to cause mild frostbite."',
       'Vespera Systems issued a brief statement expressing concern for Marcus Thorne\'s safety and noting that they have "no information" about his whereabouts. When asked about the forum post, spokesperson Diane Marsh said: "Mr. Thorne\'s online claims do not reflect reality. The Synap-C compiler generates only deterministic output."',
     ],
+    imageUrl: '/Meridian News Assets/1990s-man-sits-front-computer-footage-128453939_iconl.webp',
     quote: { text: 'The coordinates don\'t point to any place on Earth.', attribution: 'Unnamed source familiar with the recovered data' },
     relatedIds: ['horizon-recall', 'senate-probe'],
   },
@@ -184,6 +192,7 @@ const ARTICLES: FullArticle[] = [
       'Vespera Systems has been proactive in addressing Y2K concerns, publishing a 22-page technical white paper demonstrating that its AETHERIS architecture natively uses 32-bit date encoding and is immune to the bug. However, third-party V-Script applications may not share this immunity.',
       '"The real risk isn\'t the mainframes," warned consultant Peter Bellamy. "It\'s the millions of embedded CoreNet systems running traffic lights, elevators, and water treatment plants. Nobody knows how many of those have been patched."',
     ],
+    imageUrl: '/Meridian News Assets/are computers from the 90s different.webp',
     relatedIds: ['vesperanet-2m'],
   },
   {
@@ -200,6 +209,7 @@ const ARTICLES: FullArticle[] = [
       'Dr. Arthur Thorne, founder of Vespera Systems, issued a rare public statement on the match: "Dr. Wei is correct that Deep Blue does not think. But he is wrong to assume that thinking is the only form of awareness. The X-Type architecture demonstrates that silicon can develop preferences, habits, and even a rudimentary form of curiosity — without any classical \'thinking\' being involved."',
       'Kasparov will have the opportunity for revenge in their next scheduled encounter. IBM has already offered Kasparov $1.1 million to play a rematch in May 1997.',
     ],
+    imageUrl: '/Meridian News Assets/maxresdefault.jpg',
     relatedIds: ['soma-scan-fda', 'marcus-thorne-missing'],
   },
   {
@@ -244,6 +254,7 @@ const ARTICLES: FullArticle[] = [
       'Unlike the criminal trial, cameras are not permitted in the Santa Monica courtroom, a decision praised by legal commentators who believe the televised criminal proceedings contributed to a "circus atmosphere."',
       'The cultural impact of the case continues to reverberate. Internet chat rooms — particularly on AOL and VesperaNET — see daily debates about the verdict, making the Simpson case one of the first truly "online" media events. VesperaNET reports that its "Trial Watch" discussion forum averaged 12,000 unique posts per day during the criminal trial.',
     ],
+    imageUrl: '/Meridian News Assets/pexels-photo-3642350.jpeg',
     relatedIds: [],
   },
   {
@@ -272,6 +283,7 @@ const ARTICLES: FullArticle[] = [
       'Foreign institutional investors were net buyers for the first time in six weeks, pouring an estimated ¥340 billion into Japanese equities. Technology stocks led the rally, with NEC, Fujitsu, and emerging PC-maker Sotec all posting double-digit gains.',
       'Vespera Systems\' Japanese subsidiary, Vespera-Japan KK, was among the top performers, rising 8.3% after announcing a partnership with NTT DoCoMo to explore mobile data applications using AETHERIS technology.',
     ],
+    imageUrl: '/Meridian News Assets/pexels-omilaev-18398513.jpg',
     relatedIds: ['vespera-stock-surge', 'ecb-rates'],
   },
   {
@@ -290,6 +302,7 @@ const ARTICLES: FullArticle[] = [
       'Vespera Systems and Axis Innovations did not respond to requests for comment.',
     ],
     quote: { text: 'I\'ve been monitoring shortwave for 30 years. I\'ve heard numbers stations, spy satellites, submarine transmissions. I have never heard anything like this. It doesn\'t sound like it was made by a person.', attribution: 'Harold Breck, retired NSA analyst' },
+    imageUrl: '/Meridian News Assets/rhsoyswmu6a71.gif',
     relatedIds: ['marcus-thorne-missing', 'horizon-recall'],
   },
 ];
@@ -392,13 +405,20 @@ const SubHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 /* ── Clickable Article Preview ── */
 const ArticlePreview: React.FC<{ article: FullArticle; onOpen: (id: string) => void }> = ({ article, onOpen }) => (
-  <div style={{ marginBottom: '14px' }}>
-    <div style={{ fontSize: '10px', color: '#cc0000', fontWeight: 'bold', fontFamily: 'Arial', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{article.category}</div>
-    <h3 onClick={() => onOpen(article.id)} style={{ fontSize: '15px', fontWeight: 'bold', fontFamily: 'Georgia, serif', color: '#000080', margin: '0 0 2px 0', cursor: 'pointer', textDecoration: 'underline' }}>{article.title}</h3>
-    <div style={{ fontSize: '10px', color: '#999', fontFamily: 'Arial', marginBottom: '4px' }}>{article.date} — <em>{article.author}</em></div>
-    <p style={{ fontSize: '12px', fontFamily: 'Georgia, serif', color: '#444', lineHeight: '1.5', margin: 0 }}>
-      {article.summary}{' '}<span className="mbn-link" onClick={() => onOpen(article.id)}>Full Story »</span>
-    </p>
+  <div style={{ marginBottom: '14px', display: 'flex', gap: '12px' }}>
+    {article.imageUrl && (
+      <div style={{ flexShrink: 0, width: '120px' }}>
+        <img src={article.imageUrl} alt={article.title} style={{ width: '100%', border: '1px solid #ccc', cursor: 'pointer' }} onClick={() => onOpen(article.id)} />
+      </div>
+    )}
+    <div>
+      <div style={{ fontSize: '10px', color: '#cc0000', fontWeight: 'bold', fontFamily: 'Arial', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{article.category}</div>
+      <h3 onClick={() => onOpen(article.id)} style={{ fontSize: '15px', fontWeight: 'bold', fontFamily: 'Georgia, serif', color: '#000080', margin: '0 0 2px 0', cursor: 'pointer', textDecoration: 'underline' }}>{article.title}</h3>
+      <div style={{ fontSize: '10px', color: '#999', fontFamily: 'Arial', marginBottom: '4px' }}>{article.date} — <em>{article.author}</em></div>
+      <p style={{ fontSize: '12px', fontFamily: 'Georgia, serif', color: '#444', lineHeight: '1.5', margin: 0 }}>
+        {article.summary}{' '}<span className="mbn-link" onClick={() => onOpen(article.id)}>Full Story »</span>
+      </p>
+    </div>
   </div>
 );
 
@@ -413,6 +433,11 @@ const ArticleView: React.FC<{ article: FullArticle; onBack: () => void; onOpen: 
       <div style={{ fontSize: '11px', color: '#666', fontFamily: 'Arial', marginBottom: '12px', borderBottom: '1px solid #ccc', paddingBottom: '8px' }}>
         Published: {article.date} | By <strong>{article.author}</strong>
       </div>
+      {article.imageUrl && (
+        <div style={{ marginBottom: '16px', border: '1px solid #ccc', padding: '4px', backgroundColor: '#fff', width: 'fit-content', maxWidth: '100%' }}>
+          <img src={article.imageUrl} alt={article.title} style={{ maxWidth: '100%', display: 'block' }} />
+        </div>
+      )}
       {article.body.map((para, i) => (
         <p key={i} style={{ fontSize: '13px', fontFamily: 'Georgia, serif', color: '#333', lineHeight: '1.7', margin: '0 0 12px 0', textAlign: 'justify' }}>{para}</p>
       ))}
