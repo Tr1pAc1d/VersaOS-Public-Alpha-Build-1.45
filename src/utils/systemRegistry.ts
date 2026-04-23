@@ -100,8 +100,26 @@ export interface VesperaSystemAPI {
   getManifest: () => AppManifest | null;
   /** Dispatches an error to the global OS handler (can trigger BSOD or alert). */
   reportError: (details: SystemErrorDetails) => void;
+  /** Shows a simple alert dialog with OK button. */
+  alert: (title: string, message: string) => void;
+  /** Shows a confirmation dialog. Returns true if OK clicked, false if Cancel. */
+  confirm: (title: string, message: string) => boolean;
   /** OS version string for capability checks. */
   version: string;
+  /** Changes the plugin window's title bar text. */
+  setTitle: (title: string) => void;
+  /** Resizes the plugin window to w × h pixels. */
+  resize: (w: number, h: number) => void;
+  /** Moves the plugin window to x, y coordinates. */
+  move: (x: number, y: number) => void;
+  /** Closes the plugin window (self-termination). */
+  close: () => void;
+  /** Minimizes the plugin window. */
+  minimize: () => void;
+  /** Maximizes or restores the plugin window. */
+  maximize: () => void;
+  /** Sets the plugin window to stay on top of others. */
+  setAlwaysOnTop: (value: boolean) => void;
 }
 
 /**
@@ -109,6 +127,7 @@ export interface VesperaSystemAPI {
  * The plugin can call System.openWindow but cannot touch the registry.
  */
 function buildSystemAPI(manifest: AppManifest): VesperaSystemAPI {
+  const windowId = `plugin_${manifest.id}`;
   return {
     version: '1.45',
     openWindow(id: string) {
@@ -124,7 +143,55 @@ function buildSystemAPI(manifest: AppManifest): VesperaSystemAPI {
     },
     reportError(details: SystemErrorDetails) {
       reportError({ ...details, pluginId: manifest.id });
-    }
+    },
+    alert(title: string, message: string) {
+      reportError({
+        type: 'Application Alert',
+        title,
+        message,
+        fatal: false,
+        pluginId: manifest.id,
+      });
+    },
+    confirm(title: string, message: string): boolean {
+      // Use native confirm for blocking behavior (retro style)
+      return window.confirm(`${title}\n\n${message}`);
+    },
+    setTitle(title: string) {
+      window.dispatchEvent(new CustomEvent('vespera-plugin-set-title', {
+        detail: { windowId, title },
+      }));
+    },
+    resize(w: number, h: number) {
+      window.dispatchEvent(new CustomEvent('vespera-plugin-resize', {
+        detail: { windowId, width: w, height: h },
+      }));
+    },
+    move(x: number, y: number) {
+      window.dispatchEvent(new CustomEvent('vespera-plugin-move', {
+        detail: { windowId, x, y },
+      }));
+    },
+    close() {
+      window.dispatchEvent(new CustomEvent('vespera-plugin-close', {
+        detail: { windowId },
+      }));
+    },
+    minimize() {
+      window.dispatchEvent(new CustomEvent('vespera-plugin-minimize', {
+        detail: { windowId },
+      }));
+    },
+    maximize() {
+      window.dispatchEvent(new CustomEvent('vespera-plugin-maximize', {
+        detail: { windowId },
+      }));
+    },
+    setAlwaysOnTop(value: boolean) {
+      window.dispatchEvent(new CustomEvent('vespera-plugin-always-on-top', {
+        detail: { windowId, value },
+      }));
+    },
   };
 }
 

@@ -81,6 +81,7 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
         name.endsWith('.GIF') || name.endsWith('.ICO') || name.endsWith('.WEBP')) return 'versa_view';
     if (name.endsWith('.MP3') || name.endsWith('.WAV') || name.endsWith('.MID') ||
         name.endsWith('.OGG')) return 'media_player';
+    if (name.endsWith('.AWJ')) return 'workbench';  // Aetheris Workbench Project files
     return null;
   };
 
@@ -114,6 +115,8 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
       case '.CFG':
       case '.INF':
         return '/Icons/settings_gear-2.png';
+      case '.AWJ':
+        return '/Icons/notepad_file_gear-0.png';  // Aetheris Workbench Project
       case '.TXT':
       case '.LOG':
       default:
@@ -211,15 +214,21 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
     if (defaultApp) {
       if (defaultApp === 'versa_edit') {
         onOpenFile(node.id); // VersaEdit opened via onOpenFile which sets activeFileId
+      } else if (defaultApp === 'workbench') {
+        // Aetheris Workbench Project files (.awj) - pass nodeId to open specific file
+        onLaunchApp(`${defaultApp}:${node.id}`);
       } else if (onLaunchApp) {
         onLaunchApp(defaultApp);
       }
       return;
     }
 
-    // 4. Protected system files — show access denied
+    // 4. Protected system files — show access denied error
     const isProtected = PROTECTED_EXTENSIONS.some(ext => upperName.endsWith(ext));
     if (isProtected) {
+      window.dispatchEvent(new CustomEvent('vespera-system-error', {
+        detail: { type: 'Access Denied', title: 'System File Access Denied', message: `Cannot open ${node.name}. This is a protected system file required for Vespera OS operation. Modification or direct access is restricted.`, fatal: false }
+      }));
       setAssociationModal({ isOpen: true, nodeId: node.id, fileName: node.name });
       return;
     }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Monitor, Settings, Network, UserPlus, Info, ArrowLeft, ArrowRight, FolderOpen, Mail, Palette, Shield, Keyboard, CheckCircle, Volume2, VolumeX, SkipForward } from 'lucide-react';
+import { Monitor, Settings, Network, UserPlus, Info, ArrowLeft, ArrowRight, FolderOpen, Mail, Palette, Shield, Keyboard, CheckCircle, Volume2, VolumeX, SkipForward, Wrench } from 'lucide-react';
 import { useVFS } from '../hooks/useVFS';
 
 // ── Agent V SVG Skins (mirrored from VesperaAssistant) ─────────────────────
@@ -394,7 +394,45 @@ const TOUR_STEPS: TourStep[] = [
     )
   },
 
-  // ── 13. Keyboard Shortcuts ───────────────────────────────────────────────
+  // ── 13. Aetheris Workbench ────────────────────────────────────────────────
+  {
+    id: 'workbench',
+    title: 'Aetheris Workbench Pro',
+    icon: Wrench,
+    narration: "For developers and power users, Vespera OS includes Aetheris Workbench Pro — a professional IDE for building your own applications! You can write JavaScript code using the System API to create custom apps with dialogs, window controls, and error handling. The Workbench validates your code, helps you manage project files, and even publishes directly to the VStore where other users can install your creations. It's a complete development environment right on your desktop!",
+    content: ({ onLaunch }) => (
+      <div className="flex flex-col gap-4 text-sm font-serif leading-relaxed text-black">
+        <h2 className="text-2xl font-bold text-[#000080] border-b-2 border-gray-400 pb-2">Build Your Own Apps</h2>
+        <p>
+          <strong>Aetheris Workbench Pro</strong> is the professional integrated development environment for creating Vespera OS applications. Write, test, compile, and publish — all from one tool.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <HelpImg src="/Help_Images/More/VStore_Dev/Page One of making app for VStore - Help menu.png" caption="Workbench project setup — define your app's name, version, and category." />
+          <HelpImg src="/Help_Images/More/VStore_Dev/Page Three of making app for VStore - Help menu.png" caption="The code editor with syntax highlighting and project file management." />
+        </div>
+        <ul className="list-disc pl-5 space-y-2 mt-2">
+          <li><strong>Code Editor:</strong> Write JavaScript with line numbers and syntax highlighting.</li>
+          <li><strong>System API:</strong> Use System.alert(), System.confirm(), and System.reportError() for user interaction.</li>
+          <li><strong>Project Files:</strong> Organize multiple files with descriptions in your project.</li>
+          <li><strong>Live Preview:</strong> Test your app before publishing with the built-in preview.</li>
+          <li><strong>One-Click Publish:</strong> Submit your app directly to the VStore Catalyst catalog.</li>
+        </ul>
+        <div className="bg-[#e6ffe6] border border-green-400 p-3 mt-2 shadow-sm text-xs">
+          <strong>Developer Feature:</strong> Your published apps appear in VStore → Community Apps where other users can discover and install them!
+        </div>
+        <div className="flex justify-center mt-2 border-t border-gray-400 pt-3">
+          <button
+            onClick={() => onLaunch('workbench')}
+            className="flex items-center gap-2 bg-[#c0c0c0] px-6 py-2 font-bold text-[#000080] border-[3px] border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white"
+          >
+            <Wrench size={18} /> Open Aetheris Workbench
+          </button>
+        </div>
+      </div>
+    )
+  },
+
+  // ── 14. Keyboard Shortcuts ───────────────────────────────────────────────
   {
     id: 'keyboard',
     title: 'Keyboard Shortcuts',

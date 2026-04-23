@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Monitor, Settings, User, Mail, ShieldAlert, Cpu, Globe, Folder, Layers, Activity, Search, HelpCircle, HardDrive, Gamepad2, Recycle, ShoppingBag, Tv, Network, Trash2, Code2, Terminal, BookOpen, Package, FileCode } from 'lucide-react';
+import { Home, Monitor, Settings, User, Mail, ShieldAlert, Cpu, Globe, Folder, Layers, Activity, Search, HelpCircle, HardDrive, Gamepad2, Recycle, ShoppingBag, Tv, Network, Trash2, Code2, Terminal, BookOpen, Package, FileCode, Wrench, TerminalSquare } from 'lucide-react';
 
 export interface HelpTopic {
   id: string;
@@ -613,12 +613,147 @@ export const HELP_TOPICS: HelpTopic[] = [
     ],
   },
 
+  // ── Aetheris Workbench ───────────────────────────────────────────────────
+  {
+    id: 'aetheris_workbench',
+    title: 'Aetheris Workbench Pro',
+    icon: Wrench,
+    description: 'Aetheris Workbench Pro is the professional IDE for developing Vespera OS applications. It provides a complete environment for writing, testing, compiling, and publishing apps to the VStore Catalyst.',
+    children: [
+      {
+        id: 'workbench_overview',
+        title: 'Workbench Overview',
+        description: 'The Aetheris Workbench provides a multi-tab interface for managing project files, writing code with syntax highlighting, previewing your application, and publishing to the VStore.',
+        images: [
+          { src: '/Help_Images/More/VStore_Dev/Page One of making app for VStore - Help menu.png', caption: 'The Aetheris Workbench main interface showing the project setup page.' },
+          { src: '/Help_Images/More/VStore_Dev/Page Two of making app for VStore - Help menu.png', caption: 'Configuring app metadata and icon selection.' },
+        ],
+        steps: [
+          'Launch Aetheris Workbench from Start → Programs → System Tools → Aetheris Workbench.',
+          'Create a new project by filling in the App Name, Version, and selecting a Category.',
+          'Use the multi-tab interface to switch between Code, Preview, and Publish views.',
+          'Save your work frequently — projects are stored in C:\VESPERA\Workbench\ until published.',
+        ],
+      },
+      {
+        id: 'workbench_code_editor',
+        title: 'Code Editor & Project Files',
+        description: 'The Workbench features a full-featured code editor with line numbers and syntax highlighting. Your project can include multiple files that are bundled together during compilation.',
+        images: [
+          { src: '/Help_Images/More/VStore_Dev/Page Three of making app for VStore - Help menu.png', caption: 'The Code Editor tab with project file management.' },
+          { src: '/Help_Images/More/VStore_Dev/Page Four of making app for VStore - Help menu.png', caption: 'Managing multiple project files and file descriptions.' },
+        ],
+        steps: [
+          'Write your JavaScript code in the main editor pane.',
+          'Use the System API (System.alert, System.confirm, System.notify) for user interaction.',
+          'Add additional files to your project via the Project Files panel.',
+          'Each file can have a description explaining its purpose.',
+          'The .js file must declare an init(container, System) function as the entry point.',
+        ],
+      },
+      {
+        id: 'workbench_compilation',
+        title: 'Compilation & Validation',
+        description: 'Before publishing, your app must pass compilation checks. The Workbench validates your code syntax, ensures the init() function exists, and checks for proper System API usage.',
+        images: [
+          { src: '/Help_Images/More/VStore_Dev/Page Five of making app for VStore - Help menu.png', caption: 'Compilation page showing validation results and code preview.' },
+          { src: '/Help_Images/More/VStore_Dev/Final Page for making app - app compiling and submitting - help menu.png', caption: 'Final compilation and submission to VStore.' },
+        ],
+        steps: [
+          'Click "Compile & Prepare" to validate your code.',
+          'Fix any syntax errors or missing requirements shown in the log.',
+          'The validator checks: init() function declaration, proper System API calls, valid metadata.',
+          'Successful compilation generates an AppManifest ready for distribution.',
+          'Test your app thoroughly using the Preview tab before publishing.',
+        ],
+      },
+      {
+        id: 'workbench_publishing',
+        title: 'Publishing to VStore',
+        description: 'Once compiled successfully, you can publish your app to the VStore Catalyst where other users can discover and install it. Published apps appear under the "Community Apps" section.',
+        images: [
+          { src: '/Help_Images/More/VStore_Dev/How The Users JS App installer will look - Help menu.png', caption: 'How users see and install your published app.' },
+          { src: '/Help_Images/More/VStore_Dev/what a broken app install looks like - menu help.png', caption: 'Error handling when an app fails validation during install.' },
+        ],
+        steps: [
+          'Complete compilation successfully to unlock the Publish button.',
+          'Click "Publish to VStore" to submit your app to the catalog.',
+          'Your app will be reviewed for security compliance before going live.',
+          'Once approved, users can find your app in VStore → Community Apps.',
+          'You can update published apps by recompiling and republishing with a new version.',
+        ],
+      },
+    ],
+  },
+
+  // ── System API Reference ──────────────────────────────────────────────────
+  {
+    id: 'system_api',
+    title: 'System API Reference',
+    icon: TerminalSquare,
+    description: 'The Vespera System API provides methods for plugins and user scripts to interact with the operating system. This includes showing dialogs, opening windows, reporting errors, and more.',
+    children: [
+      {
+        id: 'api_overview',
+        title: 'System API Overview',
+        description: 'Every plugin and script running in Vespera OS receives a System object as the second parameter to its init() function. This object provides methods for OS integration.',
+        steps: [
+          'function init(container, System) { ... } — System is your gateway to OS features.',
+          'System.openWindow(id) — Opens any Vespera OS window by its ID (e.g., "files", "browser").',
+          'System.notify(message) — Shows a desktop notification toast.',
+          'System.getManifest() — Returns your app\'s manifest for runtime inspection.',
+          'System.version — Returns the current Vespera OS version string.',
+          'All methods are synchronous and return immediately.',
+        ],
+      },
+      {
+        id: 'api_dialogs',
+        title: 'Dialogs & User Interaction',
+        description: 'Show error dialogs, confirmations, and alerts to users with proper OS integration including sound effects and visual styling.',
+        steps: [
+          'System.alert(title, message) — Shows a non-fatal error dialog with error sound.',
+          'System.confirm(title, message) — Shows OK/Cancel dialog, returns true/false.',
+          'System.reportError({ type, title, message, fatal }) — Reports system errors.',
+          'If fatal: true, triggers the Blue Screen of Death (use sparingly!).',
+          'All errors are logged to C:\VESPERA\PROGRAMS\SYSTEM\LOGS\ERROR.LOG.',
+          'Dialogs automatically play the classic Vespera error sound for retro authenticity.',
+        ],
+      },
+      {
+        id: 'api_window_control',
+        title: 'Window Control Methods',
+        description: 'Control your plugin window\'s appearance and behavior dynamically after initialization.',
+        steps: [
+          'System.setTitle(title) — Changes the window title bar text dynamically.',
+          'System.resize(width, height) — Resizes the plugin window programmatically.',
+          'System.move(x, y) — Moves the window to a new screen position.',
+          'System.close() — Closes the plugin window.',
+          'System.minimize() / System.maximize() — Window state control.',
+          'System.setAlwaysOnTop(true/false) — Toggle always-on-top status.',
+        ],
+      },
+      {
+        id: 'api_error_handling',
+        title: 'Error Handling Best Practices',
+        description: 'Properly handle and report errors in your applications using the System API to maintain OS stability and user experience.',
+        steps: [
+          'Use System.alert() for validation errors, missing files, or unexpected conditions.',
+          'Use System.confirm() for destructive actions like delete, quit, or overwrite.',
+          'Use System.reportError() with fatal: false for recoverable system errors.',
+          'Reserve fatal: true only for catastrophic failures that require system restart.',
+          'Always wrap risky operations in try-catch blocks.',
+          'Log detailed error info to the console for debugging purposes.',
+        ],
+      },
+    ],
+  },
+
   // ── Developer Guide ────────────────────────────────────────────────────────
   {
     id: 'developer_guide',
     title: 'Developer Guide',
     icon: Code2,
-    description: 'Welcome to the Vespera OS Plugin SDK documentation. This section covers everything you need to build, package, and publish a third-party application for Vespera OS. Plugins are distributed as a single JSON object called an AppManifest, installed via the VStore Developer Import tab.',
+    description: 'Welcome to the Vespera OS Plugin SDK documentation. This section covers everything you need to build, package, and publish a third-party application for Vespera OS. Plugins are distributed as a single JSON object called an AppManifest, installed via the VStore Developer Import tab or compiled through Aetheris Workbench.',
     children: [
       {
         id: 'dev_overview',

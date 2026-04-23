@@ -95,12 +95,21 @@ export const VMail: React.FC<{ onClose: () => void, vfs?: any }> = ({ onClose, v
 
       if (!account) {
         setLoginError('VStore Member ID not found.');
+        window.dispatchEvent(new CustomEvent('vespera-system-error', {
+          detail: { type: 'Authentication Error', title: 'VMail Login Failed', message: `VStore Member ID "${username}" not found in the directory. Please check your credentials.`, fatal: false }
+        }));
         playInfoSound();
       } else if (account.isGuest) {
         setLoginError('Guest accounts do not have VMail inboxes.');
+        window.dispatchEvent(new CustomEvent('vespera-system-error', {
+          detail: { type: 'Authentication Error', title: 'Guest Account Restricted', message: 'Guest accounts do not have access to VMail. Please use a registered VStore Member account.', fatal: false }
+        }));
         playInfoSound();
       } else if (account.password !== password) {
         setLoginError('Invalid Dial-Up Password.');
+        window.dispatchEvent(new CustomEvent('vespera-system-error', {
+          detail: { type: 'Authentication Error', title: 'Invalid Password', message: 'The password you entered is incorrect. Please try again.', fatal: false }
+        }));
         playInfoSound();
       } else {
         // Success -> trigger connection boot

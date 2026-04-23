@@ -225,6 +225,9 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
           
           if (nextProg >= failAt) {
             playSound = true;
+            window.dispatchEvent(new CustomEvent('vespera-system-error', {
+              detail: { type: 'Download Error', title: 'Download Failed', message: `The download of "${d.filename}" has failed. The connection was reset or the file is unavailable.`, fatal: false }
+            }));
             return { ...d, progress: Math.min(nextProg, failAt), phase: 'error' };
           }
           return { ...d, progress: nextProg };
@@ -399,6 +402,9 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
 
     if (!isLinkUpRef.current && !isOfflineAllowedUrl(finalUrl)) {
       playInfoSound();
+      window.dispatchEvent(new CustomEvent('vespera-system-error', {
+        detail: { type: 'Network Error', title: 'Unable to Connect', message: `Cannot navigate to ${finalUrl}. The VesperaNET connection is unavailable. Please check your Network Link status.`, fatal: false }
+      }));
       return;
     }
     

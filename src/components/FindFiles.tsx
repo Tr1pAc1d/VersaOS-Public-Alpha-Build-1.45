@@ -136,6 +136,9 @@ export const FindFiles: React.FC<FindFilesProps> = ({ vfs, onOpenFile, onOpenCon
                       const parent = node.parentId;
                       if (!parent) {
                         playErrorSound();
+                        window.dispatchEvent(new CustomEvent('vespera-system-error', {
+                          detail: { type: 'Access Error', title: 'Cannot Open Folder', message: `The file "${node.name}" is in a system root folder and cannot be opened.`, fatal: false }
+                        }));
                         return;
                       }
                       playUIClickSound();

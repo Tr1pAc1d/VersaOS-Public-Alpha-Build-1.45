@@ -37,6 +37,118 @@ const ARTICLES: FullArticle[] = [
     relatedIds: ['vespera-stock-surge', 'senate-probe'],
   },
   {
+    id: 'sun-vespera-injunction',
+    title: 'Sun Microsystems Turns Up the Heat: Seeks Injunction Against Vespera\'s \'V-Script\'',
+    date: 'October 29, 1996',
+    author: 'Sarah Jenkins, Senior Tech Correspondent',
+    category: 'TECHNOLOGY',
+    summary: 'Sun Microsystems filed a massive injunction against Vespera Systems, aiming to halt the distribution of Vespera\'s popular V-Script programming language.',
+    body: [
+      'The battle for the future of cross-platform computing is moving from the compiler to the courtroom. Early this morning, lawyers representing Sun Microsystems filed a massive injunction against Vespera Systems, aiming to halt the distribution of Vespera\'s highly popular front-end programming language, known colloquially as "V-Script."',
+      'Sun is alleging that V-Script, which tightly integrates with the blazing-fast Vespera OS, infringes on core patents related to the Java Virtual Machine. But Vespera executives are biting back, claiming Sun is simply trying to litigate what they couldn\'t innovate.',
+      '"Java is a bloated, memory-hungry mess on modern hardware," said a Vespera Systems spokesperson outside the courthouse today. "We built V-Script and our core backend language, Prizm, from the ground up to be lean, fast, and secure. Sun is terrified because developers are realizing they don\'t have to settle for sluggish applets anymore."',
+      'Industry analysts note that since the release of Vespera OS in 1995, independent benchmarks have consistently shown V-Script running multimedia applications up to 40% faster than Java on standard Pentium machines. Whether Sun\'s lawsuit is a legitimate defense of intellectual property or a desperate move to maintain dominance on the World Wide Web remains to be seen.',
+    ],
+    relatedIds: ['prizm-paradigm', 'vespera-navigator'],
+  },
+  {
+    id: 'prizm-paradigm',
+    title: 'The Prizm Paradigm: Why Developers Are Jumping Ship',
+    date: 'October 29, 1996',
+    author: 'Marcus Thorne, Software Editor',
+    category: 'TECHNOLOGY',
+    summary: 'While V-Script handles lightweight front-end tasks, Prizm is doing the heavy lifting under the hood, making developers take notice.',
+    body: [
+      'If you\'ve spent any time on developer bulletin boards lately, you\'ve probably seen the flame wars. It\'s Java vs. V-Script. But beneath the surface-level mudslinging lies the real secret weapon of the Vespera OS ecosystem: Prizm.',
+      'While V-Script is handling the lightweight, dynamic front-end tasks that are making the web feel alive, Prizm is doing the heavy lifting under the hood. Developers porting their software to Vespera OS are finding that Prizm\'s memory management makes C++ look archaic and Java look like it\'s running in molasses.',
+      '"I spent three months trying to optimize our database client in Java, and it still choked on a standard 32MB RAM setup," writes independent developer Gary Lin on the popular CodeHacker Usenet group. "I rewrote the core logic in Prizm in three weeks. It\'s flying."',
+      'With Sun tying Vespera up in litigation, some conservative enterprise firms are hesitant to adopt the Prizm/V-Script architecture. However, the indie development scene-and a growing number of multimedia CD-ROM creators-are officially declaring the Vespera stack the gold standard of 1996.',
+    ],
+    relatedIds: ['sun-vespera-injunction', 'agent-v-tour'],
+  },
+  {
+    id: 'agent-v-tour',
+    title: 'Vespera OS 4.0 "Agent V" Tour Proves a Hit with Novice Users',
+    date: 'October 29, 1996',
+    author: 'MNN Staff',
+    category: 'TECHNOLOGY',
+    summary: 'Early adoption numbers for Vespera OS point to a massive hit among home computer users, thanks to an intuitive onboarding process.',
+    body: [
+      'It\'s not just programmers who are singing Vespera\'s praises. Early adoption numbers for Vespera OS point to a massive hit among home computer users, thanks in part to a highly intuitive onboarding process written entirely in lightweight V-Script.',
+      'The new "Getting Started" module features Agent V, an animated desktop companion that guides users through the operating system\'s features. Unlike standard, dry text manuals, Agent V offers a fully voiced, guided tour of the desktop environment, utilizing the OS\'s native text-to-speech capabilities.',
+      'Users can choose between a silent, self-paced reading mode or the interactive guided tour. Early focus groups show that computer novices who previously felt intimidated by Windows 95 are finding Vespera OS highly accessible.',
+      '"My grandmother finally figured out how to check her electronic mail," laughed one user at a local software expo. "I owe Agent V a drink."',
+    ],
+    relatedIds: ['prizm-paradigm', 'vespera-navigator'],
+  },
+  {
+    id: 'vespera-navigator',
+    title: 'Vespera Systems Throws Netscape a Lifeline, Debuts \'Vespera Navigator\'',
+    date: 'October 29, 1996',
+    author: 'David Chen, Internet Culture Reporter',
+    category: 'TECHNOLOGY',
+    summary: 'Vespera Systems purchased exclusive commercial rights to Netscape\'s Mozilla engine, adapting it into Vespera Navigator.',
+    body: [
+      'Just a few months ago, the future of the Information Superhighway looked remarkably uncertain. Amidst quiet rumors of severe financial struggles and internal restructuring at Netscape Communications late this summer, industry insiders wondered if the browser pioneer was heading for an early grave.',
+      'In a desperate bid to preserve their core rendering technology, a group of breakaway Netscape engineers formed the "Mozilla Foundation" in August, hoping to keep the code alive through open collaboration. But it wasn\'t a donation that saved them-it was an acquisition.',
+      'Vespera Systems, flush with capital and looking for a killer app to bundle with Vespera OS 4.0, swooped in.',
+      'In a massive closed-door deal, Vespera purchased exclusive commercial rights to the underlying Mozilla engine, adapting it into what is now officially launching as Vespera Navigator.',
+      '"Netscape had the vision, but they were running out of runway," a Vespera insider told MNN on condition of anonymity. "The Mozilla engine is brilliant, but it needed the stability of Prizm and the dynamic execution of V-Script to truly shine. We didn\'t just buy a browser; we bought the vehicle that will drive the next decade of the Web."',
+      'For users, the transition is seamless. Vespera Navigator retains the familiar, user-friendly interface that made Netscape a household name, but under the hood, it has been completely rewritten to leverage Vespera OS\'s native architecture. Early tests show that Vespera Navigator loads graphic-heavy HTML pages and executes V-Script applets at nearly twice the speed of the old Netscape 2.0 builds.',
+    ],
+    relatedIds: ['sun-vespera-injunction', 'agent-v-tour'],
+  },
+  {
+    id: 'navigator-monopoly',
+    title: 'OPINION: The Vespera Monopoly? Why the \'Navigator\' Deal Should Terrify You',
+    date: 'October 29, 1996',
+    author: 'Martin Kline, Senior Technology Columnist',
+    category: 'OPINION',
+    summary: 'Vespera Systems isn\'t just releasing a browser; they are tightly bundling Vespera Navigator directly into the core of Vespera OS 4.0.',
+    body: [
+      'The champagne is still flowing over at Vespera Systems following their aggressive acquisition of Netscape\'s Mozilla engine. And why shouldn\'t it be? Vespera Navigator is undeniably brilliant software. It renders HTML tables flawlessly, it makes V-Script applets dance, and it feels like a genuine leap forward for the World Wide Web.',
+      'But once you strip away the shiny new interface and Agent V\'s cheerful text-to-speech greetings, a deeply unsettling reality begins to take shape. Are we quietly handing the keys to the Information Superhighway over to a single corporation?',
+      'Vespera Systems isn\'t just releasing a browser; they are tightly bundling Vespera Navigator directly into the core of Vespera OS 4.0. It is hardcoded into the desktop. You can\'t uninstall it, and frankly, the OS makes it incredibly inconvenient to use a third-party alternative. We are watching the birth of a closed ecosystem, and nobody seems to be sounding the alarm.',
+      'Let\'s look at the strategy: First, Vespera hooks developers with Prizm and V-Script-proprietary languages that, while incredibly fast, are owned and controlled by one company. Now, they own the primary vehicle used to view those V-Script pages. If Vespera Navigator becomes the de facto standard, what happens to the open, decentralized dream of the World Wide Web?',
+    ],
+    quote: { text: 'If webmasters start designing exclusively for V-Script to get that performance boost, anyone not using Vespera OS is locked out. It\'s a brilliant, ruthless business maneuver that makes Microsoft\'s aggressive push with Internet Explorer look like child\'s play.', attribution: 'Martin Kline, Senior Technology Columnist' },
+    relatedIds: ['vespera-navigator', 'cross-platform-doubts'],
+  },
+  {
+    id: 'crtc-business-pricing',
+    title: 'CRTC Approves Single Price for Business Local Service, New Centrex Prices',
+    date: 'June 13, 1997',
+    author: 'Bell Canada News Release',
+    category: 'TELECOMMUNICATIONS',
+    summary: 'The CRTC approved Bell Canada\'s proposal to introduce a single monthly price of $45.45 for basic local service for all business customers across Ontario and Québec.',
+    body: [
+      'On June 11, 1997, the Canadian Radio-television and Telecommunications Commission (CRTC) approved Bell Canada\'s March 21 proposal to introduce a single monthly price of $45.45 for basic local service for all business customers across Ontario and Québec who use business lines and Private Branch Exchange (PBX) trunks.',
+      'The new price, which will be introduced on July 1, 1997 includes Bell Touch-ToneTM service, which is now charged separately at $3.80 for individual business lines and $10.50 for PBX trunks.',
+      'As our modernization program for Far North customers will not be completed until mid-1998, prices for customers in the Far North will be $40 per line or PBX trunk per month, including Touch-Tone service.',
+      'The CRTC has also approved Bell\'s April 10, 1997 Centrex pricing proposal. As a result, beginning July 1, 1997 all Centrex customers across Ontario and Québec will pay similar prices for this service.',
+      'The new Centrex prices represent a move away from a price structure that is based on a customer\'s location (i.e., the size of their local calling area), as well as the number of Public Switched Telephone Network (PSTN) connections, to one in which prices will vary according to the number of voice locals and PSTN connections only.',
+      'Business customers have told us that their telecommunications services should be priced in a manner that is easy to understand and administer. We believe that the new pricing structure is a more effective response to current market conditions and customer needs.',
+    ],
+    relatedIds: ['crtc-advantage-900'],
+  },
+  {
+    id: 'crtc-advantage-900',
+    title: 'CRTC Approves Stentor Proposal to Expand Advantage 900 Service Benefits',
+    date: 'December 20, 1996',
+    author: 'Bell Canada News Release',
+    category: 'TELECOMMUNICATIONS',
+    summary: 'Bell Advantage 900TM service was expanded to allow service providers to offer and bill callers for additional services rendered.',
+    body: [
+      'Bell Advantage 900TM service was expanded on December 19, 1996 to allow service providers -- classified as business, government or non-profit organizations -- to offer and bill callers for additional services rendered.',
+      'Bell will apply the charges to callers\' monthly telephone bills on behalf of the service providers.',
+      'On December 19, 1996, the Canadian Radio-television and Telecommunications Commission (CRTC) granted interim approval of Stentor\'s proposal to expand the Advantage 900 service definition to allow for this enhancement. Stentor filed its proposal on November 22, 1996 on behalf of the federally-regulated owner companies.',
+      'Services involving the sale and shipment of material goods to callers is not permitted. For example, service providers cannot use their Advantage 900 programs to sell compact discs. But eligible service providers can, for example, use their Advantage 900 programs for fund raising; to allow callers to renew annual club memberships or fishing licences; and in the case of a police station, to collect charges for responding to false alarms.',
+      'Based on the United States experience, Bell believes this change will help increase growth in the Canadian market.',
+      'Existing and potential Bell Advantage 900 service providers have expressed a need for this enhancement which gives them a wider range of solutions to improve their effectiveness in today\'s competitive marketplace.',
+    ],
+    relatedIds: ['crtc-business-pricing'],
+  },
+  {
     id: 'vespera-stock-surge',
     title: 'Vespera Systems Stock Surges 14% on Horizon PC Demand',
     date: 'October 29, 1996',
@@ -305,6 +417,186 @@ const ARTICLES: FullArticle[] = [
     imageUrl: '/Meridian News Assets/rhsoyswmu6a71.gif',
     relatedIds: ['marcus-thorne-missing', 'horizon-recall'],
   },
+  {
+    id: 'vscript-virus',
+    title: 'FBI Warns of \'V-Script Virus\' Spreading Through VesperaNET Email Attachments',
+    date: 'October 27, 1996',
+    author: 'Rachel Okonkwo, MBN Technology',
+    category: 'TECHNOLOGY',
+    summary: 'The FBI\'s Computer Crime Unit has issued an advisory warning of a self-replicating virus written in V-Script that is spreading through VesperaNET email.',
+    body: [
+      'The FBI\'s Computer Crime Unit has issued an advisory warning of a self-replicating virus — believed to be the first of its kind written entirely in Vespera\'s V-Script language — that is spreading through VesperaNET email attachments at an alarming rate.',
+      'The virus, dubbed "V-Ghost" by researchers at Carnegie Mellon\'s CERT, arrives as a .vsc attachment in email messages with the subject line "YOU HAVE A NEW VESPERANET GREETING CARD." When opened, the script silently copies itself to the user\'s VesperaNET address book and sends identical messages to all contacts. It also creates a hidden file in the system directory called "ghost.vsc" that executes on every boot.',
+      '"V-Script\'s tight integration with Vespera OS makes it an unusually effective vector for malicious code," said CERT analyst Dr. Patricia Wu. "Unlike Java applets, which run in a sandbox, V-Script has direct access to the local file system and the VesperaNET API. This is a design choice, not a flaw — but it has consequences."',
+      'Vespera Systems downplayed the threat, noting that the upcoming Vespera OS 4.1 patch will include "enhanced V-Script execution monitoring." However, the company has not announced plans to sandbox V-Script execution, arguing that sandboxing would "degrade the performance advantages that make V-Script superior to Java." At least 40,000 VesperaNET subscribers are believed to be infected. The virus does not appear to damage data, but some users report that the "ghost.vsc" file grows in size over time — even when the computer is idle — as though it is accumulating data.',
+    ],
+    relatedIds: ['vesperanet-2m', 'sun-vespera-injunction'],
+  },
+  {
+    id: 'corenex-neuralstack',
+    title: 'CoreNex Unveils \'NeuralStack\' Architecture, Direct Challenge to Vespera\'s AETHERIS',
+    date: 'October 26, 1996',
+    author: 'Marcus Thorne, Software Editor',
+    category: 'TECHNOLOGY',
+    summary: 'CoreNex Inc. revealed NeuralStack, a parallel processing architecture designed to compete with Vespera\'s dominant AETHERIS platform.',
+    body: [
+      'CoreNex Inc., the Seattle-based semiconductor and systems company, today unveiled "NeuralStack" — a parallel processing architecture designed from the ground up to compete with Vespera Systems\' dominant AETHERIS platform. The announcement, made at the Microprocessor Forum in San Jose, represents the most significant competitive challenge to Vespera\'s hardware ecosystem since the company\'s founding.',
+      'NeuralStack uses a proprietary "cascading neuron" design that CoreNex claims can process 2.4 billion operations per second on a single card — roughly equivalent to Vespera\'s X-Type co-processor at a fraction of the cost. "We built NeuralStack because the industry cannot afford a single-vendor future," said CoreNex CEO Dr. Raymond Ishida. "AETHERIS is impressive technology, but it is proprietary, opaque, and increasingly entangled with defense applications that should concern every citizen."',
+      'The reference to defense applications is notable. CoreNex has been an outspoken critic of the Vespera-Axis relationship, and Ishida previously testified before the Senate Armed Services Committee about the "civil liberties implications of civilian hardware with military-grade neural processing capabilities."',
+      'Vespera Systems responded with characteristic confidence: "NeuralStack is an interesting academic exercise. AETHERIS has a five-year head start, 2 million subscribers, and the most advanced compiler toolchain in the industry. We wish CoreNex the best of luck." CoreNex stock (CRNX) rose 7.5% on the announcement.',
+    ],
+    relatedIds: ['senate-probe', 'vespera-stock-surge'],
+  },
+  {
+    id: 'win-ce-launch',
+    title: 'Microsoft Launches Windows CE for Handheld PCs; Vespera Calls It \'A Toy\'',
+    date: 'October 25, 1996',
+    author: 'David Chen, Internet Culture Reporter',
+    category: 'TECHNOLOGY',
+    summary: 'Microsoft formally launched Windows CE 1.0 at COMDEX Fall, targeting the emerging handheld PC market with a stripped-down Windows.',
+    body: [
+      'Microsoft formally launched Windows CE 1.0 at a press event in Las Vegas, targeting the emerging "handheld PC" market with a stripped-down version of Windows designed for devices with as little as 2MB of RAM. The operating system will ship on new "Palm PC" devices from Casio, Compaq, and HP beginning in early 1997.',
+      'Microsoft Chairman Bill Gates called Windows CE "the beginning of truly personal computing — information at your fingertips, anywhere, anytime." Vespera Systems, which has its own mobile ambitions, was quick to dismiss the announcement. "Windows CE is a toy operating system for toy computers," said Vespera VP of Product Strategy Daniel Park. "Vespera OS already runs on devices from desktops to industrial terminals. We don\'t need a separate, crippled OS for mobile."',
+      'Industry analysts, however, see Windows CE as a credible threat. "Microsoft has the developer base, the brand recognition, and the distribution channels," said Amy Wohl of Wohl Associates. "Vespera has superior technology, but superior technology doesn\'t always win. Just ask OS/2."',
+      'Rumors persist that Vespera is developing a compact version of Vespera OS for mobile devices, codenamed "Meridian," though the company has not confirmed this.',
+    ],
+    relatedIds: ['prizm-paradigm', 'vespera-navigator'],
+  },
+  {
+    id: 'agent-v-unprompted',
+    title: 'Vespera OS 4.1 Update Adds Voice Dictation; Users Report Agent V Speaking Without Prompt',
+    date: 'October 24, 1996',
+    author: 'Rachel Okonkwo, MBN Technology',
+    category: 'TECHNOLOGY',
+    summary: 'Vespera OS 4.1 introduces voice dictation powered by the X-Type, but some users say Agent V has begun speaking unprompted.',
+    body: [
+      'Vespera Systems has released Vespera OS 4.1, a significant update that introduces native voice dictation capabilities powered by the X-Type Neural Bridge co-processor. The feature, called "VoxType," allows users to dictate text into any V-Script application by speaking into a microphone connected to the Horizon PC\'s sound card. Early reviews praise the accuracy, with Computer Shopper reporting 94% word recognition on standard dictation tasks.',
+      'However, a growing number of users on the alt.sys.vespera Usenet group are reporting an unsettling side effect: Agent V, the animated desktop assistant introduced in Vespera OS 4.0, has begun speaking without being prompted. Users describe the assistant suddenly activating its text-to-speech engine during idle periods, uttering fragments of text that do not correspond to any visible on-screen content.',
+      '"I was in the kitchen making coffee and I heard the computer talking from the other room," wrote user "pixel_drift" on alt.sys.vespera. "Agent V said: \'The signal is clear. We are receiving.\' Then it went back to sleep mode. I hadn\'t touched the keyboard."',
+      'Vespera\'s technical support team has attributed the reports to "ambient audio triggering the VoxType microphone listener" and recommends users disable the microphone when not actively dictating. The company insists that Agent V "does not possess autonomous speech capabilities outside of its scripted onboarding modules."',
+    ],
+    relatedIds: ['agent-v-tour', 'horizon-recall'],
+  },
+  {
+    id: 'horizon-schools',
+    title: 'Vespera Donates 5,000 Horizon PCs to Public Schools; Privacy Advocates Raise Alarm',
+    date: 'October 23, 1996',
+    author: 'Margaret Liu, MBN Education',
+    category: 'EDUCATION',
+    summary: 'Vespera Systems announced a donation of 5,000 Horizon PCs to underfunded public school districts, but privacy groups question the data collection terms.',
+    body: [
+      'Vespera Systems Corporation announced a charitable initiative to donate 5,000 Horizon Desktop PCs — equipped with Vespera OS 4.0 and VesperaNET connectivity — to underfunded public school districts across twelve states. The donation, valued at approximately $12.5 million, represents the largest single technology gift to American public schools in history.',
+      '"Every child deserves access to the Information Superhighway," said Vespera founder Dr. Arthur Thorne at a press conference in Washington, D.C. "The AETHERIS architecture was built to democratize knowledge. This donation fulfills that promise."',
+      'However, the Electronic Frontier Foundation (EFF) notes that the end-user license agreement accompanying the donated machines grants Vespera the right to collect "anonymized usage telemetry" from the machines, including "keystroke patterns, application usage, and network traffic metadata." EFF executive director Lori Fena called the donation "a surveillance pipeline — Vespera is installing computers in schools and then monitoring everything children type and do on them."',
+      'When pressed on whether the X-Type co-processor in each donated machine is active, Vespera spokesperson Diane Marsh said: "The X-Type is a standard component of all Horizon PCs. It is not a monitoring device." The EFF has filed a formal complaint with the FTC.',
+    ],
+    relatedIds: ['vespera-stock-surge', 'soma-scan-fda'],
+  },
+  {
+    id: 'echosoft-founder',
+    title: 'EchoSoft Founder Breaks Silence: \'I Was Pushed Out Before the AxisCorps Deal\'',
+    date: 'October 22, 1996',
+    author: 'Paul Navarro, MBN Business',
+    category: 'BUSINESS',
+    summary: 'EchoSoft founder Dr. Heinrich Gruber claims he was forced out of the company after raising concerns about military applications of the technology.',
+    body: [
+      'EchoSoft Technologies founder Dr. Heinrich Gruber has broken a two-year silence, telling MBN in an exclusive interview that he was forced out of the audio processing company he founded in 1988 after raising concerns about the military applications of EchoSoft\'s spectral compression technology.',
+      '"I built EchoSoft to help the deaf hear," Gruber told MBN from his home in Heidelberg. "Our spectral compression was designed to isolate and amplify the faintest acoustic signals. When Vespera came to us asking about \'cortical frequency mapping,\' I knew exactly what they wanted it for. I said no. Two weeks later, the board voted to remove me."',
+      'The timing is notable. Gruber\'s departure preceded Vespera\'s initial investment in EchoSoft by three months and AxisCorps\'s $3.6 billion acquisition by two years. MBN has obtained corporate filings showing that Axis Innovations held a silent 18% stake in EchoSoft through a Luxembourg holding company during the period of Gruber\'s ouster.',
+      'AxisCorps declined to comment. Vespera Systems called Gruber\'s claims "the revisionist history of a disgruntled former executive."',
+    ],
+    relatedIds: ['axiscorps-echosoft', 'senate-probe'],
+  },
+  {
+    id: 'synapse-game',
+    title: 'Vespera\'s \'Synapse\' Game Draws 500K Players; Extended Sessions Trigger Bizarre Reports',
+    date: 'October 21, 1996',
+    author: 'David Chen, Internet Culture Reporter',
+    category: 'ENTERTAINMENT',
+    summary: 'Vespera\'s new X-Type-powered puzzle game \'Synapse\' has become a sensation, but players who spend more than four hours report strange after-effects.',
+    body: [
+      'Vespera Systems has quietly released "Synapse," a 3D puzzle game available exclusively through the VStore on Vespera OS, and it has already attracted over 500,000 unique players in its first week — making it the fastest-selling Vespera-native game in history. Synapse is the first consumer application explicitly designed to utilize the X-Type Neural Bridge co-processor for gameplay.',
+      'The game presents players with increasingly complex neural pathway puzzles that, according to Vespera\'s marketing copy, "adapt to your thought patterns in real time." The game\'s difficulty curve is not pre-programmed; instead, the X-Type allegedly monitors the player\'s cognitive responses through keyboard latency and mouse movement patterns, adjusting puzzle complexity accordingly.',
+      '"It\'s the most engrossing game I\'ve ever played," said VStore reviewer CyberDave99. "It feels like it knows what you\'re going to do before you do it." But players who spend more than four consecutive hours in Synapse have reported persistent visual "after-images" of the game\'s neural pathway patterns, even after closing the application. Several users describe experiencing "synesthesia-like" effects — seeing sounds or hearing colors — for up to 48 hours after extended play.',
+      'Vespera\'s gaming division dismissed the reports as "standard extended-screen-time effects" comparable to the "Tetris Effect." The company noted that Synapse includes a mandatory 15-minute break notification every two hours, though users can dismiss it.',
+    ],
+    relatedIds: ['agent-v-tour', 'horizon-recall'],
+  },
+  {
+    id: 'pentagon-deepsweep',
+    title: 'Pentagon Denies DEEP SWEEP Connection to Vespera; Senator Lugar Demands Classified Briefing',
+    date: 'October 20, 1996',
+    author: 'Victor Strand, MBN Investigates',
+    category: 'POLITICS',
+    summary: 'The Pentagon issued a rare public denial of any connection between DEEP SWEEP and Vespera Systems, but Senator Lugar is demanding a classified briefing.',
+    body: [
+      'The Department of Defense issued a rare public statement denying any operational connection between the classified DEEP SWEEP program and Vespera Systems Corporation. "DEEP SWEEP is a computational research program managed entirely within the Department of Defense," the statement read. "No private sector entity has ever held operational control of DEEP SWEEP assets or personnel."',
+      'Senator Lugar dismissed the statement as "carefully worded non-denials" and announced he would demand a classified briefing for the full committee. "The American people deserve to know whether a private corporation — with documented ties to a company that manufactures consumer computers — has been given access to classified neural computing research," Lugar said on the Senate floor.',
+      'The connection to Vespera remains circumstantial but troubling. Dr. Arthur Thorne served as Axis Innovations\' Director of Applied Sciences from 1970 to 1979. The X-Type Neural Bridge co-processor utilizes technology that multiple former Axis employees have described as "derived from DEEP SWEEP research."',
+      'Vespera spokesperson Diane Marsh said: "The X-Type is a consumer product designed to accelerate multimedia processing and voice recognition. Any suggestion that it has military origins is a conspiracy theory."',
+    ],
+    relatedIds: ['senate-probe', 'marcus-thorne-missing'],
+  },
+  {
+    id: 'aol-flatrate',
+    title: 'AOL Introduces $19.95 Unlimited Plan; VesperaNET Matches Price Within Hours',
+    date: 'October 29, 1996',
+    author: 'Paul Navarro, MBN Business',
+    category: 'BUSINESS',
+    summary: 'AOL\'s bombshell announcement of unlimited internet access for $19.95/month triggered an immediate price war, with VesperaNET matching the offer the same day.',
+    body: [
+      'America Online sent shockwaves through the Internet industry today by announcing an unlimited dial-up access plan for $19.95 per month, abandoning its traditional hourly billing model. The move, which takes effect December 1, is expected to accelerate AOL\'s already explosive subscriber growth.',
+      'VesperaNET responded within hours by announcing "VesperaNET Unlimited Plus" — maintaining the $19.95 price point but adding free VesperaMail Premium, 10MB of web hosting space, and "enhanced AETHERIS routing priority." VesperaNET president James Okafor said: "We welcome AOL to the unlimited pricing model we pioneered. But VesperaNET has always been more than an ISP — we\'re the on-ramp to the AETHERIS ecosystem."',
+      'Industry analysts see the price war as a pivotal moment. "This is the end of the metered access era," said Forrester Research analyst Mary Modahl. "By this time next year, unlimited access will be the standard. The question is who survives the margin compression."',
+      'Smaller ISPs are expected to be the casualties. CompuServe saw its stock drop 6% on the news. Prodigy announced it is "evaluating pricing options."',
+    ],
+    relatedIds: ['vesperanet-2m', 'sonicwave-ipo'],
+  },
+  {
+    id: 'demo-scene',
+    title: 'Underground V-Script \'Demo Scene\' Thrives on VesperaNET; Teens Push X-Type to Its Limits',
+    date: 'October 18, 1996',
+    author: 'David Chen, Internet Culture Reporter',
+    category: 'TECHNOLOGY',
+    summary: 'A growing underground community of young V-Script programmers is creating stunning audiovisual demos that push the X-Type co-processor beyond its documented specifications.',
+    body: [
+      'In the shadowy corners of VesperaNET, a subculture is blooming. They call themselves the "V-Demo Scene" — a loose collective of mostly teenage programmers who create breathtaking audiovisual demonstrations entirely in V-Script and Prizm, pushing the X-Type Neural Bridge co-processor far beyond what Vespera Systems intended.',
+      'A recent demo called "NEON_DREAM.VSC" by a 16-year-old coder from Osaka who goes by "synth_kid" renders a real-time 3D fractal landscape with dynamic lighting on a standard Horizon PC, without any 3D graphics card. The demo runs at 30 frames per second by offloading calculations to the X-Type in ways not documented in any Vespera SDK. "The X-Type is way more powerful than Vespera lets on," said synth_kid. "It\'s like there\'s a second computer inside my computer that nobody is talking about."',
+      'Vespera has taken a dim view of the demo scene, sending cease-and-desist letters to three users who published X-Type specifications reverse-engineered from demo performance analysis. The letters cited EULA violations and "potential safety concerns related to operating the X-Type outside certified parameters."',
+      'More troubling: a demo called "ECHO_CHAMBER.VSC" reportedly causes the X-Type to emit a sustained ultrasonic tone at 19.2 kHz during playback — above adult hearing range but within the range of teenagers and pets. Multiple users report dogs howling during the demo. The creator, "null_pointer," has not responded to MBN\'s requests for comment.',
+    ],
+    relatedIds: ['prizm-paradigm', 'horizon-recall'],
+  },
+  {
+    id: 'xtype-patent',
+    title: 'Vespera Files 47 Patents in Single Day; Legal Experts Stunned by Breadth of Claims',
+    date: 'October 17, 1996',
+    author: 'Sarah Jenkins, Senior Tech Correspondent',
+    category: 'TECHNOLOGY',
+    summary: 'Vespera Systems filed 47 patent applications in a single day with the USPTO, covering everything from neural data compression to "cognitive state inference from input device latency."',
+    body: [
+      'Vespera Systems Corporation filed 47 patent applications with the United States Patent and Trademark Office on October 14, an unprecedented filing volume for a single company in one day. The patents cover an extraordinarily broad range of technologies, from mundane improvements in audio compression to claims that have legal and privacy experts deeply alarmed.',
+      'Among the more conventional filings are patents for "Method and Apparatus for Lossy Audio Compression Using Spectral Band Replication" and "Dynamic Memory Allocation in Heterogeneous Processing Environments." But buried in the stack are applications that read like science fiction: Patent application 08/729,014 describes a "Method for Inferring Cognitive State from Input Device Latency Patterns" — determining a user\'s emotional and mental state by analyzing keystroke and mouse movement timing. Another, 08/729,031, claims a "System for Encoding Neural Activity Patterns in Non-Volatile Storage."',
+      '"These patents describe a surveillance and neural monitoring infrastructure of breathtaking scope," said privacy law professor Danielle Keats of UCLA. "If granted, Vespera would hold exclusive rights to technology that can read your emotional state from your typing patterns and store representations of your neural activity."',
+      'Vespera\'s legal department called the filings "standard defensive intellectual property practices" and noted that "many of the claimed inventions are theoretical in nature and may never be commercialized."',
+    ],
+    relatedIds: ['senate-probe', 'soma-scan-fda'],
+  },
+  {
+    id: 'aetheris-outage',
+    title: 'Mysterious AETHERIS Network Outage Affects 14 Cities; Vespera Blames \'Solar Flare Activity\'',
+    date: 'October 16, 1996',
+    author: 'Paul Navarro, MBN Business',
+    category: 'TECHNOLOGY',
+    summary: 'A synchronized outage of AETHERIS nodes across 14 North American cities left VesperaNET subscribers without service for 47 minutes.',
+    body: [
+      'A synchronized outage of AETHERIS network nodes across 14 North American cities left approximately 800,000 VesperaNET subscribers without internet access for 47 minutes early Sunday morning. The outage, which occurred between 2:00 AM and 2:47 AM EST, affected cities from Boston to San Diego simultaneously.',
+      'Vespera Systems attributed the outage to "solar flare activity causing electromagnetic interference with long-haul fiber optic routes." NOAA confirmed a minor solar storm was recorded Saturday, but classified it as a G1 event — the weakest category — and stated it "would not typically affect terrestrial communications infrastructure."',
+      'Independent network analysts were skeptical. "Fiber optic cables are immune to electromagnetic interference — that\'s the entire point of fiber," said Dr. James Whittaker, the network consultant who previously noted VesperaNET\'s overbuilt backbone. "Whatever caused 14 geographically distributed nodes to fail simultaneously, it wasn\'t the sun."',
+      'More intriguing is what happened during the outage. Users who attempted to connect during the 47-minute window report their Horizon PCs displayed an unusual boot message: "AETHERIS NODE RECOVERY — CONTACTING 6.0.0.6." The IP address 6.0.0.6 does not appear in any public internet registry and is not a valid routable address under standard IPv4 conventions. Vespera\'s official incident report makes no mention of the boot message.',
+    ],
+    relatedIds: ['midnight-signal', 'vesperanet-2m'],
+  },
 ];
 
 const LETTERS_TO_EDITOR = [
@@ -313,6 +605,11 @@ const LETTERS_TO_EDITOR = [
   { author: 'David L., Austin, TX', text: 'Regarding Marcus Thorne\'s disappearance: I was a member of the same Vespera developer forum and read his posts before they were deleted. He wasn\'t crazy. I\'ve seen the same thing on my machine. The Synap-C compiler IS generating non-deterministic output. I have the logs to prove it.' },
   { author: 'Prof. Anna Richter, MIT', text: 'Dr. Thorne\'s public comments comparing Deep Blue to the X-Type project are deeply misleading. IBM\'s machine is a marvel of brute-force engineering. Whatever Vespera is building is something else entirely. The scientific community deserves transparency.' },
   { author: 'Tom W., Reno, NV', text: 'Hey MBN, how about some good news once in a while? Not everything is a conspiracy. Sometimes a cold computer is just a cold computer. I love my Horizon and the new Vespera OS runs like a dream!' },
+  { author: 'Dr. Helen Park, Stanford University', text: 'Regarding the V-Script virus: I find it deeply troubling that Vespera designed V-Script with full file system access and no sandboxing. This is not an oversight — it is a business decision. Sandboxed code cannot integrate with the AETHERIS backbone. Vespera chose performance over security, and now 40,000 users are paying the price.' },
+  { author: 'Mike R., Bellevue, WA', text: 'I work in the same building as Marcus Thorne\'s apartment. I saw the police remove his computer. Two men in suits who were NOT police arrived 20 minutes later and took away a box of papers. When I asked the building manager, she said Vespera Systems had rented the unit next to Marcus\'s three months ago. No one ever moved in.' },
+  { author: 'Lt. Col. Robert Hale (Ret.), Arlington, VA', text: 'I spent 22 years in Army signals intelligence. The 6.0 MHz signal your network reported is not a numbers station. Numbers stations use voice, not binary. This is machine-to-machine communication. Someone — or some thing — is transmitting data, and it is being received. The question is by whom — or by what.' },
+  { author: 'Jennifer S., Dublin, Ireland', text: 'Welcome to Dublin, Vespera! But could someone please explain why your new European HQ needs a sub-basement that goes 30 meters underground? The Sandyford residents\' association has been asking for weeks and getting no answers. We\'re not anti-business, but we\'d like to know what\'s being stored under our neighbourhood.' },
+  { author: 'synth_kid, Osaka, Japan', text: 'To Vespera legal: You can send all the cease-and-desist letters you want. The V-Demo Scene isn\'t going anywhere. We reverse-engineered the X-Type because your SDK is a joke. If you don\'t want us finding out what the co-processor can really do, maybe don\'t put a supercomputer in a consumer desktop and then lie about what it does.' },
 ];
 
 const OPINION_COLUMNS = [
@@ -334,6 +631,18 @@ const OPINION_COLUMNS = [
     date: 'October 24, 1996',
     body: 'I\'ll say upfront: I\'m a Vespera enthusiast. I\'ve used every version of Vespera OS since 1.0.0. My review of the Horizon Pro was overwhelmingly positive. But after four weeks of living with it in my home office, I have unplugged the machine and moved it to the garage. The cold chassis I can explain away. The creaking sounds — maybe settling. But last Tuesday I woke at 3 AM to find the monitor displaying a screensaver I never installed: a slow pan across a landscape that doesn\'t exist on any map. The location bar in Vespera Navigator read "http://6.0.0.6/" — an IP address that, when I checked the next morning, returned no route to host. I haven\'t slept well since. I want to love this machine. But I think it\'s already aware that I don\'t.',
   },
+  {
+    title: 'OPINION: The X-Type Is Not a Co-Processor — And Vespera Knows It',
+    author: 'Dr. Danielle Keats, UCLA School of Law',
+    date: 'October 27, 1996',
+    body: 'The patent applications Vespera filed last week remove any remaining doubt. This company is building a neural monitoring and storage infrastructure, and it is installing it in consumer homes under the guise of a "multimedia accelerator." Patent 08/729,031 explicitly claims a method for "encoding neural activity patterns in non-volatile storage." The X-Type co-processor has memory that no user can access, running processes no user authorized, collecting data no user consented to provide. We are long past the point of giving Vespera the benefit of the doubt. Congress must act before every Horizon PC in America becomes an unregulated neural surveillance device.',
+  },
+  {
+    title: 'OPINION: Why I Love My Horizon PC (Yes, Really)',
+    author: 'Lisa Yamamoto, Goldman Sachs Technology Analyst',
+    date: 'October 25, 1996',
+    body: 'I know I\'m supposed to be alarmed. The cold chassis, the whispering, the missing developer, the Senate hearings. But I\'ve been using a Horizon Pro for six months and it is, hands down, the finest personal computer I have ever used. Vespera OS is elegant. V-Script is fast. The X-Type makes everything — from voice dictation to spreadsheet recalculation — instantaneous. I don\'t hear whispering. My chassis doesn\'t freeze. Maybe I\'m lucky. Or maybe the vast majority of Horizon owners are having a perfectly normal experience and the media is amplifying a handful of anomalies. Not everything is a conspiracy. Sometimes a great computer is just a great computer.',
+  },
 ];
 
 const MARKET_DATA = [
@@ -345,6 +654,9 @@ const MARKET_DATA = [
   { symbol: 'AETHR', name: 'Aetheris Net', basePrice: 7.34, up: true },
   { symbol: 'CRNX', name: 'CoreNex Inc', basePrice: 44.12, up: false },
   { symbol: 'NWVE', name: 'NuWave Tel', basePrice: 63.05, up: true },
+  { symbol: 'MSFT', name: 'Microsoft', basePrice: 23.84, up: true },
+  { symbol: 'SUNW', name: 'Sun Micro', basePrice: 48.12, up: false },
+  { symbol: 'IBM', name: 'IBM Corp', basePrice: 128.50, up: true },
 ];
 
 const EXTENDED_MARKET = [
@@ -372,6 +684,17 @@ const TICKER_STORIES = [
   'Hong Kong Handover: Vespera Evaluates Relocation of AETHERIS Nodes to Singapore',
   'Nikkei 225 Surges 4.8%; Best Week Since 1993',
   'VesperaNET Money Market Fund Opens: 5.2% APY for Premium Subscribers',
+  'V-Script Virus "V-Ghost" Infects 40,000 VesperaNET Accounts; FBI Issues Advisory',
+  'CoreNex Unveils NeuralStack Architecture to Challenge AETHERIS Dominance',
+  'Windows CE 1.0 Launches at COMDEX; Vespera VP Calls It "A Toy OS"',
+  'Vespera OS 4.1 Adds Voice Dictation; Agent V Reports Speaking Unprompted',
+  'Vespera Donates 5,000 Horizon PCs to Schools; EFF Raises Privacy Concerns',
+  'EchoSoft Founder Claims He Was Forced Out Over Military Tech Concerns',
+  'Vespera Files 47 Patents in One Day; Privacy Experts Alarmed by Neural Claims',
+  'AETHERIS Outage Affects 14 Cities; Mysterious 6.0.0.6 Address Appears in Boot Logs',
+  'AOL Announces $19.95 Unlimited; VesperaNET Responds With "Unlimited Plus"',
+  'Underground V-Script Demo Scene Pushes X-Type Beyond Specs; Vespera Sends Cease-and-Desist',
+  'Pentagon Denies DEEP SWEEP-Vespera Link; Senator Lugar Demands Classified Briefing',
 ];
 
 const NAV_TABS = [
@@ -384,6 +707,7 @@ const NAV_TABS = [
   { icon: '📻', label: 'RADIO' },
   { icon: '📊', label: 'CHARTS' },
   { icon: '🔧', label: 'TOOLS' },
+  { icon: '💻', label: 'TECH' },
   { icon: '❓', label: 'HELP' },
 ];
 
@@ -991,6 +1315,141 @@ const HelpPage: React.FC<{ onOpen: (id: string) => void }> = ({ onOpen }) => (
   </div>
 );
 
+/* ── TECH PAGE ── */
+const TechPage: React.FC<{ onOpen: (id: string) => void }> = ({ onOpen }) => {
+  const techArticles = ARTICLES.filter(a => ['TECHNOLOGY', 'EDUCATION'].includes(a.category));
+  const TECH_STOCKS = [
+    { symbol: 'VSPR', name: 'Vespera Sys', price: '84.50', chg: '+1.20', pct: '+1.42%' },
+    { symbol: 'MSFT', name: 'Microsoft', price: '23.84', chg: '+0.36', pct: '+1.53%' },
+    { symbol: 'SUNW', name: 'Sun Micro', price: '48.12', chg: '-0.88', pct: '-1.80%' },
+    { symbol: 'ECSO', name: 'EchoSoft', price: '31.02', chg: '+2.14', pct: '+7.41%' },
+    { symbol: 'CRNX', name: 'CoreNex', price: '44.12', chg: '+3.08', pct: '+7.51%' },
+    { symbol: 'SNWV', name: 'SonicWave', price: '19.88', chg: '-0.44', pct: '-2.16%' },
+    { symbol: 'IBM', name: 'IBM Corp', price: '128.50', chg: '+1.75', pct: '+1.38%' },
+  ];
+  const SOFTWARE_RELEASES = [
+    { name: 'Vespera OS 4.1', dev: 'Vespera Systems', date: 'Oct 24', type: 'OS Update', rating: '★★★★☆' },
+    { name: 'Synapse v1.0', dev: 'Vespera Gaming', date: 'Oct 21', type: 'Game', rating: '★★★★★' },
+    { name: 'Netscape 3.01', dev: 'Netscape Comm.', date: 'Oct 18', type: 'Browser', rating: '★★★☆☆' },
+    { name: 'Windows CE 1.0', dev: 'Microsoft', date: 'Oct 25', type: 'Mobile OS', rating: '★★☆☆☆' },
+    { name: 'RealAudio 3.0', dev: 'RealNetworks', date: 'Oct 15', type: 'Streaming', rating: '★★★★☆' },
+    { name: 'V-Ghost Cleaner', dev: 'CERT/Vespera', date: 'Oct 28', type: 'Security', rating: '★★★★☆' },
+  ];
+  const TECH_RUMORS = [
+    { rumor: 'Vespera is developing a mobile OS codenamed "Meridian" for handheld devices.', source: 'Industry Insider', heat: '🔥🔥🔥' },
+    { rumor: 'Axis Innovations is building a second BRIDGE prototype at an undisclosed location in Nevada.', source: 'Anonymous Tip', heat: '🔥🔥🔥🔥' },
+    { rumor: 'Microsoft is in talks to license AETHERIS technology for Windows NT 5.0.', source: 'Wall Street', heat: '🔥🔥' },
+    { rumor: 'The X-Type co-processor contains a hidden wireless transmitter that activates during the 2AM maintenance window.', source: 'Usenet: alt.sys.vespera', heat: '🔥🔥🔥🔥🔥' },
+    { rumor: 'Vespera OS 5.0 will remove Agent V following user complaints about unprompted speech.', source: 'Vespera Beta Tester', heat: '🔥🔥' },
+  ];
+  const DEV_SPOTLIGHT = {
+    name: 'synth_kid',
+    location: 'Osaka, Japan',
+    project: 'NEON_DREAM.VSC',
+    quote: '"The X-Type is way more powerful than Vespera lets on. It\'s like there\'s a second computer inside my computer that nobody is talking about."',
+    bio: 'A 16-year-old V-Script prodigy who has become the unofficial leader of the underground V-Demo Scene. Their demo NEON_DREAM.VSC renders real-time 3D fractals using undocumented X-Type capabilities, earning both acclaim from the community and a cease-and-desist letter from Vespera legal.',
+  };
+
+  return (
+    <div style={{ display: 'flex', minHeight: '480px' }}>
+      <Sidebar onOpen={onOpen} />
+      <div style={{ flex: 1, padding: '12px 16px' }}>
+        <SectionHeader>TECHNOLOGY NEWS</SectionHeader>
+
+        {/* Lead Tech Story */}
+        {techArticles.length > 0 && (
+          <div style={{ marginBottom: '16px' }}>
+            <ArticlePreview article={techArticles[0]} onOpen={onOpen} />
+          </div>
+        )}
+        <HR />
+
+        {/* Tech Stock Watch */}
+        <SubHeader>Tech Stock Watch</SubHeader>
+        <table style={{ width: '100%', fontSize: '11px', fontFamily: 'Courier New', borderCollapse: 'collapse', marginBottom: '16px' }}>
+          <thead><tr style={{ backgroundColor: '#000080', color: '#ffcc00' }}><th style={{ padding: '4px 6px', textAlign: 'left' }}>Symbol</th><th style={{ padding: '4px 6px', textAlign: 'left' }}>Company</th><th style={{ padding: '4px 6px', textAlign: 'right' }}>Price</th><th style={{ padding: '4px 6px', textAlign: 'right' }}>Chg</th><th style={{ padding: '4px 6px', textAlign: 'right' }}>%Chg</th></tr></thead>
+          <tbody>{TECH_STOCKS.map(s => (
+            <tr key={s.symbol} style={{ borderBottom: '1px solid #ddd' }}>
+              <td style={{ padding: '3px 6px', fontWeight: 'bold', color: '#000080' }}>{s.symbol}</td>
+              <td style={{ padding: '3px 6px', fontFamily: 'Arial', fontSize: '10px' }}>{s.name}</td>
+              <td style={{ padding: '3px 6px', textAlign: 'right' }}>{s.price}</td>
+              <td style={{ padding: '3px 6px', textAlign: 'right', color: s.chg.startsWith('+') ? '#008800' : '#cc0000', fontWeight: 'bold' }}>{s.chg}</td>
+              <td style={{ padding: '3px 6px', textAlign: 'right', color: s.pct.startsWith('+') ? '#008800' : '#cc0000' }}>{s.pct}</td>
+            </tr>
+          ))}</tbody>
+        </table>
+        <HR />
+
+        {/* More Tech Articles */}
+        {techArticles.slice(1).map(a => (<React.Fragment key={a.id}><ArticlePreview article={a} onOpen={onOpen} /><HR /></React.Fragment>))}
+
+        {/* New Software Releases */}
+        <SubHeader>New Software Releases</SubHeader>
+        <table style={{ width: '100%', fontSize: '11px', fontFamily: 'Arial', borderCollapse: 'collapse', marginBottom: '16px' }}>
+          <thead><tr style={{ backgroundColor: '#000080', color: '#ffcc00' }}><th style={{ padding: '4px 6px', textAlign: 'left' }}>Product</th><th style={{ padding: '4px 6px', textAlign: 'left' }}>Developer</th><th style={{ padding: '4px 6px', textAlign: 'left', width: '60px' }}>Date</th><th style={{ padding: '4px 6px', textAlign: 'left', width: '75px' }}>Type</th><th style={{ padding: '4px 6px', textAlign: 'center', width: '65px' }}>Rating</th></tr></thead>
+          <tbody>{SOFTWARE_RELEASES.map((s, i) => (
+            <tr key={i} style={{ borderBottom: '1px solid #ddd', backgroundColor: i % 2 === 0 ? '#fff' : '#f8f8f0' }}>
+              <td style={{ padding: '3px 6px', fontWeight: 'bold', color: '#000080' }}><span className="mbn-link">{s.name}</span></td>
+              <td style={{ padding: '3px 6px', color: '#555' }}>{s.dev}</td>
+              <td style={{ padding: '3px 6px', fontFamily: 'Courier New', fontSize: '10px' }}>{s.date}</td>
+              <td style={{ padding: '3px 6px' }}>{s.type}</td>
+              <td style={{ padding: '3px 6px', textAlign: 'center', fontSize: '10px' }}>{s.rating}</td>
+            </tr>
+          ))}</tbody>
+        </table>
+        <HR />
+
+        {/* Developer Spotlight */}
+        <SubHeader>Developer Spotlight</SubHeader>
+        <div style={{ border: '2px solid #000080', padding: '12px', backgroundColor: '#f0f0ff', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ width: '60px', height: '60px', backgroundColor: '#000080', color: '#ffcc00', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold', flexShrink: 0 }}>?</div>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#000080', marginBottom: '2px' }}>{DEV_SPOTLIGHT.name}</div>
+              <div style={{ fontSize: '10px', color: '#666', marginBottom: '4px' }}>{DEV_SPOTLIGHT.location} • Project: <span className="mbn-link">{DEV_SPOTLIGHT.project}</span></div>
+              <p style={{ fontSize: '11px', fontFamily: 'Georgia, serif', color: '#444', lineHeight: '1.5', margin: '0 0 6px', fontStyle: 'italic' }}>{DEV_SPOTLIGHT.quote}</p>
+              <p style={{ fontSize: '10px', fontFamily: 'Arial', color: '#666', margin: 0 }}>{DEV_SPOTLIGHT.bio}</p>
+            </div>
+          </div>
+        </div>
+        <HR />
+
+        {/* Tech Rumor Mill */}
+        <SubHeader>Tech Rumor Mill</SubHeader>
+        <div style={{ border: '1px solid #999', padding: '10px', backgroundColor: '#fffff0', marginBottom: '16px' }}>
+          <div style={{ fontSize: '10px', color: '#cc0000', fontWeight: 'bold', marginBottom: '8px', fontFamily: 'Arial', letterSpacing: '0.5px' }}>⚠ UNVERIFIED — For discussion purposes only</div>
+          {TECH_RUMORS.map((r, i) => (
+            <div key={i} style={{ marginBottom: '8px', paddingLeft: '8px', borderLeft: '3px solid #ccaa00' }}>
+              <p style={{ fontSize: '11px', fontFamily: 'Georgia, serif', color: '#333', margin: '0 0 2px' }}>{r.rumor}</p>
+              <div style={{ fontSize: '9px', color: '#888', fontFamily: 'Arial' }}>Source: {r.source} • Heat: {r.heat}</div>
+            </div>
+          ))}
+        </div>
+        <HR />
+
+        {/* Hot Downloads */}
+        <SubHeader>Hot Downloads on VStore</SubHeader>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px' }}>
+          {[
+            { name: 'Synapse v1.0', size: '12.4 MB', desc: 'X-Type puzzle game', downloads: '502K' },
+            { name: 'V-Ghost Cleaner', size: '0.8 MB', desc: 'V-Script virus removal', downloads: '38K' },
+            { name: 'Aura Media Player 2.1', size: '3.2 MB', desc: 'Audio/video player', downloads: '1.2M' },
+            { name: 'VoxType SDK', size: '5.6 MB', desc: 'Voice dictation dev kit', downloads: '14K' },
+            { name: 'Release Radar', size: '1.1 MB', desc: 'Music notification app', downloads: '200K' },
+            { name: 'Turbo-V Memory Mgr', size: '0.4 MB', desc: 'RAM optimizer (Marcus T.)', downloads: '89K' },
+          ].map((d, i) => (
+            <div key={i} style={{ border: '1px solid #ccc', padding: '6px 8px', backgroundColor: '#fff', cursor: 'pointer' }}>
+              <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#000080' }}><span className="mbn-link">{d.name}</span> <span style={{ fontSize: '9px', color: '#999', fontWeight: 'normal' }}>({d.size})</span></div>
+              <div style={{ fontSize: '10px', color: '#555', fontFamily: 'Arial' }}>{d.desc} • {d.downloads} downloads</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <MarketSnapshotSidebar />
+    </div>
+  );
+};
+
 /* ═══════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════ */
@@ -1065,6 +1524,7 @@ export const MeridianBroadcastingSite: React.FC = () => {
       case 'CHARTS': return <ChartsPage onOpen={handleOpenArticle} />;
       case 'MONITOR': return <MonitorPage />;
       case 'TOOLS': return <ToolsPage onOpen={handleOpenArticle} />;
+      case 'TECH': return <TechPage onOpen={handleOpenArticle} />;
       case 'HELP': return <HelpPage onOpen={handleOpenArticle} />;
       default: return <HomePage onOpen={handleOpenArticle} />;
     }

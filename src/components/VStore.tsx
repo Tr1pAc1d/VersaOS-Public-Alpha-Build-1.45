@@ -19,6 +19,7 @@ interface VStoreProps {
   onLaunchBrowser?: (url?: string) => void;
   vfs?: any;
   onOpenSetupWizard?: (manifest: AppManifest) => void;
+  konamiUnlocked?: boolean;
 }
 
 const CATEGORIES: VStoreCategory[] = [ 
@@ -96,7 +97,9 @@ const VStoreBootSequence: React.FC<{ onComplete: () => void, account: VStoreAcco
   );
 };
 
-export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onLaunchBrowser, vfs, onOpenSetupWizard }) => {
+export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onLaunchBrowser, vfs, onOpenSetupWizard, konamiUnlocked = false }) => {
+  // Defensive: ensure installedApps is always an array
+  const safeInstalledApps = Array.isArray(installedApps) ? installedApps : [];
   const [account, setAccount] = useState<VStoreAccount | null>(null);
   const [showAuth, setShowAuth] = useState(true);
   const [showEula, setShowEula] = useState(false);
@@ -251,7 +254,7 @@ export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onL
     }
 
     // Purchase Lock
-    if (app.price && !installedApps.includes(app.id) && (!account?.purchasedApps || !account.purchasedApps.includes(app.id))) {
+    if (app.price && !safeInstalledApps.includes(app.id) && (!account?.purchasedApps || !account.purchasedApps.includes(app.id))) {
       if (!account || account.isGuest) {
         playAlertSound();
         setPurchaseError("Restricted: Commercial downloads demand a verified Member Account.");
@@ -290,7 +293,12 @@ export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onL
   };
 
   // Merge built-in and community-published apps into one catalog
-  const allApps = [...VSTORE_APPS, ...communityApps];
+  // Filter out hidden apps unless Konami code is unlocked
+  const allApps = [...VSTORE_APPS, ...(communityApps || [])].filter(app => {
+    if (!app) return false;
+    if (app.hidden && !konamiUnlocked) return false;
+    return true;
+  });
 
   // Filter apps
   const filteredApps = allApps.filter(app => {
@@ -380,6 +388,11 @@ export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onL
             <h1 className="text-xl font-bold tracking-wider text-[#e0f2fe] drop-shadow-md">VSTORE CATALYST</h1>
             <p className="text-[10px] text-[#00a3cc] uppercase tracking-[0.2em] font-bold">Secure Global Software Repository</p>
           </div>
+          {konamiUnlocked && (
+            <div className="ml-2 px-2 py-0.5 bg-green-600 text-white text-[9px] font-bold rounded border border-green-400 animate-pulse">
+              SECRET UNLOCKED
+            </div>
+          )}
         </div>
         {/* Search */}
         <div className="flex items-center gap-2 bg-[#001a22] border-2 border-t-[#001116] border-l-[#001116] border-b-[#006b8f] border-r-[#006b8f] px-2 py-1 w-64 shadow-inner">
@@ -1091,7 +1104,7 @@ export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onL
                   )}
 
                   <div className={`pt-3 border-t-2 border-gray-300 flex justify-end shrink-0 ${!purchaseError && selectedApp.functional ? 'mt-auto' : ''}`}>
-                    {installedApps.includes(selectedApp.id) ? (
+                    {safeInstalledApps.includes(selectedApp.id) ? (
                       <button disabled className="flex items-center gap-2 px-8 py-3 font-bold text-sm border-[3px] bg-[#008000] text-white border-t-gray-800 border-l-gray-800 border-b-white border-r-white cursor-default opacity-80 shadow-none translate-y-[2px] translate-x-[2px]">
                         <CheckCircle2 size={20} /> ALREADY INSTALLED
                       </button>
@@ -1192,7 +1205,7 @@ export const VStore: React.FC<VStoreProps> = ({ onInstallApp, installedApps, onL
                         </div>
 
                         <div className="flex justify-between items-center mt-auto">
-                          {installedApps.includes(app.id) ? (
+                          {safeInstalledApps.includes(app.id) ? (
                             <span className="text-[9px] bg-[#008000] text-white px-1.5 py-0.5 font-bold tracking-wider inline-flex items-center gap-1">
                               <CheckCircle2 size={10} /> INSTALLED
                             </span>

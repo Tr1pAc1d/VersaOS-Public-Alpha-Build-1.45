@@ -69,6 +69,9 @@ export const RunDialog: React.FC<RunDialogProps> = ({ isOpen, onClose, onSubmit 
     const t = line.trim();
     if (!t) {
       playErrorSound();
+      window.dispatchEvent(new CustomEvent('vespera-system-error', {
+        detail: { type: 'Input Error', title: 'Cannot Start Program', message: 'Please type a program name, folder, or document to open.', fatal: false }
+      }));
       return;
     }
     playUIClickSound();

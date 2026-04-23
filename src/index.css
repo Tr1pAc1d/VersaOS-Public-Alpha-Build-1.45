@@ -144,3 +144,22 @@
 .sys-cursor-wait, .sys-cursor-wait * { cursor: wait !important; }
 .sys-cursor-text, .sys-cursor-text * { cursor: text !important; }
 .sys-cursor-move, .sys-cursor-move * { cursor: move !important; }
+
+/* High Contrast Mode */
+.high-contrast, .high-contrast * {
+  background-color: #000000 !important;
+  color: #ffff00 !important;
+  border-color: #ffffff !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+
+.high-contrast button {
+  border: 1px solid #ffffff !important;
+}
+
+.high-contrast select, .high-contrast input {
+  background-color: #000000 !important;
+  color: #ffff00 !important;
+  border: 1px solid #ffffff !important;
+}

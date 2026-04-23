@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Monitor, Cpu, User, Package, Settings, ArrowLeft, HardDrive, Trash2, AlertCircle, Menu, ChevronRight, ChevronDown, FolderOpen, ArrowUp, ArrowDown, Plus, RotateCcw, Minus, Globe, Key, Shield, Download, CheckCircle, Sparkles, Loader, Volume2, MessageSquare, MousePointer2 } from 'lucide-react';
+import { Monitor, Cpu, User, Package, Settings, ArrowLeft, HardDrive, Trash2, AlertCircle, Menu, ChevronRight, ChevronDown, FolderOpen, ArrowUp, ArrowDown, Plus, RotateCcw, Minus, Globe, Key, Shield, Download, CheckCircle, Sparkles, Loader, Volume2, MessageSquare, MousePointer2, Clock, Printer, Type, Layout, Activity, Zap, History, Lock, Eye, Network } from 'lucide-react';
 import { DEFAULT_WORKSPACE_MENU } from '../hooks/useVFS';
 import { APP_DICTIONARY } from '../utils/appDictionary';
 import { RETRO_ICONS } from '../utils/retroIcons';
@@ -16,6 +16,7 @@ interface PanelItem {
   description: string;
   Icon: React.FC<{ size?: number; className?: string }>;
   iconColor: string;
+  iconUrl?: string;
 }
 
 const PANEL_ITEMS: PanelItem[] = [
@@ -25,6 +26,7 @@ const PANEL_ITEMS: PanelItem[] = [
     description: 'Display: Configure your screen resolution and desktop colors.',
     Icon: Monitor,
     iconColor: 'text-[#008080]',
+    iconUrl: '/Icons/display_properties-0.png'
   },
   {
     id: 'system',
@@ -32,6 +34,7 @@ const PANEL_ITEMS: PanelItem[] = [
     description: 'System: View hardware information and manage device resources.',
     Icon: Cpu,
     iconColor: 'text-[#000080]',
+    iconUrl: '/Icons/computer-0.png'
   },
   {
     id: 'users',
@@ -39,6 +42,7 @@ const PANEL_ITEMS: PanelItem[] = [
     description: 'Users: Manage user accounts and access permissions.',
     Icon: User,
     iconColor: 'text-[#4a4a8a]',
+    iconUrl: '/Icons/users-0.png'
   },
   {
     id: 'addremove',
@@ -46,6 +50,7 @@ const PANEL_ITEMS: PanelItem[] = [
     description: 'Add/Remove Programs: Install or remove software from your Vespera system.',
     Icon: Package,
     iconColor: 'text-[#7a4a00]',
+    iconUrl: '/Icons/appwizard-0.png'
   },
   {
     id: 'taskbar',
@@ -53,6 +58,7 @@ const PANEL_ITEMS: PanelItem[] = [
     description: 'Task Menu: Customize the appearance and behavior of the Task Menu.',
     Icon: Menu,
     iconColor: 'text-[#4a4a8a]',
+    iconUrl: '/Icons/start_menu_shortcuts.png'
   },
   {
     id: 'vespera_update',
@@ -60,6 +66,7 @@ const PANEL_ITEMS: PanelItem[] = [
     description: 'Vespera Update: Check for and install system updates from VesperaNET.',
     Icon: Download,
     iconColor: 'text-[#006400]',
+    iconUrl: '/Icons/windows_update_large-0.png'
   },
   {
     id: 'agent_v',
@@ -67,6 +74,87 @@ const PANEL_ITEMS: PanelItem[] = [
     description: 'Agent V: Personalize your Vespera desktop assistant.',
     Icon: MessageSquare,
     iconColor: 'text-[#000080]',
+    iconUrl: '/Icons/msagent-0.png'
+  },
+  {
+    id: 'fonts',
+    label: 'Fonts',
+    description: 'Fonts: View and manage the fonts installed on your system.',
+    Icon: Type,
+    iconColor: 'text-[#800080]',
+    iconUrl: '/Icons/directory_fonts-0.png'
+  },
+  {
+    id: 'datetime',
+    label: 'Date/Time',
+    description: 'Date/Time: Change the date, time and time zone for your computer.',
+    Icon: Clock,
+    iconColor: 'text-[#000080]',
+    iconUrl: '/Icons/time_and_date-0.png'
+  },
+  {
+    id: 'sounds',
+    label: 'Sounds',
+    description: 'Sounds: Assign sounds to system events and change sound schemes.',
+    Icon: Volume2,
+    iconColor: 'text-[#008000]',
+    iconUrl: '/Icons/loudspeaker_rays-0.png'
+  },
+  {
+    id: 'regional',
+    label: 'Regional\nSettings',
+    description: 'Regional Settings: Customize how dates, times, and currency are displayed.',
+    Icon: Globe,
+    iconColor: 'text-[#008080]',
+    iconUrl: '/Icons/world-0.png'
+  },
+  {
+    id: 'printers',
+    label: 'Printers',
+    description: 'Printers: Add, remove and configure local and network printers.',
+    Icon: Printer,
+    iconColor: 'text-[#4a4a4a]',
+    iconUrl: '/Icons/printer-0.png'
+  },
+  {
+    id: 'accessibility',
+    label: 'Accessibility',
+    description: 'Accessibility: Adjust your computer settings for vision, hearing and mobility.',
+    Icon: Key,
+    iconColor: 'text-[#808000]',
+    iconUrl: '/Icons/accessibility-0.png'
+  },
+  {
+    id: 'security',
+    label: 'Security',
+    description: 'Security: Monitor your system\'s data vault and neural shielding status.',
+    Icon: Shield,
+    iconColor: 'text-[#000080]',
+    iconUrl: '/Icons/key_padlock-0.png'
+  },
+  {
+    id: 'xtype_diag',
+    label: 'X-Type\nDiagnostics',
+    description: 'X-Type Diagnostics: Advanced tools for monitoring the Neural Bridge.',
+    Icon: Activity,
+    iconColor: 'text-[#8b0000]',
+    iconUrl: '/Icons/bar_graph-0.png'
+  },
+  {
+    id: 'network',
+    label: 'Network',
+    description: 'Network: Configure your connection to AETHERIS and local gateways.',
+    Icon: Network,
+    iconColor: 'text-[#006400]',
+    iconUrl: '/Icons/network_normal_two_pcs-0.png'
+  },
+  {
+    id: 'hardware_wiz',
+    label: 'Hardware\nWizard',
+    description: 'Hardware Wizard: Install or configure new hardware devices.',
+    Icon: Cpu,
+    iconColor: 'text-[#000080]',
+    iconUrl: '/Icons/hardware-0.png'
   },
 ];
 
@@ -206,6 +294,35 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   const [updateInstallProgress, setUpdateInstallProgress] = useState(0);
   const [updateInstallStatus, setUpdateInstallStatus] = useState('');
   const [updateInstallTarget, setUpdateInstallTarget] = useState<SystemUpdate | null>(null);
+
+  // New Sub-Panel States
+  const [selectedFont, setSelectedFont] = useState<string | null>(null);
+  const [mockSystemTime, setMockSystemTime] = useState(new Date());
+  const [highContrast, setHighContrast] = useState(false);
+  const [securityLogs, setSecurityLogs] = useState<string[]>([]);
+  const [diagPulse, setDiagPulse] = useState(0);
+  const [hardwareStep, setHardwareStep] = useState(0);
+  const [hardwareFound, setHardwareFound] = useState<any[]>([]);
+
+  useEffect(() => {
+    const timer = setInterval(() => setMockSystemTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (activePanel === 'security') {
+      const logInterval = setInterval(() => {
+        const lines = [
+          `[${new Date().toLocaleTimeString()}] SENTINEL: Node ${Math.floor(Math.random() * 999)} sync OK.`,
+          `[${new Date().toLocaleTimeString()}] CRYPTO: Rotating RSA keys (Level 4)...`,
+          `[${new Date().toLocaleTimeString()}] SHIELD: Interference at ${Math.floor(Math.random() * 40)}Hz detected.`,
+          `[${new Date().toLocaleTimeString()}] X-TYPE: Bridge load nominal.`
+        ];
+        setSecurityLogs(prev => [lines[Math.floor(Math.random() * lines.length)], ...prev].slice(0, 50));
+      }, 3000);
+      return () => clearInterval(logInterval);
+    }
+  }, [activePanel]);
 
   useEffect(() => {
     if (initialPanel) setActivePanel(initialPanel);
@@ -414,10 +531,19 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
               className="flex flex-col items-center justify-start w-20 h-20 p-1 gap-1 hover:bg-[#000080] hover:text-white group rounded-none cursor-default select-none"
               title={item.description}
             >
-              <item.Icon
-                size={32}
-                className={`mt-1 ${item.iconColor} group-hover:text-white`}
-              />
+              {item.iconUrl ? (
+                <img 
+                  src={item.iconUrl} 
+                  alt="" 
+                  className="w-8 h-8 mt-1 object-contain" 
+                  style={{ imageRendering: 'pixelated' }}
+                />
+              ) : (
+                <item.Icon
+                  size={32}
+                  className={`mt-1 ${item.iconColor} group-hover:text-white`}
+                />
+              )}
               <span className="text-[10px] font-bold text-center leading-tight whitespace-pre-line group-hover:text-white">
                 {item.label}
               </span>
@@ -432,19 +558,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   const renderDisplay = () => (
     <div className="flex flex-col h-full p-3 gap-2">
       {/* Back bar */}
-      <div className="flex items-center gap-2 border-b border-gray-500 pb-2">
-        <button
-          onClick={() => setActivePanel(null)}
-          className="flex items-center gap-1 px-2 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold"
-        >
-          <ArrowLeft size={12} />
-          Back
-        </button>
-        <div className="flex items-center gap-2">
-          <Monitor size={20} className="text-[#008080]" />
-          <span className="font-bold text-sm tracking-wide">Display Properties</span>
-        </div>
-      </div>
+      {PanelHeader('Display Properties', Monitor, 'text-[#008080]', '/Icons/display_properties-0.png')}
 
       {/* Tabs */}
       <div className="flex gap-[2px] border-b-2 border-white mt-1 relative z-10 px-1 overflow-x-auto">
@@ -844,20 +958,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
 
     return (
       <div className="flex flex-col h-full p-3 gap-3">
-        {/* Back bar */}
-        <div className="flex items-center gap-2 border-b border-gray-500 pb-2">
-          <button
-            onClick={() => { setActivePanel(null); setSelectedAppId(null); }}
-            className="flex items-center gap-1 px-2 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold"
-          >
-            <ArrowLeft size={12} />
-            Back
-          </button>
-          <div className="flex items-center gap-2">
-            <Package size={20} className="text-[#7a4a00]" />
-            <span className="font-bold text-sm tracking-wide">Add/Remove Programs</span>
-          </div>
-        </div>
+        {PanelHeader('Add/Remove Programs', Package, 'text-[#7a4a00]', '/Icons/appwizard-0.png', () => setSelectedAppId(null))}
 
         {/* Two-pane layout */}
         <div className="flex flex-1 gap-3 overflow-hidden">
@@ -1248,19 +1349,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   const renderTaskbarPanel = () => (
     <div className="flex flex-col h-full p-3 gap-2">
       {/* Back bar */}
-      <div className="flex items-center gap-2 border-b border-gray-500 pb-2">
-        <button
-          onClick={() => setActivePanel(null)}
-          className="flex items-center gap-1 px-2 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold"
-        >
-          <ArrowLeft size={12} />
-          Back
-        </button>
-        <div className="flex items-center gap-2">
-          <Menu size={20} className="text-[#4a4a8a]" />
-          <span className="font-bold text-sm tracking-wide">Task Menu Properties</span>
-        </div>
-      </div>
+      {PanelHeader('Task Menu Properties', Menu, 'text-[#4a4a8a]', '/Icons/start_menu_shortcuts.png')}
 
       {/* Tabs */}
       <div className="flex gap-1 border-b-2 border-white mt-1 relative z-10 px-1 overflow-x-auto scroller-hidden">
@@ -1887,20 +1976,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
 
     return (
       <div className="flex flex-col h-full p-3 gap-3">
-        {/* Back bar */}
-        <div className="flex items-center gap-2 border-b border-gray-500 pb-2">
-          <button
-            onClick={() => { setActivePanel(null); setSelectedUserId(null); }}
-            className="flex items-center gap-1 px-2 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold"
-          >
-            <ArrowLeft size={12} />
-            Back
-          </button>
-          <div className="flex items-center gap-2">
-            <User size={20} className="text-[#4a4a8a]" />
-            <span className="font-bold text-sm tracking-wide">Users</span>
-          </div>
-        </div>
+        {PanelHeader('Users', User, 'text-[#4a4a8a]', '/Icons/users-0.png', () => setSelectedUserId(null))}
 
         {/* Two-pane layout */}
         <div className="flex flex-1 gap-3 overflow-hidden">
@@ -2189,19 +2265,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
 
     return (
       <div className="flex flex-col h-full p-3 gap-3 bg-[#c0c0c0]">
-        <div className="flex items-center gap-2 border-b border-gray-500 pb-2 bg-[#c0c0c0]">
-          <button
-            onClick={() => { setActivePanel(null); }}
-            className="flex items-center gap-1 px-2 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white text-xs font-bold"
-          >
-            <ArrowLeft size={12} />
-            Back
-          </button>
-          <div className="flex items-center gap-2">
-            <Download size={20} className="text-[#006400]" />
-            <span className="font-bold text-sm tracking-wide">Vespera Update</span>
-          </div>
-        </div>
+        {PanelHeader('Vespera Update', Download, 'text-[#006400]', '/Icons/windows_update_large-0.png')}
 
         {updateInstallPhase === 'idle' && (
           <div className="flex-1 flex flex-col gap-3 min-h-0">
@@ -2319,19 +2383,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   // ── Agent V Settings ──────────────────────────────────────────────────────────
   const renderAgentVSettings = () => (
     <div className="flex flex-col h-full p-3 gap-2">
-      <div className="flex items-center gap-2 border-b border-gray-500 pb-2">
-        <button
-          onClick={() => setActivePanel(null)}
-          className="flex items-center gap-1 px-2 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold"
-        >
-          <ArrowLeft size={12} />
-          Back
-        </button>
-        <div className="flex items-center gap-2">
-          <MessageSquare size={20} className="text-[#000080]" />
-          <span className="font-bold text-sm tracking-wide">Agent V Properties</span>
-        </div>
-      </div>
+      {PanelHeader('Agent V Properties', MessageSquare, 'text-[#000080]', '/Icons/msagent-0.png')}
       
       <div className="flex-1 border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 p-4 bg-[#c0c0c0] flex flex-col gap-4 relative z-0 overflow-y-auto min-h-0">
         <div className="flex items-center gap-4 border-b pb-3 border-gray-400">
@@ -2473,6 +2525,627 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
     </div>
   );
 
+  // ── Sub-panel: Fonts ────────────────────────────────────────────────────────
+  const renderFonts = () => {
+    const fontFiles = (vfs?.nodes || []).filter((n: any) => n.parentId === 'v_fonts');
+    
+    return (
+      <div className="flex flex-col h-full p-3 overflow-hidden">
+        {PanelHeader('Fonts', Type, 'text-[#800080]', '/Icons/directory_fonts-0.png')}
+        
+        <div className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white overflow-y-auto p-1">
+          <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-1">
+            {fontFiles.map((f: any) => (
+              <div 
+                key={f.id} 
+                onDoubleClick={() => setSelectedFont(f.name)}
+                className={`flex flex-col items-center p-2 gap-1 cursor-default hover:bg-[#000080] hover:text-white group ${selectedFont === f.name ? 'bg-[#000080] text-white' : ''}`}
+                onClick={() => setSelectedFont(f.name)}
+              >
+                <img src={f.customIcon || '/Icons/font_tt-0.png'} alt="" className="w-8 h-8 object-contain" style={{ imageRendering: 'pixelated' }} />
+                <span className="text-[10px] text-center break-all leading-tight">{f.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-2 shrink-0 border-t border-gray-400 pt-2 flex justify-between items-center text-[10px] text-gray-600">
+          <span>{fontFiles.length} font(s) installed.</span>
+          <p className="italic">Double-click a font to preview it.</p>
+        </div>
+
+        {/* Font Preview Modal */}
+        {selectedFont && (
+          <div className="absolute inset-0 z-[100] bg-black/20 flex items-center justify-center p-4">
+            <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-black border-r-black w-full max-w-md shadow-xl flex flex-col">
+              <div className="bg-[#000080] text-white px-2 py-1 flex justify-between items-center">
+                <span className="text-xs font-bold font-sans">Font Viewer - {selectedFont}</span>
+                <button onClick={() => setSelectedFont(null)} className="w-4 h-4 bg-[#c0c0c0] text-black border border-t-white border-l-white border-b-black border-r-black flex items-center justify-center">X</button>
+              </div>
+              <div className="p-4 bg-white m-2 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white overflow-y-auto max-h-[300px]">
+                <div className="border-b border-gray-300 pb-2 mb-4">
+                  <h2 className="text-lg font-bold">{selectedFont}</h2>
+                  <p className="text-[10px] text-gray-500 italic">Installed: March 22, 1994</p>
+                </div>
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <p className="text-[10px] text-gray-400 mb-1">12pt</p>
+                    <p className="text-sm">The quick brown fox jumps over the lazy dog. 1234567890</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 mb-1">18pt</p>
+                    <p className="text-lg">The quick brown fox jumps over the lazy dog.</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 mb-1">24pt</p>
+                    <p className="text-2xl">The quick brown fox jumps over the lazy dog.</p>
+                  </div>
+                  <div className="pt-4 border-t border-gray-200">
+                    <p className="text-[10px] text-gray-400 mb-1">Full Character Set (UPPER)</p>
+                    <p className="text-xl tracking-widest uppercase">ABCDEFGHIJKLMNOPQRSTUVWXYZ</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-2 flex justify-end">
+                <button 
+                  onClick={() => setSelectedFont(null)}
+                  className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ── Sub-panel: Date/Time ───────────────────────────────────────────────────
+  const renderDateTime = () => (
+    <div className="flex flex-col h-full p-3">
+      {PanelHeader('Date & Time', Clock, 'text-[#000080]', '/Icons/time_and_date-0.png')}
+      
+      <div className="flex-1 flex flex-col gap-4 mt-2">
+        <div className="flex gap-4">
+          {/* Calendar Side */}
+          <div className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white p-3">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-bold text-xs">March 1994</span>
+              <div className="flex gap-1">
+                <button className="w-4 h-4 bg-[#c0c0c0] border border-gray-500 flex items-center justify-center text-[10px]">{'<'}</button>
+                <button className="w-4 h-4 bg-[#c0c0c0] border border-gray-500 flex items-center justify-center text-[10px]">{'>'}</button>
+              </div>
+            </div>
+            <div className="grid grid-cols-7 gap-1 text-center">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
+                <span key={d} className="text-[9px] font-bold text-gray-500">{d}</span>
+              ))}
+              {Array.from({ length: 31 }).map((_, i) => (
+                <span 
+                  key={i} 
+                  className={`text-[10px] p-1 cursor-default ${i + 1 === 22 ? 'bg-[#000080] text-white font-bold' : 'hover:bg-gray-100'}`}
+                >
+                  {i + 1}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Clock Side */}
+          <div className="w-40 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white flex flex-col items-center justify-center p-4">
+            {/* Analog Clock Mock */}
+            <div className="w-24 h-24 rounded-full border-2 border-black relative mb-4">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-1 h-1 bg-black rounded-full z-10" />
+                {/* Hour Hand */}
+                <div className="absolute w-1 h-8 bg-black bottom-1/2 origin-bottom rotate-[45deg]" />
+                {/* Minute Hand */}
+                <div className="absolute w-0.5 h-10 bg-black bottom-1/2 origin-bottom rotate-[180deg]" />
+                {/* Second Hand */}
+                <div className="absolute w-px h-11 bg-red-600 bottom-1/2 origin-bottom rotate-[270deg]" />
+              </div>
+            </div>
+            <span className="font-mono text-lg font-bold">{mockSystemTime.toLocaleTimeString()}</span>
+          </div>
+        </div>
+
+        <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-3">
+          <p className="text-[10px] font-bold mb-2">Time Zone</p>
+          <select className="w-full text-xs bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-1">
+            <option>(GMT-08:00) Pacific Time (US & Canada)</option>
+            <option selected>(GMT-05:00) Eastern Time (US & Canada)</option>
+            <option>(GMT+00:00) Greenwich Mean Time</option>
+            <option>(GMT+01:00) AETHERIS Central Node</option>
+          </select>
+        </div>
+
+        <div className="flex justify-end gap-2 mt-auto">
+          <button className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold">Apply</button>
+          <button onClick={() => setActivePanel(null)} className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold">OK</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── Sub-panel: Regional Settings ──────────────────────────────────────────
+  const renderRegional = () => (
+    <div className="flex flex-col h-full p-3">
+      {PanelHeader('Regional Settings', Globe, 'text-[#008080]', '/Icons/world-0.png')}
+      
+      <div className="flex-1 flex flex-col gap-4 mt-2">
+        <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-3">
+          <p className="text-[10px] font-bold mb-2">Regional Settings</p>
+          <p className="text-[10px] text-gray-700 mb-2">Choose the language and country for which you want to use international settings.</p>
+          <select className="w-full text-xs bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-1">
+            <option selected>English (United States)</option>
+            <option>English (AETHERIS Primary)</option>
+            <option>Deutsch (Deutschland)</option>
+            <option>Français (France)</option>
+            <option>日本語 (日本)</option>
+          </select>
+        </div>
+
+        <div className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-3 flex flex-col gap-2">
+          <p className="text-[10px] font-bold mb-1">Preview</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-gray-600">Numbers:</span>
+              <span className="text-xs font-mono bg-white border border-gray-400 p-1">123,456,789.00</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-gray-600">Currency:</span>
+              <span className="text-xs font-mono bg-white border border-gray-400 p-1">$123,456,789.00</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-gray-600">Time:</span>
+              <span className="text-xs font-mono bg-white border border-gray-400 p-1">{mockSystemTime.toLocaleTimeString()}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-gray-600">Date:</span>
+              <span className="text-xs font-mono bg-white border border-gray-400 p-1">{mockSystemTime.toLocaleDateString()}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 mt-auto">
+          <button className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold">Apply</button>
+          <button onClick={() => setActivePanel(null)} className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold">OK</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── Sub-panel: Printers ────────────────────────────────────────────────────
+  const renderPrinters = () => (
+    <div className="flex flex-col h-full p-3 overflow-hidden">
+      {PanelHeader('Printers', Printer, 'text-[#4a4a4a]', '/Icons/printer-0.png')}
+      
+      <div className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white overflow-y-auto p-1">
+        <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
+          <div className="flex flex-col items-center p-2 gap-1 cursor-default hover:bg-[#000080] hover:text-white group">
+            <Plus size={32} className="text-[#000080] group-hover:text-white" />
+            <span className="text-[10px] text-center font-bold">Add Printer</span>
+          </div>
+          <div className="flex flex-col items-center p-2 gap-1 cursor-default hover:bg-[#000080] hover:text-white group">
+            <Printer size={32} className="text-[#4a4a4a] group-hover:text-white" />
+            <span className="text-[10px] text-center">VESPERA LaserWriter Pro</span>
+            <span className="text-[8px] opacity-70">Ready</span>
+          </div>
+          <div className="flex flex-col items-center p-2 gap-1 cursor-default hover:bg-[#000080] hover:text-white group opacity-50">
+            <Printer size={32} className="text-[#4a4a4a] group-hover:text-white" />
+            <span className="text-[10px] text-center">DotMatrix 9-Pin (LPT1)</span>
+            <span className="text-[8px] opacity-70">Offline</span>
+          </div>
+          <div className="flex flex-col items-center p-2 gap-1 cursor-default hover:bg-[#000080] hover:text-white group">
+            <HardDrive size={32} className="text-[#008080] group-hover:text-white" />
+            <span className="text-[10px] text-center">Print to File (.prn)</span>
+            <span className="text-[8px] opacity-70">Virtual</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-2 text-[10px] text-gray-600 bg-[#ececec] p-1 border-t border-gray-400">
+        4 printer(s) found.
+      </div>
+    </div>
+  );
+
+  // ── Sub-panel: Accessibility ──────────────────────────────────────────────
+  const renderAccessibility = () => (
+    <div className="flex flex-col h-full p-3">
+      {PanelHeader('Accessibility Options', Key, 'text-[#808000]', '/Icons/accessibility-0.png')}
+      
+      <div className="flex-1 flex flex-col gap-4 mt-2">
+        <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-3">
+          <p className="text-[10px] font-bold mb-2 uppercase tracking-wide">Display</p>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={highContrast}
+              onChange={(e) => {
+                setHighContrast(e.target.checked);
+                if (e.target.checked) {
+                  document.body.classList.add('high-contrast');
+                } else {
+                  document.body.classList.remove('high-contrast');
+                }
+              }}
+            />
+            <span className="text-xs font-bold">Use High Contrast</span>
+          </label>
+          <p className="text-[9px] text-gray-600 mt-2 italic">Designed for users with vision impairments. Overrides all system colors with black and yellow.</p>
+        </div>
+
+        <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-3">
+          <p className="text-[10px] font-bold mb-2 uppercase tracking-wide">Keyboard</p>
+          <div className="flex flex-col gap-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" />
+              <span className="text-xs">Use StickyKeys</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" />
+              <span className="text-xs">Use FilterKeys</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="mt-auto flex justify-end gap-2">
+          <button onClick={() => setActivePanel(null)} className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold">OK</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── Sub-panel: Sounds ──────────────────────────────────────────────────────
+  const renderSounds = () => (
+    <div className="flex flex-col h-full p-3 overflow-hidden">
+      {PanelHeader('Sounds', Volume2, 'text-[#008000]', '/Icons/loudspeaker_rays-0.png')}
+      
+      <div className="flex-1 flex flex-col gap-4 mt-2 overflow-hidden">
+        <div className="flex flex-col flex-1 min-h-0">
+          <p className="text-[10px] font-bold mb-1">Events:</p>
+          <div className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white overflow-y-auto">
+            {[
+              { id: 'start', label: 'Start Vespera', file: 'vespera_start.wav' },
+              { id: 'stop', label: 'Shutdown', file: 'vespera_stop.wav' },
+              { id: 'error', label: 'Critical Stop', file: 'error.wav' },
+              { id: 'notify', label: 'Question', file: 'notify.wav' },
+              { id: 'trash', label: 'Empty Trash', file: 'recycle.wav' },
+              { id: 'logon', label: 'User Logon', file: 'logon.wav' },
+              { id: 'logoff', label: 'User Logoff', file: 'logoff.wav' },
+            ].map(ev => (
+              <div key={ev.id} className="flex items-center justify-between px-2 py-1 text-xs hover:bg-[#000080] hover:text-white cursor-default group">
+                <span>{ev.label}</span>
+                <span className="text-[10px] opacity-60 group-hover:text-white">{ev.file}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-3 shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <p className="text-[10px] font-bold mb-1">Name:</p>
+              <select className="w-full text-xs bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-1">
+                <option>(None)</option>
+                <option selected>Vespera Default</option>
+                <option>Robotica</option>
+                <option>Nature</option>
+              </select>
+            </div>
+            <button className="mt-4 p-2 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">
+              <Play size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 shrink-0">
+          <button className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold">Apply</button>
+          <button onClick={() => setActivePanel(null)} className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold">OK</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── Sub-panel: Security Center ─────────────────────────────────────────────
+  const renderSecurity = () => (
+    <div className="flex flex-col h-full p-3 overflow-hidden">
+      {PanelHeader('Security Center', Shield, 'text-[#000080]', '/Icons/key_padlock-0.png')}
+      
+      <div className="flex-1 flex flex-col gap-3 mt-2 overflow-hidden">
+        <div className="grid grid-cols-2 gap-3 h-1/2">
+          {/* Sentinel Vault */}
+          <div className="flex flex-col border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-black p-2 overflow-hidden">
+            <div className="flex justify-between items-center border-b border-gray-700 pb-1 mb-1">
+              <span className="text-[10px] font-bold text-green-500 uppercase">Sentinel Vault Status</span>
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.8)]" />
+            </div>
+            <div className="flex-1 overflow-y-auto font-mono text-[9px] text-green-400 leading-tight">
+              {securityLogs.map((log, i) => <div key={i}>{log}</div>)}
+              <div className="animate-pulse">_</div>
+            </div>
+          </div>
+
+          {/* Neural Shielding */}
+          <div className="flex flex-col border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-2">
+            <span className="text-[10px] font-bold mb-2 uppercase">Neural Shielding</span>
+            <div className="flex-1 flex flex-col items-center justify-center gap-4">
+              <div className="w-full bg-gray-400 h-4 border border-gray-600 relative">
+                <div 
+                  className="h-full bg-blue-600 transition-all duration-1000" 
+                  style={{ width: `${85 + Math.sin(Date.now() / 1000) * 5}%` }} 
+                />
+              </div>
+              <p className="text-[9px] text-center text-gray-700">Integrity: <span className="font-bold text-blue-800">NOMINAL</span></p>
+              <div className="grid grid-cols-2 gap-2 w-full">
+                <button className="px-2 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-[9px] font-bold">Refresh</button>
+                <button className="px-2 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-[9px] font-bold">Tune</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Password Management */}
+        <div className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-3">
+          <p className="text-[10px] font-bold mb-3 uppercase border-b border-gray-400 pb-1">User Credentials</p>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <User size={24} className="text-[#000080]" />
+              <div className="flex-1">
+                <p className="text-xs font-bold">{currentUser?.username || 'System Admin'}</p>
+                <p className="text-[10px] text-gray-600">Level 4 Clearance</p>
+              </div>
+              <button className="px-3 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-[10px] font-bold">Change Password</button>
+            </div>
+            <div className="p-2 bg-yellow-50 border border-yellow-200 text-[9px] text-yellow-800">
+              <strong>Security Tip:</strong> Neural Bridge passwords should contain at least 12 symbols and 2 biometric hashes.
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 shrink-0">
+          <button onClick={() => setActivePanel(null)} className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold">Exit</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── Sub-panel: X-Type Diagnostics ──────────────────────────────────────────
+  const renderXTypeDiag = () => (
+    <div className="flex flex-col h-full p-3 overflow-hidden">
+      {PanelHeader('X-Type Diagnostics', Activity, 'text-[#8b0000]', '/Icons/bar_graph-0.png')}
+      
+      <div className="flex-1 flex flex-col gap-3 mt-2 overflow-hidden">
+        {/* Signal Analysis */}
+        <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-black h-40 relative overflow-hidden">
+          <div className="absolute top-1 left-2 text-[8px] text-red-500 font-mono z-10">BRIDGE SIGNAL ANALYSIS - REALTIME</div>
+          <svg width="100%" height="100%" viewBox="0 0 400 160" preserveAspectRatio="none">
+            <path 
+              d={`M0 80 ${Array.from({ length: 40 }).map((_, i) => `L${i * 10} ${80 + Math.sin((Date.now() / 200) + i) * (20 + Math.random() * 40)}`).join(' ')}`}
+              fill="none" 
+              stroke="#ff0000" 
+              strokeWidth="2" 
+              className="opacity-80"
+            />
+            <path 
+              d={`M0 80 ${Array.from({ length: 40 }).map((_, i) => `L${i * 10} ${80 + Math.cos((Date.now() / 150) + i) * (10 + Math.random() * 20)}`).join(' ')}`}
+              fill="none" 
+              stroke="#00ff41" 
+              strokeWidth="1" 
+              className="opacity-40"
+            />
+          </svg>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
+          {/* Heuristic Compiler */}
+          <div className="flex flex-col border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-2 overflow-hidden">
+            <span className="text-[10px] font-bold mb-1 uppercase tracking-tight">Synap-C Compiler</span>
+            <div className="flex-1 bg-black p-1 font-mono text-[8px] text-[#00ff41] overflow-y-auto leading-none">
+              {Array.from({ length: 15 }).map((_, i) => (
+                <div key={i} className="mb-1 opacity-80">
+                  {`> PUSH NODE_${Math.floor(Math.random() * 0xFFFF).toString(16).toUpperCase()}`}
+                  <br />
+                  {`> RESOLVING SYMBOL: ${['ALPHA', 'BETA', 'AXIS', 'THORNE', 'BRIDGE'][Math.floor(Math.random() * 5)]}... OK`}
+                </div>
+              ))}
+              <div className="animate-pulse">_</div>
+            </div>
+          </div>
+
+          {/* Core Controls */}
+          <div className="flex flex-col border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-3 gap-3">
+            <span className="text-[10px] font-bold uppercase tracking-tight">Core Maintenance</span>
+            <button 
+              className="px-2 py-1 bg-red-800 text-white border-2 border-t-red-400 border-l-red-400 border-b-black border-r-black active:border-t-black active:border-l-black active:border-b-red-400 active:border-r-red-400 text-[10px] font-bold"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('vespera-system-error', {
+                  detail: { type: 'Maintenance Warning', title: 'Manual Flush Initiated', message: 'The Neural Bridge signal is being manually reset. Please remain calm.', fatal: false }
+                }));
+              }}
+            >
+              Manual Core Flush
+            </button>
+            <div className="mt-auto space-y-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" />
+                <span className="text-[10px]">Enable Heuristic Cache</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" />
+                <span className="text-[10px]">Shadow Sector Access</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── Sub-panel: Hardware Wizard ─────────────────────────────────────────────
+  const renderHardwareWizard = () => {
+    const steps = [
+      { 
+        title: 'Add New Hardware Wizard', 
+        content: 'This wizard helps you install software to make a new hardware device work with your computer.\n\nIf you have a disk that came with your device, click Cancel and use the Disk Install utility instead.'
+      },
+      { 
+        title: 'Scanning System...', 
+        content: 'Vespera is now searching for new hardware connected to your system. This may take a few minutes if you have multiple Neural Bridge extensions.',
+        loading: true
+      },
+      { 
+        title: 'Hardware Found!', 
+        content: 'The following hardware was detected and initialized:',
+        devices: ['Axis Quantum Storage Controller', 'High-Speed Neural Interconnect v2.4', 'Vespera SoundBoard 16-bit']
+      },
+      { 
+        title: 'Installation Complete', 
+        content: 'Your new hardware has been installed and is ready to use. You may need to reboot Vespera for some changes to take effect.'
+      }
+    ];
+
+    const step = steps[hardwareStep] || steps[0];
+
+    return (
+      <div className="flex flex-col h-full p-4 bg-[#c0c0c0]">
+        <div className="flex-1 flex gap-4">
+          <div className="w-24 shrink-0 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-gray-400 flex items-center justify-center">
+             <Cpu size={48} className="text-gray-200 opacity-50" />
+          </div>
+          <div className="flex-1 flex flex-col gap-2">
+            <h2 className="font-bold text-sm tracking-wide">{step.title}</h2>
+            <div className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white p-3 text-xs whitespace-pre-line leading-relaxed">
+              {step.content}
+              {step.loading && (
+                <div className="mt-8 flex flex-col items-center gap-2">
+                  <div className="w-48 h-4 border border-gray-600 bg-gray-200 overflow-hidden relative">
+                    <div className="absolute h-full bg-[#000080] w-12 animate-[hardwareScan_2s_infinite_linear]" />
+                  </div>
+                  <span className="text-[10px] animate-pulse">Checking I/O Ports...</span>
+                </div>
+              )}
+              {step.devices && (
+                <div className="mt-4 flex flex-col gap-1">
+                  {step.devices.map(d => (
+                    <div key={d} className="flex items-center gap-2 text-[11px] font-bold text-blue-900">
+                      <CheckCircle size={12} /> {d}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        <style>{`
+          @keyframes hardwareScan {
+            0% { left: -50px; }
+            100% { left: 200px; }
+          }
+        `}</style>
+        <div className="mt-4 flex justify-end gap-2 border-t border-gray-500 pt-3">
+          {hardwareStep > 0 && hardwareStep < steps.length - 1 && (
+            <button 
+              onClick={() => setHardwareStep(s => s - 1)}
+              className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold"
+            >
+              {'< Back'}
+            </button>
+          )}
+          {hardwareStep < steps.length - 1 ? (
+            <button 
+              onClick={() => {
+                if (hardwareStep === 1) {
+                  setTimeout(() => setHardwareStep(2), 3000);
+                } else {
+                  setHardwareStep(s => s + 1);
+                }
+              }}
+              disabled={hardwareStep === 1}
+              className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold disabled:opacity-50"
+            >
+              {hardwareStep === 0 ? 'Next >' : 'Finish'}
+            </button>
+          ) : (
+            <button 
+              onClick={() => { setHardwareStep(0); setActivePanel(null); }}
+              className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold"
+            >
+              Close
+            </button>
+          )}
+          <button 
+            onClick={() => { setHardwareStep(0); setActivePanel(null); }}
+            className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // ── Sub-panel: Network ───────────────────────────────────────────────────
+  const renderNetwork = () => (
+    <div className="flex flex-col h-full p-3">
+      {PanelHeader('Network Settings', Network, 'text-[#006400]', '/Icons/network_normal_two_pcs-0.png')}
+      
+      <div className="flex-1 flex flex-col gap-4 mt-2">
+        <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-3">
+          <p className="text-[10px] font-bold mb-2 uppercase tracking-wide">Identification</p>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] w-24">Computer name:</span>
+              <input type="text" value="VESPERA-STATION" readOnly className="flex-1 text-xs bg-white border border-gray-400 p-1 font-mono" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] w-24">Workgroup:</span>
+              <input type="text" value="AETHERIS_NODE" readOnly className="flex-1 text-xs bg-white border border-gray-400 p-1 font-mono" />
+            </div>
+          </div>
+        </div>
+
+        <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-3">
+          <p className="text-[10px] font-bold mb-2 uppercase tracking-wide">Access Control</p>
+          <p className="text-[9px] text-gray-700 mb-2">Configure how this computer is connected to the AETHERIS backbone.</p>
+          <div className="flex flex-col gap-2">
+            <button className="self-start px-4 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-xs font-bold">Proxy Settings...</button>
+            <button className="self-start px-4 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-xs font-bold">Dial-Up Networking...</button>
+          </div>
+        </div>
+
+        <div className="mt-auto flex justify-end gap-2">
+          <button onClick={() => setActivePanel(null)} className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold">OK</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const PanelHeader = (title: string, Icon: any, iconColor: string, iconUrl?: string, onBack?: () => void) => (
+    <div className="flex items-center gap-2 border-b border-gray-500 pb-2 mb-1 shrink-0">
+      <button
+        onClick={() => {
+          if (onBack) onBack();
+          setActivePanel(null);
+        }}
+        className="flex items-center gap-1 px-2 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold"
+      >
+        <ArrowLeft size={12} />
+        Back
+      </button>
+      <div className="flex items-center gap-2 ml-1">
+        {iconUrl ? (
+          <img src={iconUrl} alt="" className="w-5 h-5 object-contain" style={{ imageRendering: 'pixelated' }} />
+        ) : (
+          <Icon size={20} className={iconColor} />
+        )}
+        <span className="font-bold text-sm tracking-wide uppercase">{title}</span>
+      </div>
+    </div>
+  );
+
   // ── Active panel router ───────────────────────────────────────────────────────
   const renderActivePanel = () => {
     if (!activePanel) return renderHub();
@@ -2482,6 +3155,18 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
     if (activePanel === 'users') return renderUsers();
     if (activePanel === 'vespera_update') return renderVesperaUpdate();
     if (activePanel === 'agent_v') return renderAgentVSettings();
+    
+    if (activePanel === 'fonts') return renderFonts();
+    if (activePanel === 'datetime') return renderDateTime();
+    if (activePanel === 'sounds') return renderSounds();
+    if (activePanel === 'regional') return renderRegional();
+    if (activePanel === 'printers') return renderPrinters();
+    if (activePanel === 'accessibility') return renderAccessibility();
+    if (activePanel === 'security') return renderSecurity();
+    if (activePanel === 'xtype_diag') return renderXTypeDiag();
+    if (activePanel === 'hardware_wiz') return renderHardwareWizard();
+    if (activePanel === 'network') return renderNetwork();
+
     if (activePanel === 'system') return <SystemProperties onBack={() => setActivePanel(null)} vfs={vfs} currentUser={currentUser} neuralBridgeActive={neuralBridgeActive} />;
     const item = PANEL_ITEMS.find(p => p.id === activePanel);
     return item ? renderStub(item) : renderHub();

@@ -38,6 +38,8 @@ export interface VStoreApp {
   ageRestricted?: boolean;
   /** Price in USD (1996 pricing). If set, app must be purchased before install */
   price?: number;
+  /** If true, app is hidden and only revealed via Konami code or special trigger */
+  hidden?: boolean;
 }
 
 export const VSTORE_APPS: VStoreApp[] = [
@@ -1648,6 +1650,39 @@ export const VSTORE_APPS: VStoreApp[] = [
     requirements: 'Vespera OS',
     screenshotUrl: 'https://placehold.co/400x300/000033/0088FF/png?text=Uptime+Clock',
     functional: false
+  },
+  {
+    id: 'aetheris_workbench',
+    name: 'AETHERIS Workbench Pro',
+    developer: 'Vespera Systems',
+    version: '2.0.0',
+    size: '8.5 MB',
+    icon: Code,
+    customIcon: '/Icons/notepad_file_gear-0.png',
+    color: 'text-blue-700',
+    category: ['Featured Apps', 'Productivity'],
+    description: 'The professional-grade development environment for Vespera OS. Build multi-file JavaScript projects with live preview, syntax highlighting, and one-click Compile & Publish directly to VStore Catalyst. A serious upgrade over the free web-based Developer Portal — includes project persistence, file management, and advanced debugging telemetry.',
+    requirements: 'Vespera OS 1.45+, 16MB RAM, JavaScript Runtime',
+    screenshotUrl: 'https://placehold.co/400x300/C0C0C0/000080/png?text=AETHERIS+Workbench+Pro',
+    functional: true,
+    price: 149.95,
+    rating: 4.8
+  },
+  {
+    id: 'minecraft_classic',
+    name: 'Minecraft Classic',
+    developer: 'Mojang Specifications',
+    version: '0.0.23a_01',
+    size: '2.4 MB',
+    icon: Grid,
+    customIcon: '/Icons/minecraft_dirt_block.png',
+    color: 'text-green-600',
+    category: ['Games & Entertainment'],
+    description: 'The legendary creative sandbox game in its purest form. Build with infinite blocks in a procedurally generated world. Single-player creative mode only. Official Classic 0.0.23a_01 build ported for Vespera OS.',
+    requirements: '486DX/66MHz, 8MB RAM, VGA 256-color, Mouse required',
+    screenshotUrl: 'https://placehold.co/400x300/5D8C47/3E2723/png?text=Minecraft+Classic',
+    functional: true,
+    hidden: true
   }
 ];
 

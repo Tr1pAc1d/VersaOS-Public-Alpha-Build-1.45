@@ -10,6 +10,7 @@ import { NetMonitor } from "./NetMonitor";
 import { DownloadDialog } from "./DownloadDialog";
 import { SetupWizard } from "./SetupWizard";
 import { AetherisWorkbench } from "./AetherisWorkbench";
+import { MinecraftClassic } from "./MinecraftClassic";
 import { hauntManager } from "../utils/HauntManager";
 import { ActiveAppletsManager, TaskbarAppletSlot } from "./ActiveApplets";
 import {
@@ -18,6 +19,7 @@ import {
   stopGuiAmbientHum,
   playUIClickSound,
   playErrorSound,
+  playFatalErrorSound,
   playNewMailSound,
   startPlusAmbient,
   stopPlusAmbient,
@@ -62,6 +64,7 @@ import { DiskScanCheck } from "./DiskScanCheck";
 import { RunDialog, findVfsFileLoose } from "./RunDialog";
 import { FindFiles } from "./FindFiles";
 import { VersaMediaPlayer } from "./VersaMediaPlayer";
+import { VideoPlayerPopup } from "./VideoPlayerPopup";
 import { RetroTV } from "./RetroTV";
 import { RemoteDesktop } from "./RemoteDesktop";
 import { ScreensaverOverlay, useScreensaverIdle, type ScreensaverType } from "./Screensavers";
@@ -87,7 +90,7 @@ import { PChords } from "./PChords";
 import { PChordsSetup } from "./PChordsSetup";
 import { PluginSandbox } from "./PluginSandbox";
 import { ThirdPartySetupWizard } from "./ThirdPartySetupWizard";
-import { getPlugins } from "../utils/systemRegistry";
+import { getPlugins, System } from "../utils/systemRegistry";
 import type { AppManifest, InstalledPlugin } from "../types/pluginTypes";
 
 // ── Post-Login Init helper components ───────────────────────────────────────
@@ -136,13 +139,14 @@ const DesktopWindow = React.memo(({
   transition,
   className,
   style,
+  disableDrag,
   children
 }: any) => {
   const dragControls = useDragControls();
   return (
     <motion.div
       key={winId}
-      drag
+      drag={!disableDrag}
       dragListener={false}
       dragControls={dragControls}
       dragMomentum={false}
@@ -210,21 +214,23 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   const [fatalError, setFatalError] = useState<{title: string, message: string, type?: string} | null>(null);
   const [systemWarnings, setSystemWarnings] = useState<Array<{id: string, title: string, message: string, pluginId?: string}>>([]);
   
-  const [windows, setWindows] = useState<{ 
-    id: string; 
-    title: string; 
-    isOpen: boolean; 
-    isMinimized?: boolean; 
-    isMaximized?: boolean; 
-    x: number; 
-    y: number; 
-    width?: number; 
-    height?: number; 
+  const [windows, setWindows] = useState<{
+    id: string;
+    title: string;
+    isOpen: boolean;
+    isMinimized?: boolean;
+    isMaximized?: boolean;
+    x: number;
+    y: number;
+    width?: number;
+    height?: number;
     minWidth?: number;
     minHeight?: number;
-    type?: string; 
-    target?: string; 
-    nodeId?: string 
+    type?: string;
+    target?: string;
+    nodeId?: string;
+    videoUrl?: string;
+    videoTitle?: string;
   }[]>([
     { id: "about", title: "System Information", x: 40, y: 40, width: 450, height: 500, minWidth: 300, minHeight: 400, isOpen: false },
     { id: "control_panel", title: "CRT Control Panel", x: 100, y: 100, width: 460, height: 600, minWidth: 460, minHeight: 500, isOpen: false },
@@ -237,6 +243,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     { id: "netmon_setup", title: "AETHERIS Setup Wizard", x: 300, y: 150, width: 500, height: 400, isOpen: false },
     { id: "uninstall_wizard", title: "Vespera Uninstall Wizard", x: 300, y: 150, width: 500, height: 400, isOpen: false, target: "", nodeId: "" },
     { id: "workbench", title: "AETHERIS Workbench Pro - [C:\\VESPERA\\SRC\\DIAGNOSTIC.SC]", x: 60, y: 30, width: 750, height: 550, isOpen: false },
+    { id: "minecraft_classic", title: "Minecraft Classic", x: 100, y: 50, width: 800, height: 600, minWidth: 640, minHeight: 480, isOpen: false },
       { id: "open_dos", title: "Open-DOS Subsystem", x: 80, y: 40, width: 640, height: 480, isOpen: false },
     { id: "versa_edit", title: "VersaEdit", x: 150, y: 150, width: 600, height: 450, isOpen: false },
     { id: "defrag", title: "Disk Defragmenter - Drive C:", x: 180, y: 120, width: 500, height: 480, isOpen: false },
@@ -253,7 +260,8 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     { id: "dialup", title: "VesperaNET Dial-Up Connection", x: 160, y: 100, width: 460, height: 420, isOpen: false },
     { id: "scandisk", title: "Disk Checker - Drive C:", x: 200, y: 110, width: 440, height: 400, isOpen: false },
     { id: "findfiles", title: "Find Files", x: 140, y: 70, width: 480, height: 420, isOpen: false },
-    { id: "media_player", title: "VERSA Media Agent 2.0", x: 130, y: 60, width: 440, height: 520, isOpen: false },
+    { id: "media_player", title: "VERSA Media Agent 2.0", x: 100, y: 50, width: 600, height: 650, minWidth: 500, minHeight: 550, isOpen: false },
+    { id: "video_player_popup", title: "Video Player", x: 200, y: 100, width: 640, height: 480, minWidth: 320, minHeight: 240, isOpen: false },
     { id: "vsweeper", title: "V-Sweeper", x: 160, y: 120, width: 240, height: 330, isOpen: false },
     { id: "neural_solitaire", title: "Neural Solitaire", x: 80, y: 40, width: 730, height: 580, minWidth: 600, minHeight: 460, isOpen: false },
     { id: "axis_paint_setup", title: "Axis Paint 2.0 Setup", x: 180, y: 100, width: 620, height: 460, isOpen: false },
@@ -333,12 +341,30 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   const [screensaverActive, setScreensaverActive] = useState(false);
   const [lastFocusedApp, setLastFocusedApp] = useState<string | null>(null);
 
+  // ── Konami code unlock state ───────────────────────────────────────────
+  const [konamiUnlocked, setKonamiUnlocked] = useState(() => {
+    try { return localStorage.getItem('vespera_konami_unlocked') === 'true'; }
+    catch { return false; }
+  });
+
   // ── Plugin architecture state ───────────────────────────────────────────
   const [activePluginSetup, setActivePluginSetup] = useState<AppManifest | null>(null);
   const [iconPositions, setIconPositions] = useState<Record<string, {x: number, y: number}>>(() => {
     const saved = localStorage.getItem('desktop_icon_positions');
     return saved ? JSON.parse(saved) : {};
   });
+
+  // ── Minecraft active state (disables window drag when playing) ────────────
+  const [minecraftActive, setMinecraftActive] = useState(false);
+
+  useEffect(() => {
+    const handleMinecraftActive = (e: Event) => {
+      const customEvent = e as CustomEvent<boolean>;
+      setMinecraftActive(customEvent.detail);
+    };
+    window.addEventListener('minecraft-active', handleMinecraftActive);
+    return () => window.removeEventListener('minecraft-active', handleMinecraftActive);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('desktop_icon_positions', JSON.stringify(iconPositions));
@@ -403,6 +429,13 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
       const ev = e as CustomEvent<{ type?: string, title: string, message: string, fatal: boolean, pluginId?: string }>;
       const d = ev.detail;
       
+      // Play appropriate error sound
+      if (d.fatal) {
+        playFatalErrorSound();
+      } else {
+        playErrorSound();
+      }
+      
       // Update UI state
       if (d.fatal) {
         setFatalError({ title: d.title, message: d.message, type: d.type });
@@ -416,7 +449,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
       try {
         let logsFolder = vfs.getChildren('prog_system').find((n: any) => n.name === 'logs');
         if (!logsFolder) {
-           vfs.createNode('logs', 'folder', 'prog_system', '');
+           vfs.createNode('logs', 'directory', 'prog_system', '');
            logsFolder = vfs.getChildren('prog_system').find((n: any) => n.name === 'logs');
         }
         if (logsFolder) {
@@ -557,6 +590,37 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [signingOut, needsRecovery]);
+
+  // ── Konami code detection ───────────────────────────────────────────────
+  useEffect(() => {
+    const KONAMI_CODE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'KeyB', 'KeyA', 'Enter'];
+    const sequence: string[] = [];
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in input fields
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) {
+        return;
+      }
+      // Use e.code primarily (e.g., "ArrowUp", "KeyB"), fallback to e.key
+      const key = e.code || e.key;
+      if (!key) return;
+      sequence.push(key);
+      if (sequence.length > KONAMI_CODE.length) sequence.shift();
+      // Debug logging
+      console.log('[Konami] Key:', key, 'Sequence:', sequence.join(','));
+      if (sequence.join(',') === KONAMI_CODE.join(',')) {
+        console.log('[Konami] MATCH! Unlocking...');
+        setKonamiUnlocked(true);
+        localStorage.setItem('vespera_konami_unlocked', 'true');
+        sequence.length = 0;
+        window.dispatchEvent(new CustomEvent('vespera-system-error', {
+          detail: { type: 'Secret Unlocked', title: 'Minecraft Classic Revealed', message: 'The Konami Code has unlocked a hidden treasure! Minecraft Classic is now available in the VStore.', fatal: false }
+        }));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const [cmdWindows, setCmdWindows] = useState<{id: number, x: number, y: number, text: string}[]>([]);
   const [bootPhase, setBootPhase] = useState<number>(0);
@@ -997,21 +1061,31 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   };
 
   const openWindow = (id: string) => {
+    // Handle special format for apps that need file context: "appId:nodeId"
+    let actualId = id;
+    let nodeId: string | undefined;
+    
+    if (id.includes(':')) {
+      const parts = id.split(':');
+      actualId = parts[0];
+      nodeId = parts[1];
+    }
+    
     // First verify if this is an application and has its necessary program files
-    if (!verifyAppIntegrity(id)) {
-      throwAppIntegrityError(id);
+    if (!verifyAppIntegrity(actualId)) {
+      throwAppIntegrityError(actualId);
       return;
     }
 
     setWindows(prev => {
-      const winIndex = prev.findIndex(w => w.id === id);
+      const winIndex = prev.findIndex(w => w.id === actualId);
       if (winIndex === -1) return prev;
       const win = prev[winIndex];
       const newWindows = [...prev];
 
       // Center control_panel on every open so it always spawns in the middle
       let posOverride: { x?: number; y?: number } = {};
-      if (id === 'control_panel') {
+      if (actualId === 'control_panel') {
         const { w, h } = deskDimsRef.current;
         const winW = win.width || 460;
         const winH = win.height || 600;
@@ -1021,7 +1095,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         };
       }
       
-      newWindows[winIndex] = { ...win, ...posOverride, isOpen: true, isMinimized: false };
+      newWindows[winIndex] = { ...win, ...posOverride, isOpen: true, isMinimized: false, ...(nodeId ? { nodeId } : {}) };
       const openedWin = newWindows.splice(winIndex, 1)[0];
       newWindows.push(openedWin);
       
@@ -1123,7 +1197,55 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
       });
     };
     window.addEventListener("launch-app", onLaunchApp);
-    return () => window.removeEventListener("launch-app", onLaunchApp);
+
+    // Plugin window shell control APIs
+    const onPluginSetTitle = (e: Event) => {
+      const { windowId, title } = (e as CustomEvent).detail;
+      setWindows(prev => prev.map(w => w.id === windowId ? { ...w, title } : w));
+    };
+    const onPluginResize = (e: Event) => {
+      const { windowId, width, height } = (e as CustomEvent).detail;
+      setWindows(prev => prev.map(w => w.id === windowId ? { ...w, width, height } : w));
+    };
+    const onPluginMove = (e: Event) => {
+      const { windowId, x, y } = (e as CustomEvent).detail;
+      setWindows(prev => prev.map(w => w.id === windowId ? { ...w, x, y } : w));
+    };
+    const onPluginClose = (e: Event) => {
+      const { windowId } = (e as CustomEvent).detail;
+      setWindows(prev => prev.map(w => w.id === windowId ? { ...w, isOpen: false, isMinimized: false, isMaximized: false } : w));
+    };
+    const onPluginMinimize = (e: Event) => {
+      const { windowId } = (e as CustomEvent).detail;
+      setWindows(prev => prev.map(w => w.id === windowId ? { ...w, isMinimized: true } : w));
+    };
+    const onPluginMaximize = (e: Event) => {
+      const { windowId } = (e as CustomEvent).detail;
+      setWindows(prev => prev.map(w => w.id === windowId ? { ...w, isMaximized: !w.isMaximized } : w));
+    };
+    const onPluginAlwaysOnTop = (e: Event) => {
+      const { windowId, value } = (e as CustomEvent).detail;
+      setWindows(prev => prev.map(w => w.id === windowId ? { ...w, alwaysOnTop: !!value } : w));
+    };
+
+    window.addEventListener('vespera-plugin-set-title', onPluginSetTitle);
+    window.addEventListener('vespera-plugin-resize', onPluginResize);
+    window.addEventListener('vespera-plugin-move', onPluginMove);
+    window.addEventListener('vespera-plugin-close', onPluginClose);
+    window.addEventListener('vespera-plugin-minimize', onPluginMinimize);
+    window.addEventListener('vespera-plugin-maximize', onPluginMaximize);
+    window.addEventListener('vespera-plugin-always-on-top', onPluginAlwaysOnTop);
+
+    return () => {
+      window.removeEventListener("launch-app", onLaunchApp);
+      window.removeEventListener('vespera-plugin-set-title', onPluginSetTitle);
+      window.removeEventListener('vespera-plugin-resize', onPluginResize);
+      window.removeEventListener('vespera-plugin-move', onPluginMove);
+      window.removeEventListener('vespera-plugin-close', onPluginClose);
+      window.removeEventListener('vespera-plugin-minimize', onPluginMinimize);
+      window.removeEventListener('vespera-plugin-maximize', onPluginMaximize);
+      window.removeEventListener('vespera-plugin-always-on-top', onPluginAlwaysOnTop);
+    };
   }, [vfs.nodes]);
 
   // Bridge for ControlPanel to launch the AgentV PLUS! Setup Wizard
@@ -1214,6 +1336,9 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     const line = raw.trim();
     if (!line) {
       playErrorSound();
+      window.dispatchEvent(new CustomEvent('vespera-system-error', {
+        detail: { type: 'Input Error', title: 'Cannot Start Program', message: 'Please type a program name, folder, or document to open.', fatal: false }
+      }));
       return;
     }
 
@@ -1232,6 +1357,9 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     const { command, args } = parseRunLine(line);
     if (!command) {
       playErrorSound();
+      window.dispatchEvent(new CustomEvent('vespera-system-error', {
+        detail: { type: 'Command Error', title: 'Invalid Command', message: `Cannot recognize the command "${line}".`, fatal: false }
+      }));
       return;
     }
 
@@ -1249,6 +1377,9 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         return;
       }
       playErrorSound();
+      window.dispatchEvent(new CustomEvent('vespera-system-error', {
+        detail: { type: 'File Not Found', title: 'Cannot Find File', message: `Cannot find a file named "${args}". Please check the file name and try again.`, fatal: false }
+      }));
       return;
     }
 
@@ -1288,6 +1419,9 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     }
 
     playErrorSound();
+    window.dispatchEvent(new CustomEvent('vespera-system-error', {
+      detail: { type: 'Command Error', title: 'Cannot Find Program', message: `Cannot find the program "${command}". Make sure you typed the name correctly, and then try again.`, fatal: false }
+    }));
   };
 
   const renderWindowContent = (id: string) => {
@@ -1510,9 +1644,26 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           />
         );
       case "workbench":
-          return <AetherisWorkbench />;
-        case "open_dos":
-          return <OpenDOSPrompt onReboot={onReboot} neuralBridgeActive={neuralBridgeActive} neuralBridgeEnabled={neuralBridgeEnabled} />;
+        const wbWin = windows.find(w => w.id === "workbench");
+        return (
+          <AetherisWorkbench
+            vfs={vfs}
+            initialProjectFileId={wbWin?.nodeId}
+            onOpenSetupWizard={(manifest: AppManifest) => {
+              setActivePluginSetup(manifest);
+              addWindow({
+                id: `plugin_${manifest.id}_setup`,
+                title: `${manifest.name} Setup`,
+                x: 180, y: 100, width: 580, height: 460,
+              });
+              openWindow(`plugin_${manifest.id}_setup`);
+            }}
+          />
+        );
+      case "minecraft_classic":
+        return <MinecraftClassic />;
+      case "open_dos":
+        return <OpenDOSPrompt onReboot={onReboot} neuralBridgeActive={neuralBridgeActive} neuralBridgeEnabled={neuralBridgeEnabled} />;
       case "versa_edit":
         return <VesperaWrite vfs={vfs} fileId={activeFileId} onClose={() => closeWindow("versa_edit", { stopPropagation: () => {} } as any)} onSave={(content) => {
           if (activeFileId) {
@@ -1536,7 +1687,18 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
       case "help":
         return <HelpViewer />;
       case "media_player":
-        return <VersaMediaPlayer />;
+        return (
+          <VersaMediaPlayer
+            onOpenVideoPopup={(videoUrl, title) => {
+              // Store video info in window state and open popup
+              setWindows(prev => prev.map(w => w.id === "video_player_popup" ? { ...w, isOpen: true, isMinimized: false, videoUrl, videoTitle: title } : w));
+              bringToFront("video_player_popup");
+            }}
+          />
+        );
+      case "video_player_popup":
+        const popupWin = windows.find(w => w.id === "video_player_popup");
+        return <VideoPlayerPopup onClose={() => closeWindow("video_player_popup", { stopPropagation: () => {} } as any)} videoUrl={popupWin?.videoUrl} videoTitle={popupWin?.videoTitle} />;
       case "vstore":
         return <VStore onInstallApp={(id) => {
           // ── Community / plugin app: route to ThirdPartySetupWizard ──
@@ -1584,7 +1746,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
             width: 560,
             height: 440,
           });
-        }} installedApps={installedApps} vfs={vfs}
+        }} installedApps={installedApps} vfs={vfs} konamiUnlocked={konamiUnlocked}
         onOpenSetupWizard={(manifest: AppManifest) => {
           // Open the ThirdPartySetupWizard for a freshly imported plugin
           setActivePluginSetup(manifest);
@@ -2468,6 +2630,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
             <DesktopWindow
               key={win.id}
               winId={win.id}
+              disableDrag={win.id === 'minecraft_classic' && minecraftActive}
               dragConstraints={win.isMaximized ? false : desktopRef}
               onDragEnd={(e: any, info: any) => {
                 // Ensure some part of the window (at least the title bar) stays on screen
@@ -2498,8 +2661,8 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
             >
               {(dragControls: any) => (
                 <>
-                  {/* Resize handles — only on non-maximized windows */}
-                  {!win.isMaximized && !isPersistentMinimized && win.id !== 'vsweeper' && (
+                  {/* Resize handles — only on non-maximized windows, disabled for active Minecraft */}
+                  {!win.isMaximized && !isPersistentMinimized && win.id !== 'vsweeper' && !(win.id === 'minecraft_classic' && minecraftActive) && (
                     <>
                       {/* Edges */}
                       <div onMouseDown={e => startResize(e, win.id, 'n')}  style={{ position:'absolute', top:-4,    left:8,    right:8,   height:8,  cursor:'ns-resize',   zIndex:10 }} />
@@ -2516,7 +2679,8 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                   {/* Motif-style Titlebar — colors follow Task Menu theme */}
                   <div
                     onPointerDown={(e) => {
-                      if (!win.isMaximized && !resizing && !isPersistentMinimized) {
+                      // Disable dragging for Minecraft window when active (to allow game mouse capture)
+                      if (!win.isMaximized && !resizing && !isPersistentMinimized && !(win.id === 'minecraft_classic' && minecraftActive)) {
                         dragControls.start(e);
                       }
                     }}
@@ -3857,26 +4021,26 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
       {/* Missing Dependencies Error Modal */}
       {appLaunchError && (
         <div className="absolute inset-0 z-[10000] flex items-center justify-center bg-black/40">
-          <div className="w-[350px] bg-[#c0c0c0] shadow-[2px_2px_0_#000,-2px_-2px_0_#dfdfdf,2px_-2px_0_#000,-2px_2px_0_#dfdfdf] border-2 border-white flex flex-col p-0.5 pointer-events-auto">
-            <div className="bg-gradient-to-r from-[#000080] to-[#1084d0] px-2 py-1 text-white font-bold tracking-wider relative flex justify-between items-center text-sm">
+          <div className="w-[280px] bg-[#c0c0c0] shadow-[2px_2px_0_#000,-2px_-2px_0_#dfdfdf,2px_-2px_0_#000,-2px_2px_0_#dfdfdf] border-2 border-white flex flex-col p-0.5 pointer-events-auto">
+            <div className="bg-gradient-to-r from-[#000080] to-[#1084d0] px-2 py-0.5 text-white font-bold tracking-wider relative flex justify-between items-center text-xs">
               <span className="truncate">{appLaunchError.title}</span>
               <button 
                 onClick={() => setAppLaunchError(null)} 
-                className="w-4 h-4 bg-[#c0c0c0] border border-white border-b-gray-800 border-r-gray-800 flex items-center justify-center text-black font-bold outline-none font-mono text-[10px] hover:active:border-t-gray-800 hover:active:border-l-gray-800 hover:active:border-b-white hover:active:border-r-white"
+                className="w-3 h-3 bg-[#c0c0c0] border border-white border-b-gray-800 border-r-gray-800 flex items-center justify-center text-black font-bold outline-none font-mono text-[8px] hover:active:border-t-gray-800 hover:active:border-l-gray-800 hover:active:border-b-white hover:active:border-r-white"
               >
                 X
               </button>
             </div>
-            <div className="p-4 flex flex-row gap-4 items-start bg-[#c0c0c0]">
-              <div className="shrink-0 w-8 h-8 rounded-full bg-red-600 border border-t-gray-800 border-l-gray-800 border-b-white border-r-white flex items-center justify-center text-white font-bold text-xl shadow-md">
+            <div className="p-3 flex flex-row gap-3 items-start bg-[#c0c0c0]">
+              <div className="shrink-0 w-6 h-6 rounded-full bg-red-600 border border-t-gray-800 border-l-gray-800 border-b-white border-r-white flex items-center justify-center text-white font-bold text-sm shadow-md">
                 X
               </div>
-              <p className="text-black text-sm whitespace-pre-wrap">{appLaunchError.message}</p>
+              <p className="text-black text-xs whitespace-pre-wrap leading-tight">{appLaunchError.message}</p>
             </div>
-            <div className="p-3 flex justify-center border-t border-gray-400 bg-[#c0c0c0]">
+            <div className="p-2 flex justify-center border-t border-gray-400 bg-[#c0c0c0]">
               <button 
                 onClick={() => setAppLaunchError(null)} 
-                className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-black outline-none active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white focus:outline-dotted focus:outline-1 focus:-outline-offset-4 focus:outline-black font-bold"
+                className="px-4 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-black text-xs outline-none active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white focus:outline-dotted focus:outline-1 focus:-outline-offset-4 focus:outline-black font-bold"
               >
                 OK
               </button>
@@ -3889,34 +4053,34 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
       {systemWarnings.map((warning, index) => {
         const metaInfo = warning.pluginId ? (APP_DICTIONARY[warning.pluginId] || APP_DICTIONARY['default']) : null;
         return (
-          <div key={warning.id} className="absolute inset-0 z-[99999] flex items-center justify-center pointer-events-none" style={{ marginTop: index * 24, marginLeft: index * 24 }}>
-            <div className="w-[450px] bg-[#c0c0c0] shadow-[2px_2px_0_#000,-2px_-2px_0_#dfdfdf,2px_-2px_0_#000,-2px_2px_0_#dfdfdf] border-2 border-white flex flex-col p-0.5 pointer-events-auto">
-              <div className="bg-gradient-to-r from-[#000080] to-[#1084d0] px-2 py-1 text-white font-bold tracking-wider flex justify-between items-center text-sm">
+          <div key={warning.id} className="absolute inset-0 z-[99999] flex items-center justify-center pointer-events-none" style={{ marginTop: index * 20, marginLeft: index * 20 }}>
+            <div className="w-[320px] bg-[#c0c0c0] shadow-[2px_2px_0_#000,-2px_-2px_0_#dfdfdf,2px_-2px_0_#000,-2px_2px_0_#dfdfdf] border-2 border-white flex flex-col p-0.5 pointer-events-auto">
+              <div className="bg-gradient-to-r from-[#000080] to-[#1084d0] px-2 py-0.5 text-white font-bold tracking-wider flex justify-between items-center text-xs">
                 <span className="truncate">{warning.type || 'System Warning'}</span>
                 <button 
                   onClick={() => setSystemWarnings(w => w.filter(x => x.id !== warning.id))} 
-                  className="w-4 h-4 bg-[#c0c0c0] border border-white border-b-gray-800 border-r-gray-800 flex items-center justify-center text-black font-bold outline-none font-mono text-[10px] hover:active:border-t-gray-800 hover:active:border-l-gray-800 hover:active:border-b-white hover:active:border-r-white"
+                  className="w-3 h-3 bg-[#c0c0c0] border border-white border-b-gray-800 border-r-gray-800 flex items-center justify-center text-black font-bold outline-none font-mono text-[8px] hover:active:border-t-gray-800 hover:active:border-l-gray-800 hover:active:border-b-white hover:active:border-r-white"
                 >X</button>
               </div>
-              <div className="p-4 flex flex-row gap-4 items-start bg-[#c0c0c0]">
-                <div className="shrink-0 w-8 h-8 flex items-center justify-center">
+              <div className="p-3 flex flex-row gap-3 items-start bg-[#c0c0c0]">
+                <div className="shrink-0 w-6 h-6 flex items-center justify-center">
                   {metaInfo ? (
                      metaInfo.customIcon ? (
-                        <img src={metaInfo.customIcon} alt="Icon" className="w-8 h-8 drop-shadow-md" style={{ imageRendering: 'pixelated' }} />
-                     ) : <metaInfo.icon size={32} className={metaInfo.color} />
+                        <img src={metaInfo.customIcon} alt="Icon" className="w-6 h-6 drop-shadow-md" style={{ imageRendering: 'pixelated' }} />
+                     ) : <metaInfo.icon size={24} className={metaInfo.color} />
                   ) : (
-                     <div className="w-8 h-8 rounded-full bg-yellow-500 border border-t-gray-800 border-l-gray-800 border-b-white border-r-white flex items-center justify-center text-black font-bold text-xl shadow-md">!</div>
+                     <div className="w-6 h-6 rounded-full bg-yellow-500 border border-t-gray-800 border-l-gray-800 border-b-white border-r-white flex items-center justify-center text-black font-bold text-sm shadow-md">!</div>
                   )}
                 </div>
-                <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                  <span className="font-bold text-sm text-black">{warning.title}</span>
-                  <p className="text-black text-xs whitespace-pre-wrap leading-relaxed max-h-[200px] overflow-y-auto">{warning.message}</p>
+                <div className="flex flex-col gap-1 flex-1 min-w-0">
+                  <span className="font-bold text-xs text-black">{warning.title}</span>
+                  <p className="text-black text-xs whitespace-pre-wrap leading-tight max-h-[150px] overflow-y-auto">{warning.message}</p>
                 </div>
               </div>
-              <div className="p-3 flex justify-center border-t border-gray-400 bg-[#c0c0c0]">
+              <div className="p-2 flex justify-center border-t border-gray-400 bg-[#c0c0c0]">
                 <button 
                   onClick={() => setSystemWarnings(w => w.filter(x => x.id !== warning.id))} 
-                  className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-black font-bold active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white focus:outline-dotted focus:outline-1 focus:-outline-offset-4 focus:outline-black"
+                  className="px-4 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-black text-xs font-bold active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white focus:outline-dotted focus:outline-1 focus:-outline-offset-4 focus:outline-black"
                 >OK</button>
               </div>
             </div>
