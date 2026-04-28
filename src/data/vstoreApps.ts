@@ -363,6 +363,28 @@ export const VSTORE_APPS: VStoreApp[] = [
 
   // ── Productivity ──
   {
+    id: 'versaslide',
+    name: 'VersaSlide Presentation Suite',
+    developer: 'Forethought, Inc.',
+    version: '1.0',
+    size: '9.2 MB',
+    icon: Layers,
+    customIcon: '/Icons/bar_graph-1.png',
+    color: 'text-orange-500',
+    category: ['Featured Apps', 'Productivity'],
+    description: 'Create, design, and deliver stunning presentations right from your Vespera OS desktop. Developed by Forethought, Inc. and published by Vespera Systems. VersaSlide features a full slide editor with drag-and-drop text boxes, shapes, and images, 5 built-in professional themes, full-screen slideshow mode with keyboard navigation, and seamless save/load to your Documents folder.',
+    requirements: '486DX, 8MB RAM, VGA 256-color display, Mouse',
+    screenshotUrl: 'https://placehold.co/400x300/1a1a3e/FF8C00/png?text=VersaSlide+Editor',
+    functional: true,
+    rating: 4.6,
+    downloadCount: 12840,
+    reviews: [
+      { user: 'Vspr_Admin', date: '1996-11-10', rating: 5, text: 'Finally a real presentation tool on Vespera OS. Slide themes are gorgeous and the slideshow mode is smooth.' },
+      { user: 'DataDriven_Dax', date: '1996-10-29', rating: 4, text: 'Drag-and-drop canvas is intuitive. Wish it had more export options, but for 1996 this is impressive.' },
+      { user: 'CorpMonkey96', date: '1996-10-15', rating: 5, text: 'Used this for a board presentation. Bosses were stunned. 10/10 would deploy again.' },
+    ],
+  },
+  {
     id: 'vmail',
     name: 'VMail Client',
     developer: 'Vespera Systems',

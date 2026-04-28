@@ -14,6 +14,8 @@ import {
   type WorkbenchSettings, type StorageMode,
 } from '../utils/workbenchProjects';
 import { System, executePlugin } from '../utils/systemRegistry';
+import { VesperaSplash } from './VesperaSplash';
+import { VersaSlideFilePicker } from './VersaSlideFilePicker';
 
 interface LogEntry {
   text: string;
@@ -51,6 +53,18 @@ function jsHighlight(code: string): string {
 
 export const AetherisWorkbench: React.FC<AetherisWorkbenchProps> = ({ vfs, onOpenSetupWizard, initialProjectFileId }) => {
   const [view, setView] = useState<'projects' | 'editor'>('projects');
+  
+  // Splash Screen State
+  const [splashDone, setSplashDone] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const parentWin = containerRef.current?.closest('.absolute.bg-\\[\\#c0c0c0\\]') as HTMLElement;
+    if (parentWin) {
+      parentWin.style.visibility = splashDone ? 'visible' : 'hidden';
+    }
+  }, [splashDone]);
+
   const [projects, setProjects] = useState<WorkbenchProject[]>([]);
   const [project, setProject] = useState<WorkbenchProject | null>(null);
   const [selectedFileId, setSelectedFileId] = useState<string>('');
@@ -59,6 +73,9 @@ export const AetherisWorkbench: React.FC<AetherisWorkbenchProps> = ({ vfs, onOpe
   const [showMetadata, setShowMetadata] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showFolderPicker, setShowFolderPicker] = useState(false);
+  const [showSavePicker, setShowSavePicker] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [settings, setSettings] = useState<WorkbenchSettings>(getWorkbenchSettings());
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -152,26 +169,18 @@ export const AetherisWorkbench: React.FC<AetherisWorkbenchProps> = ({ vfs, onOpe
     if (!project) return;
     // Save based on storage mode
     if (settings.storageMode === 'vfs' && vfs) {
-      // Save as .awj file to VFS
-      const fileName = getProjectFileName(project.name);
-      const content = serializeProject(project);
-      const parentId = settings.vfsSaveLocation;
-      
-      // Check if file already exists and update it, or create new
-      const existingNode = vfs.nodes?.find((n: any) => n.name === fileName && n.parentId === parentId);
-      if (existingNode) {
-        vfs.updateFileContent(existingNode.id, content);
+      if (project.vfsNodeId) {
+        // Update existing file silently
+        const content = serializeProject(project);
+        vfs.updateFileContent(project.vfsNodeId, content);
+        const saved = saveProject(project);
+        setProject(saved);
+        refreshProjects();
+        addLog(`> Project "${saved.name}" updated in VFS.`, 'success');
       } else {
-        const newNode = vfs.createNode(fileName, 'file', parentId, content);
-        // Store the VFS node ID in the project
-        project.vfsNodeId = newNode.id;
+        // First time saving to VFS, show picker
+        setShowSavePicker(true);
       }
-      
-      // Still save metadata to localStorage for quick listing
-      const saved = saveProject({ ...project, vfsNodeId: project.vfsNodeId });
-      setProject(saved);
-      refreshProjects();
-      addLog(`> Project "${saved.name}" saved to VFS as ${fileName}.`, 'success');
     } else {
       // localStorage mode (default)
       const saved = saveProject({ ...project, vfsNodeId: null });
@@ -464,7 +473,18 @@ export const AetherisWorkbench: React.FC<AetherisWorkbenchProps> = ({ vfs, onOpe
   // ── RENDER: Projects List ───────────────────────────────────────────────
   if (view === 'projects') {
     return (
-      <div className="flex flex-col h-full bg-[#c0c0c0] text-black font-sans text-[11px] select-none">
+      <div ref={containerRef} className="flex flex-col h-full bg-[#c0c0c0] text-black font-sans text-[11px] select-none">
+        {!splashDone && (
+          <VesperaSplash
+            appName="AETHERIS"
+            subtitle="Workbench Pro"
+            version="Version 2.0"
+            developer="Vespera Systems"
+            icon="/Icons/notepad_file_gear-0.png"
+            durationMs={2000}
+            onDone={() => setSplashDone(true)}
+          />
+        )}
         <div className="flex gap-4 px-2 py-1 border-b border-gray-500">
           <span className="hover:bg-[#000080] hover:text-white px-1 cursor-pointer"><span className="underline">F</span>ile</span>
           <span className="hover:bg-[#000080] hover:text-white px-1 cursor-pointer"><span className="underline">E</span>dit</span>
@@ -526,13 +546,64 @@ export const AetherisWorkbench: React.FC<AetherisWorkbenchProps> = ({ vfs, onOpe
 
   // ── RENDER: Editor ──────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-full bg-[#c0c0c0] text-black font-sans text-[11px] select-none">
-      <div className="flex gap-4 px-2 py-1 border-b border-gray-500">
-        <span className="hover:bg-[#000080] hover:text-white px-1 cursor-pointer"><span className="underline">F</span>ile</span>
-        <span className="hover:bg-[#000080] hover:text-white px-1 cursor-pointer"><span className="underline">E</span>dit</span>
-        <span className="hover:bg-[#000080] hover:text-white px-1 cursor-pointer" onClick={() => setShowMetadata(true)}><span className="underline">P</span>roject</span>
-        <span className="hover:bg-[#000080] hover:text-white px-1 cursor-pointer" onClick={() => setShowSettings(true)}><span className="underline">S</span>ettings</span>
-        <span className="hover:bg-[#000080] hover:text-white px-1 cursor-pointer" onClick={() => setShowHelp(true)}><span className="underline">H</span>elp</span>
+    <div ref={containerRef} className="flex flex-col h-full bg-[#c0c0c0] text-black font-sans text-[11px] select-none">
+      {!splashDone && (
+        <VesperaSplash
+          appName="AETHERIS"
+          subtitle="Workbench Pro"
+          version="Version 2.0"
+          developer="Vespera Systems"
+          icon="/Icons/notepad_file_gear-0.png"
+          durationMs={2000}
+          onDone={() => setSplashDone(true)}
+        />
+      )}
+      <div className="flex gap-4 px-2 py-1 border-b border-gray-500 relative">
+        {activeMenu && <div className="fixed inset-0 z-40" onClick={() => setActiveMenu(null)} />}
+        
+        {/* File Menu */}
+        <div className="relative">
+          <span 
+            className={`px-1 cursor-pointer select-none ${activeMenu === 'file' ? 'bg-[#000080] text-white' : 'hover:bg-[#000080] hover:text-white'}`}
+            onClick={() => setActiveMenu(activeMenu === 'file' ? null : 'file')}
+          >
+            <span className="underline">F</span>ile
+          </span>
+          {activeMenu === 'file' && (
+            <div className="absolute top-[120%] left-0 w-40 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0_rgba(0,0,0,0.3)] z-50 text-black py-1">
+              <div className="px-4 py-1 hover:bg-[#000080] hover:text-white cursor-pointer" onClick={() => { setActiveMenu(null); handleNewProject(); }}>New Project</div>
+              <div className="px-4 py-1 hover:bg-[#000080] hover:text-white cursor-pointer" onClick={() => { setActiveMenu(null); setView('projects'); }}>Open Project...</div>
+              <div className="border-t border-gray-500 my-1 mx-1"></div>
+              <div className="px-4 py-1 hover:bg-[#000080] hover:text-white cursor-pointer" onClick={() => { setActiveMenu(null); handleSaveProject(); }}>Save Project</div>
+              <div className="px-4 py-1 hover:bg-[#000080] hover:text-white cursor-pointer" onClick={() => { setActiveMenu(null); setShowSavePicker(true); }}>Save Project As...</div>
+              <div className="border-t border-gray-500 my-1 mx-1"></div>
+              <div className="px-4 py-1 hover:bg-[#000080] hover:text-white cursor-pointer" onClick={() => { setActiveMenu(null); handleExportProject(); }}>Export to OS</div>
+            </div>
+          )}
+        </div>
+
+        {/* Edit Menu */}
+        <div className="relative">
+          <span 
+            className={`px-1 cursor-pointer select-none ${activeMenu === 'edit' ? 'bg-[#000080] text-white' : 'hover:bg-[#000080] hover:text-white'}`}
+            onClick={() => setActiveMenu(activeMenu === 'edit' ? null : 'edit')}
+          >
+            <span className="underline">E</span>dit
+          </span>
+          {activeMenu === 'edit' && (
+            <div className="absolute top-[120%] left-0 w-32 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0_rgba(0,0,0,0.3)] z-50 text-black py-1">
+              <div className="px-4 py-1 hover:bg-[#000080] hover:text-white cursor-pointer opacity-50" onClick={() => setActiveMenu(null)}>Undo</div>
+              <div className="border-t border-gray-500 my-1 mx-1"></div>
+              <div className="px-4 py-1 hover:bg-[#000080] hover:text-white cursor-pointer opacity-50" onClick={() => setActiveMenu(null)}>Cut</div>
+              <div className="px-4 py-1 hover:bg-[#000080] hover:text-white cursor-pointer opacity-50" onClick={() => setActiveMenu(null)}>Copy</div>
+              <div className="px-4 py-1 hover:bg-[#000080] hover:text-white cursor-pointer opacity-50" onClick={() => setActiveMenu(null)}>Paste</div>
+            </div>
+          )}
+        </div>
+
+        <span className="hover:bg-[#000080] hover:text-white px-1 cursor-pointer select-none" onClick={() => setShowMetadata(true)}><span className="underline">P</span>roject</span>
+        <span className="hover:bg-[#000080] hover:text-white px-1 cursor-pointer select-none" onClick={() => setShowSettings(true)}><span className="underline">S</span>ettings</span>
+        <span className="hover:bg-[#000080] hover:text-white px-1 cursor-pointer select-none" onClick={() => setShowHelp(true)}><span className="underline">H</span>elp</span>
       </div>
 
       {/* Toolbar */}
@@ -758,11 +829,19 @@ export const AetherisWorkbench: React.FC<AetherisWorkbenchProps> = ({ vfs, onOpe
               <ul className="list-disc pl-4 space-y-0.5">
                 <li><code>System.alert(title, message)</code> — Shows a non-fatal error dialog with an error sound. Use for validation errors, missing files, or unexpected conditions.</li>
                 <li><code>System.confirm(title, message)</code> — Shows a blocking confirm dialog with OK/Cancel. Returns <code>true</code> if OK clicked, <code>false</code> otherwise. Use for destructive actions like delete, quit, or overwrite.</li>
-                <li><code>System.reportError({`{`} type, title, message, fatal {`}`})</code> — Report a system error. If <code>fatal: true</code>, triggers the Blue Screen of Death. All errors are logged to <code>C:\VESPERA\PROGRAMS\SYSTEM\LOGS\ERROR.LOG</code>.</li>
+                <li><code>System.reportError({`{`} type, title, message, fatal {`}`})</code> — Report a system error. If <code>fatal: true</code>, triggers the Blue Screen of Death. All errors are logged to <code>C:\Vespera\System\Logs\ERROR.LOG</code>.</li>
               </ul>
               <p className="text-orange-700 font-bold">Note: Error dialogs play the classic Vespera error sound automatically. Confirm dialogs use the native browser confirm (blocking) for retro authenticity.</p>
 
-              <h3 className="font-bold text-[#000080] text-xs border-b border-gray-400 pb-0.5 mt-2">2b. Window Shell Control API</h3>
+              <h3 className="font-bold text-[#000080] text-xs border-b border-gray-400 pb-0.5 mt-2">2b. Media & System Info</h3>
+              <p>Access system hardware parameters, media, and loading screens:</p>
+              <ul className="list-disc pl-4 space-y-0.5">
+                <li><code>System.showSplash({`{`} appName, subtitle, icon, version {`}`})</code> — Display the native Vespera OS loading splash screen over your app.</li>
+                <li><code>System.playSound(id)</code> — Play a system sound. Available IDs: <code>startup</code>, <code>error</code>, <code>ding</code>, <code>chimes</code>, <code>chord</code>, <code>tada</code>.</li>
+                <li><code>System.getSystemInfo()</code> — Retrieve hardware and OS specs (CPU, Memory, Display, Version).</li>
+              </ul>
+
+              <h3 className="font-bold text-[#000080] text-xs border-b border-gray-400 pb-0.5 mt-2">2c. Window Shell Control API</h3>
               <p>Your app runs inside a standard Vespera OS window shell with a title bar, border, and chrome buttons. You can control this shell directly from your code:</p>
               <ul className="list-disc pl-4 space-y-0.5">
                 <li><code>System.setTitle(title)</code> — Dynamically change the window title bar text.</li>
@@ -892,6 +971,56 @@ export const AetherisWorkbench: React.FC<AetherisWorkbenchProps> = ({ vfs, onOpe
         </div>
       )}
 
+      {/* Save File Picker */}
+      {showSavePicker && (
+        <VersaSlideFilePicker
+          vfs={vfs}
+          defaultName={project ? getProjectFileName(project.name) : ''}
+          folderOnly={false}
+          allowedExtensions={[{ value: '.awj', label: 'AETHERIS Workbench Project (*.awj)' }]}
+          title="Save Project As..."
+          onConfirm={(folderId, filename) => {
+            if (!project) return;
+            const content = serializeProject(project);
+            
+            // Check if file exists in that folder
+            const existingNode = vfs.nodes?.find((n: any) => n.name === filename && n.parentId === folderId);
+            let newNodeId = '';
+            
+            if (existingNode) {
+              vfs.updateFileContent(existingNode.id, content);
+              newNodeId = existingNode.id;
+            } else {
+              const newNode = vfs.createNode(filename, 'file', folderId, content);
+              newNodeId = newNode.id;
+            }
+            
+            const saved = saveProject({ ...project, vfsNodeId: newNodeId });
+            setProject(saved);
+            refreshProjects();
+            addLog(`> Project "${saved.name}" saved to VFS as ${filename}.`, 'success');
+            setShowSavePicker(false);
+          }}
+          onCancel={() => setShowSavePicker(false)}
+        />
+      )}
+
+      {/* Folder Picker */}
+      {showFolderPicker && (
+        <VersaSlideFilePicker
+          vfs={vfs}
+          folderOnly={true}
+          onConfirm={(folderId) => {
+            const newSettings = { ...settings, vfsSaveLocation: folderId };
+            setSettings(newSettings);
+            setWorkbenchSettings(newSettings);
+            setShowFolderPicker(false);
+            addLog(`> VFS Save Location changed to: ${folderId}`, 'success');
+          }}
+          onCancel={() => setShowFolderPicker(false)}
+        />
+      )}
+
       {/* Settings Dialog */}
       {showSettings && (
         <div className="absolute inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
@@ -924,16 +1053,24 @@ export const AetherisWorkbench: React.FC<AetherisWorkbenchProps> = ({ vfs, onOpe
               {settings.storageMode === 'vfs' && (
                 <div>
                   <label className="block font-bold mb-1">VFS Save Location</label>
-                  <input
-                    value={settings.vfsSaveLocation}
-                    onChange={(e) => {
-                      const newSettings = { ...settings, vfsSaveLocation: e.target.value };
-                      setSettings(newSettings);
-                      setWorkbenchSettings(newSettings);
-                    }}
-                    placeholder="Enter directory node ID (e.g., 'documents')"
-                    className="w-full border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white px-1 py-0.5 outline-none bg-white"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      value={settings.vfsSaveLocation}
+                      onChange={(e) => {
+                        const newSettings = { ...settings, vfsSaveLocation: e.target.value };
+                        setSettings(newSettings);
+                        setWorkbenchSettings(newSettings);
+                      }}
+                      placeholder="Enter directory node ID (e.g., 'documents')"
+                      className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white px-1 py-0.5 outline-none bg-white"
+                    />
+                    <button
+                      onClick={() => setShowFolderPicker(true)}
+                      className="px-3 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-[11px] font-bold"
+                    >
+                      Browse...
+                    </button>
+                  </div>
                   <p className="text-[10px] text-gray-600 mt-1">
                     The VFS directory node ID where .awj project files will be saved. Default is 'documents'.
                   </p>

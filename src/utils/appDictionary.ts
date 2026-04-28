@@ -1,9 +1,9 @@
-import { Folder, Globe, Terminal, Activity, MessageSquare, Settings, Cpu, HardDrive, Monitor, Store, Ghost, FileText, Package, Mail, HelpCircle, Music, PenTool, Gamepad2, Wrench, Phone, ShieldCheck, Search, Disc3, Tv, Grid, Image as ImageIcon } from 'lucide-react';
+import { Folder, Globe, Terminal, Activity, MessageSquare, Settings, Cpu, HardDrive, Monitor, Store, Ghost, FileText, Package, Mail, HelpCircle, Music, PenTool, Gamepad2, Wrench, Phone, ShieldCheck, Search, Disc3, Tv, Grid, Image as ImageIcon, Layers } from 'lucide-react';
 
 export const APP_DICTIONARY: Record<string, { icon: any, customIcon?: string, color: string, defaultTitle: string, isSystem?: boolean }> = {
-  'files': { icon: Folder, customIcon: '/Icons/computer_explorer-5.png', color: 'text-yellow-400', defaultTitle: 'File Manager', isSystem: true },
+  'files': { icon: Folder, customIcon: '/Icons/Extra Icons/directory_explorer.ico', color: 'text-yellow-400', defaultTitle: 'File Manager', isSystem: true },
   'browser': { icon: Globe, customIcon: '/Icons/world-5.png', color: 'text-blue-300', defaultTitle: 'Vespera Navigator', isSystem: true },
-  'workbench': { icon: Terminal, customIcon: '/Icons/executable_gear-0.png', color: 'text-blue-400', defaultTitle: 'AETHERIS Workbench Pro', isSystem: true },
+  'workbench': { icon: Terminal, customIcon: '/Icons/Extra Icons/application_hammer_grouppol.ico', color: 'text-blue-400', defaultTitle: 'AETHERIS Workbench Pro', isSystem: true },
   'open_dos': { icon: Terminal, customIcon: '/Icons/ms_dos-0.png', color: 'text-gray-300', defaultTitle: 'Open-DOS Subsystem', isSystem: true },
   'analyzer': { icon: Activity, customIcon: '/Icons/bar_graph-1.png', color: 'text-green-400', defaultTitle: 'Data Analyzer', isSystem: true },
   'chat': { icon: MessageSquare, customIcon: '/Icons/message_envelope_open-0.png', color: 'text-purple-400', defaultTitle: 'Vespera Assistant', isSystem: true },
@@ -18,7 +18,7 @@ export const APP_DICTIONARY: Record<string, { icon: any, customIcon?: string, co
   'findfiles': { icon: Search, customIcon: '/Icons/search_computer-0.png', color: 'text-gray-700', defaultTitle: 'Find Files', isSystem: true },
   'media_player': { icon: Disc3, customIcon: '/Icons/media_player-1.png', color: 'text-purple-400', defaultTitle: 'VERSA Media Agent 2.0', isSystem: true },
   'dialup': { icon: Phone, customIcon: '/Icons/directory_dial_up_networking_cool-3.png', color: 'text-teal-600', defaultTitle: 'VesperaNET Dial-Up', isSystem: true },
-  'vstore': { icon: Store, customIcon: '/Icons/package-1.png', color: 'text-green-500', defaultTitle: 'VStore Software Exchange', isSystem: true },
+  'vstore': { icon: Store, customIcon: '/Icons/Extra Icons/world_star.ico', color: 'text-green-500', defaultTitle: 'VStore Software Exchange', isSystem: true },
   'v_messenger': { icon: MessageSquare, customIcon: '/Icons/msn_cool-3.png', color: 'text-blue-400', defaultTitle: 'Vespera Messenger' },
   'v_sonic': { icon: Music, customIcon: '/Icons/cd_audio_cd_a-4.png', color: 'text-orange-400', defaultTitle: 'Vespera Sonic' },
   'axis_paint': { icon: PenTool, customIcon: '/Icons/paint_old-0.png', color: 'text-red-500', defaultTitle: 'Axis Paint 2.0' },
@@ -31,14 +31,17 @@ export const APP_DICTIONARY: Record<string, { icon: any, customIcon?: string, co
   'packman_setup': { icon: Ghost, customIcon: '/Icons/pacman_icon.ico', color: 'text-yellow-500', defaultTitle: 'Pac-Man (x86) Setup' },
   'leave_me_alone': { icon: Gamepad2, customIcon: '/Games_VStore/Leave Me Alone/Leave_Me_Alone_Icon.png', color: 'text-[#8dc63f]', defaultTitle: 'Leave Me Alone' },
   'leave_me_alone_setup': { icon: Gamepad2, customIcon: '/Games_VStore/Leave Me Alone/Leave_Me_Alone_Icon.png', color: 'text-[#8dc63f]', defaultTitle: 'Leave Me Alone Setup' },
-  'retrotv': { icon: Tv, customIcon: '/Icons/movie_maker-3.png', color: 'text-purple-600', defaultTitle: 'Meridian. TV', isSystem: true },
+  'retrotv': { icon: Tv, customIcon: '/Icons/Extra Icons/channels.ico', color: 'text-purple-600', defaultTitle: 'Meridian. TV', isSystem: true },
   'remote_desktop': { icon: Monitor, customIcon: '/Icons/netmeeting-2.png', color: 'text-blue-600', defaultTitle: 'VesperaConnect Remote Desktop', isSystem: true },
   'vsweeper': { icon: Grid, customIcon: '/Icons/game_mine_1-0.png', color: 'text-gray-400', defaultTitle: 'V-Sweeper', isSystem: true },
   'aw_release_radar': { icon: Music, customIcon: '/Icons/multimedia-2.png', color: 'text-cyan-400', defaultTitle: 'AW Release Radar' },
   'pchords': { icon: Music, customIcon: '/Icons/pchords_icon.png', color: 'text-[#2968a3]', defaultTitle: 'PChords' },
   'task_manager': { icon: Activity, customIcon: '/Icons/processor-1.png', color: 'text-green-400', defaultTitle: 'Vespera Task Manager', isSystem: true },
   'versa_view': { icon: ImageIcon, customIcon: '/Icons/magnifying_glass_4-1.png', color: 'text-teal-600', defaultTitle: 'VersaView Image Viewer', isSystem: true },
-  'default': { icon: Package, customIcon: '/Icons/application_hourglass-0.png', color: 'text-gray-400', defaultTitle: 'Application' }
+  'versaslide': { icon: Layers, customIcon: '/Icons/Microsoft_PowerPoint_1995.svg', color: 'text-orange-500', defaultTitle: 'VersaSlide Presentation Suite' },
+  'versaslide_setup': { icon: Layers, customIcon: '/Icons/Microsoft_PowerPoint_1995.svg', color: 'text-orange-500', defaultTitle: 'VersaSlide Setup' },
+  'vmail': { icon: Mail, customIcon: '/Icons/Extra Icons/mailbox_world.ico', color: 'text-blue-500', defaultTitle: 'VesperaNet Mail', isSystem: true },
+  'default': { icon: Package, customIcon: '/Icons/Extra Icons/executable.ico', color: 'text-gray-400', defaultTitle: 'Application' }
 };
 
 export const getCompatibleApps = (filename: string): string[] => {
@@ -47,6 +50,8 @@ export const getCompatibleApps = (filename: string): string[] => {
   if (['png', 'jpg', 'jpeg', 'bmp', 'gif', 'webp', 'ico'].includes(ext)) return ['versa_view', 'axis_paint', 'browser'];
   if (['htm', 'html'].includes(ext)) return ['browser', 'versa_edit'];
   if (['mp3', 'wav', 'mid', 'ogg'].includes(ext)) return ['media_player'];
+  if (['pptx', 'vsp'].includes(ext)) return ['versaslide'];
+  if (['awj'].includes(ext)) return ['workbench'];
   return [];
 };
 

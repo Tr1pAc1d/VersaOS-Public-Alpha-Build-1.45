@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { executePlugin, getPlugin } from '../utils/systemRegistry';
+import { VesperaSplash } from './VesperaSplash';
 
 interface PluginSandboxProps {
   /** The manifest id (without the `plugin_` prefix). */
@@ -26,6 +27,8 @@ export const PluginSandbox: React.FC<PluginSandboxProps> = ({ pluginId }) => {
   const [pluginAuthor, setPluginAuthor] = useState('');
   const hasRun = useRef(false);
 
+  const [splashOptions, setSplashOptions] = useState<{ appName: string; subtitle?: string; icon?: string; version?: string } | null>(null);
+
   useEffect(() => {
     if (hasRun.current) return;
     hasRun.current = true;
@@ -45,6 +48,22 @@ export const PluginSandbox: React.FC<PluginSandboxProps> = ({ pluginId }) => {
 
     const errorMsg = executePlugin(manifest, containerRef.current);
     if (errorMsg) setError(errorMsg);
+  }, [pluginId]);
+
+  useEffect(() => {
+    const handleSplash = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail && detail.windowId === `plugin_${pluginId}`) {
+        setSplashOptions({
+          appName: detail.appName,
+          subtitle: detail.subtitle,
+          icon: detail.icon,
+          version: detail.version,
+        });
+      }
+    };
+    window.addEventListener('vespera-plugin-splash', handleSplash);
+    return () => window.removeEventListener('vespera-plugin-splash', handleSplash);
   }, [pluginId]);
 
   // ── Error state ────────────────────────────────────────────────────────────
@@ -77,10 +96,21 @@ export const PluginSandbox: React.FC<PluginSandboxProps> = ({ pluginId }) => {
 
   // ── Normal state ───────────────────────────────────────────────────────────
   return (
-    <div
-      ref={containerRef}
-      className="flex-1 w-full h-full overflow-auto bg-white"
-      style={{ minHeight: 0 }}
-    />
+    <div className="relative flex-1 w-full h-full">
+      <div
+        ref={containerRef}
+        className="w-full h-full overflow-auto bg-white"
+        style={{ minHeight: 0 }}
+      />
+      {splashOptions && (
+        <VesperaSplash
+          appName={splashOptions.appName}
+          subtitle={splashOptions.subtitle}
+          icon={splashOptions.icon}
+          version={splashOptions.version}
+          onDone={() => setSplashOptions(null)}
+        />
+      )}
+    </div>
   );
 };

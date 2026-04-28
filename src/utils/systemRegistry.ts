@@ -120,6 +120,12 @@ export interface VesperaSystemAPI {
   maximize: () => void;
   /** Sets the plugin window to stay on top of others. */
   setAlwaysOnTop: (value: boolean) => void;
+  /** Shows a Vespera-style splash screen over the plugin window. */
+  showSplash: (options: { appName: string; subtitle?: string; icon?: string; version?: string; durationMs?: number }) => void;
+  /** Plays a system sound by ID (e.g. 'startup', 'error', 'ding', 'chimes', 'chord'). */
+  playSound: (soundId: string) => void;
+  /** Retrieves hardware and OS information. */
+  getSystemInfo: () => { os: string; version: string; cpu: string; memory: string; display: string };
 }
 
 /**
@@ -191,6 +197,25 @@ function buildSystemAPI(manifest: AppManifest): VesperaSystemAPI {
       window.dispatchEvent(new CustomEvent('vespera-plugin-always-on-top', {
         detail: { windowId, value },
       }));
+    },
+    showSplash(options: { appName: string; subtitle?: string; icon?: string; version?: string; durationMs?: number }) {
+      window.dispatchEvent(new CustomEvent('vespera-plugin-splash', {
+        detail: { windowId, ...options },
+      }));
+    },
+    playSound(soundId: string) {
+      window.dispatchEvent(new CustomEvent('vespera-sound-play', {
+        detail: { soundId },
+      }));
+    },
+    getSystemInfo() {
+      return {
+        os: 'Vespera OS',
+        version: '1.45',
+        cpu: 'Virtual X-Type 1 Neural Bridge',
+        memory: '32MB EDO RAM',
+        display: 'VGA 640x480 256 Colors',
+      };
     },
   };
 }

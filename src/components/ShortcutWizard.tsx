@@ -4,7 +4,7 @@ import { Monitor } from 'lucide-react';
 
 interface ShortcutWizardProps {
   onClose: () => void;
-  onCreate: (name: string, target: string, iconType: string) => void;
+  onCreate: (name: string, target: string, customIcon?: string) => void;
   installedApps: string[];
 }
 
@@ -21,7 +21,7 @@ export const ShortcutWizard: React.FC<ShortcutWizardProps> = ({ onClose, onCreat
     .map(id => ({
       id,
       name: APP_DICTIONARY[id].defaultTitle,
-      iconType: APP_DICTIONARY[id].customIcon || 'app'
+      customIcon: APP_DICTIONARY[id].customIcon
     }));
 
   const [selectedApp, setSelectedApp] = useState(availableApps[0]?.id || '');
@@ -82,7 +82,7 @@ export const ShortcutWizard: React.FC<ShortcutWizardProps> = ({ onClose, onCreat
             onClick={() => {
               if (!selectedApp) return;
               const app = availableApps.find(a => a.id === selectedApp);
-              onCreate(shortcutName, selectedApp, app?.iconType || 'app');
+              onCreate(shortcutName, selectedApp, app?.customIcon);
             }}
             className="px-6 py-1 text-sm font-bold border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white focus:outline-none hover:bg-gray-200"
           >

@@ -41,6 +41,20 @@ const queue: QueuedItem[] = [];
 let globalVolumeScale = 1;
 let globalMuted = false;
 
+// Scheme overrides: maps SOUNDS key → replacement URL.
+// Set by applySchemeOverrides() from the Control Panel.
+let _schemeOverrides: Record<string, string> = {};
+
+/** Apply a sound scheme. Pass {} to reset to defaults. Persists key in sessionStorage so re-renders stay in sync. */
+export function applySchemeOverrides(overrides: Record<string, string>) {
+  _schemeOverrides = overrides;
+}
+
+/** Get the active src for a SOUNDS key (respects scheme override). */
+function resolveSound(key: keyof typeof SOUNDS): string {
+  return _schemeOverrides[key] ?? SOUNDS[key];
+}
+
 export function setGlobalVolumeScale(vol: number) {
   globalVolumeScale = vol;
   if (ambientEl) ambientEl.volume = 0.12 * globalVolumeScale;
@@ -113,24 +127,24 @@ export function playSound(src: string, volume = 1) {
   playSoundNow(src, volume);
 }
 
-export const playStartupSound = () => playSound(SOUNDS.startup);
-export const playShutdownSound = () => playSound(SOUNDS.shutdown);
-export const playAlertSound = () => playSound(SOUNDS.alert, 0.95);
-export const playErrorSound = () => playSound(SOUNDS.error);
-export const playFatalErrorSound = () => playSound(SOUNDS.fatalError);
-export const playInstallCompleteSound = () => playSound(SOUNDS.installComplete, 0.95);
-export const playBootAfterBiosSound = () => playSound(SOUNDS.bootAfterBios, 0.85);
-export const playBrowserBootSound = () => playSound(SOUNDS.browserBoot, 0.75);
-export const playDownloadFailedSound = () => playSound(SOUNDS.downloadFailed, 0.9);
-export const playUIClickSound = () => playSound(SOUNDS.click, 0.45);
-export const playModemDialingSound = () => playSound(SOUNDS.modemDial, 0.5);
-export const playVStoreLoadingSound = () => playSound(SOUNDS.vstoreLoading, 0.55);
-export const playBeepDoopSound = () => playSound(SOUNDS.beepDoop, 0.7);
-export const playDiskLoadSound = () => playSound(SOUNDS.c64Disk, 0.65);
-export const playGlitchCorruptSound = () => playSound(SOUNDS.glitchCorrupt, 0.6);
-export const playHarshErrorSound = () => playSound(SOUNDS.harshError, 0.85);
-export const playInfoSound = () => playSound(SOUNDS.info, 0.75);
-export const playNewMailSound = () => playSound(SOUNDS.newMail, 0.65);
+export const playStartupSound        = () => playSound(resolveSound('startup'));
+export const playShutdownSound       = () => playSound(resolveSound('shutdown'));
+export const playAlertSound          = () => playSound(resolveSound('alert'), 0.95);
+export const playErrorSound          = () => playSound(resolveSound('error'));
+export const playFatalErrorSound     = () => playSound(resolveSound('fatalError'));
+export const playInstallCompleteSound= () => playSound(resolveSound('installComplete'), 0.95);
+export const playBootAfterBiosSound  = () => playSound(SOUNDS.bootAfterBios, 0.85);  // not overrideable
+export const playBrowserBootSound    = () => playSound(SOUNDS.browserBoot, 0.75);    // not overrideable
+export const playDownloadFailedSound = () => playSound(SOUNDS.downloadFailed, 0.9);  // not overrideable
+export const playUIClickSound        = () => playSound(resolveSound('click'), 0.45);
+export const playModemDialingSound   = () => playSound(SOUNDS.modemDial, 0.5);
+export const playVStoreLoadingSound  = () => playSound(SOUNDS.vstoreLoading, 0.55);
+export const playBeepDoopSound       = () => playSound(resolveSound('beepDoop'), 0.7);
+export const playDiskLoadSound       = () => playSound(SOUNDS.c64Disk, 0);
+export const playGlitchCorruptSound  = () => playSound(SOUNDS.glitchCorrupt, 0.6);
+export const playHarshErrorSound     = () => playSound(SOUNDS.harshError, 0.85);
+export const playInfoSound           = () => playSound(resolveSound('info'), 0.75);
+export const playNewMailSound        = () => playSound(resolveSound('newMail'), 0.65);
 
 export function startGuiAmbientHum() {
   initVesperaAudio();

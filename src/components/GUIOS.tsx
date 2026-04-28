@@ -55,6 +55,9 @@ import { AxisPaint } from "./AxisPaint";
 import { WelcomeTour } from "./WelcomeTour";
 import { VolumeControl } from "./VolumeControl";
 import { VersaView } from "./VersaView";
+import { VersaZip } from "./VersaZip";
+import { VersaSlide } from "./VersaSlide";
+import { VersaSlideSetup } from "./VersaSlideSetup";
 import { VSTORE_APPS } from "../data/vstoreApps";
 
 import { HelpViewer } from "./HelpViewer";
@@ -279,12 +282,57 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     { id: "pchords", title: "PChords", x: 250, y: 100, width: 500, height: 450, minWidth: 400, minHeight: 350, isOpen: false },
     { id: "pchords_setup", title: "PChords Setup", x: 200, y: 130, width: 560, height: 440, isOpen: false },
     { id: "volume_control", title: "Volume Control", x: 180, y: 120, width: 490, height: 320, minWidth: 460, minHeight: 280, isOpen: false },
-    { id: "versa_view", title: "VersaView Image Viewer", x: 140, y: 100, width: 600, height: 500, isOpen: false }
+    { id: "versa_view", title: "VersaView Image Viewer", x: 140, y: 100, width: 600, height: 500, isOpen: false },
+    { id: "versaslide_setup", title: "VersaSlide Setup", x: 200, y: 130, width: 560, height: 440, isOpen: false },
+    { id: "versaslide", title: "VersaSlide Presentation Suite", x: 80, y: 40, width: 900, height: 640, minWidth: 700, minHeight: 500, isOpen: false },
+    { id: "versa_zip", title: "VersaZip Archive Manager", x: 140, y: 100, width: 520, height: 420, minWidth: 400, minHeight: 300, isOpen: false }
   ]);
 
   const vfs = useVFS();
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, nodeId?: string } | null>(null);
   const [renamingNodeId, setRenamingNodeId] = useState<string | null>(null);
+  const [selectedDesktopNodes, setSelectedDesktopNodes] = useState<Set<string>>(new Set());
+  const [lassoSelection, setLassoSelection] = useState<{ startX: number, startY: number, currentX: number, currentY: number, active: boolean } | null>(null);
+  const [deskZipDialog, setDeskZipDialog] = useState<{ progress: number; fileName: string } | null>(null);
+  const deskZipTimerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  /** Create a zip on the desktop from currently selected desktop icons */
+  const compressDesktopToZip = (parentId: string = 'desktop') => {
+    const ids = Array.from(selectedDesktopNodes).filter(id => {
+      const n = vfs.getNode(id);
+      return n && !n.name.toLowerCase().endsWith('.zip');
+    });
+    if (ids.length === 0) return;
+    const zipNode = vfs.createNode('Archive.zip', 'directory', parentId, undefined, undefined, undefined, { customIcon: '/Icons/Extra Icons/directory_zipper.ico' });
+    let prog = 0;
+    setDeskZipDialog({ progress: 0, fileName: 'Archive.zip' });
+    if (deskZipTimerRef.current) clearInterval(deskZipTimerRef.current);
+    
+    const targetDuration = Math.floor(Math.random() * 25000) + 5000; // 5 to 30 seconds
+    const updateInterval = 250;
+    let elapsed = 0;
+
+    deskZipTimerRef.current = setInterval(() => {
+      elapsed += updateInterval;
+      prog = Math.min(100, (elapsed / targetDuration) * 100 + (Math.random() * 5));
+      
+      if (elapsed >= targetDuration || prog >= 100) {
+        prog = 100;
+        clearInterval(deskZipTimerRef.current!);
+        deskZipTimerRef.current = null;
+        ids.forEach(id => {
+          const n = vfs.getNode(id);
+          if (n && n.id !== zipNode.id && n.id !== 'recycle_bin') {
+            vfs.updateNode(id, { parentId: zipNode.id });
+          }
+        });
+        setSelectedDesktopNodes(new Set());
+        setTimeout(() => setDeskZipDialog(null), 400);
+      }
+      setDeskZipDialog({ progress: Math.floor(prog), fileName: 'Archive.zip' });
+    }, updateInterval);
+    setContextMenu(null);
+  };
   const desktopRef = React.useRef<HTMLDivElement>(null);
   // Tracks the current logical desktop dimensions so event handlers can center windows
   const deskDimsRef = React.useRef<{ w: number; h: number }>({ w: 1024, h: 768 });
@@ -318,6 +366,8 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
 
   const [renameValue, setRenameValue] = useState("");
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
+  const [activeZipId, setActiveZipId] = useState<string | null>(null);
+  const [activeSlideFileId, setActiveSlideFileId] = useState<string | null>(null);
   const [runDialogOpen, setRunDialogOpen] = useState(false);
   const [fmDirFocusNonce, setFmDirFocusNonce] = useState(0);
   const [fmDirFocusId, setFmDirFocusId] = useState<string | null>(null);
@@ -788,6 +838,66 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     }
     return () => stopBackgroundDelivery();
   }, [vmailInstalled, bootPhase, startBackgroundDelivery, stopBackgroundDelivery]);
+
+  // Auto-assign grid positions for any icon that doesn't have a saved position
+  // This prevents new icons from overlapping when they first appear
+  useEffect(() => {
+    if (!iconsVisible) return;
+    const cellW = 80, cellH = 100, padX = 24, padY = 24;
+    const deskW = deskDimsRef.current.w || 1024;
+    const deskH = deskDimsRef.current.h || 768;
+
+    const desktopNodes = vfs.getChildren('desktop').filter(
+      (n: VFSNode) => n.id !== 'netmon_exe_lnk' && n.id !== 'rhid_exe_lnk'
+    );
+    const allIconIds = [
+      ...(installedApps.includes('netmon') ? ['netmon_icon'] : []),
+      ...(installedApps.includes('rhid') ? ['rhid_icon'] : []),
+      ...(installedApps.includes('retrotv') ? ['retrotv_icon'] : []),
+      ...desktopNodes.map((n: VFSNode) => n.id),
+    ];
+
+    const unpositioned = allIconIds.filter(id => !iconPositions[id]);
+    if (unpositioned.length === 0) return;
+
+    // Build set of already-occupied cells
+    const occupied = new Set<string>();
+    Object.values(iconPositions).forEach(pos => {
+      const cx = Math.round((pos.x - padX) / cellW) * cellW + padX;
+      const cy = Math.round((pos.y - padY) / cellH) * cellH + padY;
+      occupied.add(`${cx},${cy}`);
+    });
+
+    const maxCols = Math.max(1, Math.floor((deskW - padX) / cellW));
+    const maxRows = Math.max(1, Math.floor((deskH - padY - 80) / cellH)); // 80 = taskbar reserve
+
+    const newPositions: Record<string, { x: number; y: number }> = {};
+    for (const id of unpositioned) {
+      let placed = false;
+      outer: for (let col = 0; col < maxCols; col++) {
+        for (let row = 0; row < maxRows; row++) {
+          const x = padX + col * cellW;
+          const y = padY + row * cellH;
+          const key = `${x},${y}`;
+          if (!occupied.has(key)) {
+            newPositions[id] = { x, y };
+            occupied.add(key);
+            placed = true;
+            break outer;
+          }
+        }
+      }
+      // Fallback: place off-grid if somehow all cells are taken
+      if (!placed) {
+        newPositions[id] = { x: padX, y: padY + Object.keys(newPositions).length * cellH };
+      }
+    }
+
+    if (Object.keys(newPositions).length > 0) {
+      setIconPositions(prev => ({ ...prev, ...newPositions }));
+    }
+  }, [iconsVisible, vfs.nodes, installedApps]);
+
 
   // React to new mail arriving — play sound + show toast
   useEffect(() => {
@@ -1553,8 +1663,19 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           }} 
           neuralBridgeActive={neuralBridgeActive} 
           onOpenFile={(id) => {
-            setActiveFileId(id);
-            openWindow("versa_edit");
+            const node = vfs.nodes.find((n: VFSNode) => n.id === id);
+            const name = node?.name?.toLowerCase() || '';
+            if (name.endsWith('.zip')) {
+              setActiveZipId(id);
+              setWindows((prev: any[]) => prev.map(w => w.id === 'versa_zip' ? { ...w, title: `VersaZip - ${node?.name}` } : w));
+              openWindow('versa_zip');
+            } else if (name.endsWith('.vsp') || name.endsWith('.pptx')) {
+              setActiveSlideFileId(id);
+              openWindow('versaslide');
+            } else {
+              setActiveFileId(id);
+              openWindow('versa_edit');
+            }
           }} 
           onContextMenu={(e, nodeId) => handleContextMenu(e, nodeId)}
           focusDirectoryNonce={fmDirFocusNonce}
@@ -1773,6 +1894,8 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
       case "versa_view":
         const vvNode = vfs.getNode(activeFileId || "");
         return <VersaView vfs={vfs} fileId={activeFileId || undefined} onClose={() => closeWindow("versa_view", { stopPropagation: () => {} } as any)} />;
+      case "versa_zip":
+        return <VersaZip vfs={vfs} zipNodeId={activeZipId} onClose={() => closeWindow("versa_zip", { stopPropagation: () => {} } as any)} />;
       case "packman_setup":
         return <PackManSetup vfs={vfs} onComplete={() => closeWindow("packman_setup", { stopPropagation: () => {} } as any)} onCancel={() => closeWindow("packman_setup", { stopPropagation: () => {} } as any)} />;
       case "packman":
@@ -1795,6 +1918,12 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         );
       case "axis_paint":
         return <AxisPaint vfs={vfs} onClose={() => closeWindow("axis_paint", { stopPropagation: () => {} } as any)} />;
+      case "versaslide_setup":
+        return <VersaSlideSetup vfs={vfs} onComplete={() => closeWindow("versaslide_setup", { stopPropagation: () => {} } as any)} onCancel={() => closeWindow("versaslide_setup", { stopPropagation: () => {} } as any)} />;
+      case "versaslide": {
+        const slideFileNode = activeSlideFileId ? vfs.nodes.find((n: VFSNode) => n.id === activeSlideFileId) : null;
+        return <VersaSlide vfs={vfs} initialFileId={activeSlideFileId || undefined} initialFileName={slideFileNode?.name} onClose={() => { closeWindow("versaslide", { stopPropagation: () => {} } as any); setActiveSlideFileId(null); }} />;
+      }
       case "retrotv":
         const rtvWin = windows.find(w => w.id === "retrotv");
         return (
@@ -2280,10 +2409,128 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         <div className="absolute inset-0 z-[190] bg-[#5f8787] pointer-events-none transition-opacity duration-1000 opacity-0" />
       )}
 
+      {/* Desktop Zip Compression Dialog */}
+      {vfs.currentCollision && (
+        <div className="absolute inset-0 z-[9999] flex items-center justify-center bg-black/30">
+          <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] w-80">
+            <div className="bg-[#000080] text-white px-2 py-1 font-bold text-sm tracking-wide flex items-center gap-2">
+              <img src="/Icons/Extra Icons/directory_warning.ico" alt="" className="w-4 h-4" style={{ imageRendering: 'pixelated' }} />
+              Confirm File Replace
+            </div>
+            <div className="p-4 flex flex-col gap-4">
+              <div className="flex gap-4 items-start">
+                <img src="/Icons/Extra Icons/directory_warning.ico" alt="" className="w-8 h-8 mt-1" style={{ imageRendering: 'pixelated' }} />
+                <div className="text-sm text-black">
+                  This folder already contains a file named <span className="font-bold">{vfs.getNode(vfs.currentCollision.sourceId)?.name}</span>.
+                  <br /><br />
+                  Would you like to replace the existing file, or keep both?
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-2">
+                <button 
+                  className="px-4 py-1 text-sm bg-[#c0c0c0] text-black border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white"
+                  onClick={() => vfs.resolveCollision('replace')}
+                >
+                  Replace
+                </button>
+                <button 
+                  className="px-4 py-1 text-sm bg-[#c0c0c0] text-black border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white font-bold"
+                  onClick={() => vfs.resolveCollision('keep_both')}
+                >
+                  Keep Both
+                </button>
+                <button 
+                  className="px-4 py-1 text-sm bg-[#c0c0c0] text-black border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white"
+                  onClick={() => vfs.resolveCollision('skip')}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deskZipDialog && (
+        <div className="absolute inset-0 z-[9999] flex items-center justify-center bg-black/30 pointer-events-auto">
+          <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] w-72">
+            <div className="bg-[#000080] text-white px-2 py-1 font-bold text-sm tracking-wide flex items-center gap-2">
+              <img src="/Icons/Extra Icons/directory_zipper.ico" alt="" className="w-4 h-4" style={{ imageRendering: 'pixelated' }} />
+              Compressing Files
+            </div>
+            <div className="p-4">
+              <div className="text-sm text-black mb-2 truncate">Compressing: <span className="font-bold">{deskZipDialog.fileName}</span></div>
+              <div className="text-xs text-black mb-3">Please wait while files are compressed...</div>
+              <div className="w-full h-5 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white overflow-hidden">
+                <div className="h-full bg-[#000080] transition-all duration-100" style={{ width: `${deskZipDialog.progress}%` }} />
+              </div>
+              <div className="text-xs text-right text-black mt-1">{deskZipDialog.progress}%</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Desktop Workspace */}
       <div 
         ref={desktopRef}
         className="absolute inset-0" 
+        onMouseDown={(e) => {
+          if (e.target === desktopRef.current || (e.target as HTMLElement).classList.contains('desktop-icon-container')) {
+            const rect = desktopRef.current?.getBoundingClientRect();
+            const scale = rect ? rect.width / (desktopRef.current as any).offsetWidth || 1 : 1;
+            const startX = rect ? (e.clientX - rect.left) / scale : e.clientX;
+            const startY = rect ? (e.clientY - rect.top) / scale : e.clientY;
+            setLassoSelection({
+              startX,
+              startY,
+              currentX: startX,
+              currentY: startY,
+              active: true
+            });
+            if (!e.ctrlKey && !e.metaKey) {
+              setSelectedDesktopNodes(new Set());
+            }
+          }
+        }}
+        onMouseMove={(e) => {
+          if (lassoSelection?.active) {
+            const rect = desktopRef.current?.getBoundingClientRect();
+            const scale = rect ? rect.width / (desktopRef.current as any).offsetWidth || 1 : 1;
+            const currentX = rect ? (e.clientX - rect.left) / scale : e.clientX;
+            const currentY = rect ? (e.clientY - rect.top) / scale : e.clientY;
+            setLassoSelection(prev => prev ? { ...prev, currentX, currentY } : null);
+          }
+        }}
+        onMouseUp={(e) => {
+          if (lassoSelection?.active) {
+            const rect = desktopRef.current?.getBoundingClientRect();
+            if (rect) {
+              const scale = rect.width / (desktopRef.current as any).offsetWidth || 1;
+              const left = Math.min(lassoSelection.startX, lassoSelection.currentX);
+              const right = Math.max(lassoSelection.startX, lassoSelection.currentX);
+              const top = Math.min(lassoSelection.startY, lassoSelection.currentY);
+              const bottom = Math.max(lassoSelection.startY, lassoSelection.currentY);
+              
+              const newSelected = new Set((e.ctrlKey || e.metaKey) ? selectedDesktopNodes : []);
+              // Get all icon elements on desktop
+              const icons = document.querySelectorAll('.desktop-icon-node');
+              icons.forEach((icon: Element) => {
+                const iconRect = (icon as HTMLElement).getBoundingClientRect();
+                const iLeft = (iconRect.left - rect.left) / scale;
+                const iRight = (iconRect.right - rect.left) / scale;
+                const iTop = (iconRect.top - rect.top) / scale;
+                const iBottom = (iconRect.bottom - rect.top) / scale;
+                // Check intersection
+                if (iLeft < right && iRight > left && iTop < bottom && iBottom > top) {
+                  const nodeId = icon.getAttribute('data-nodeid');
+                  if (nodeId) newSelected.add(nodeId);
+                }
+              });
+              setSelectedDesktopNodes(newSelected);
+            }
+            setLassoSelection(null);
+          }
+        }}
         onClick={() => {
           setMenuOpen(false);
           setContextMenu(null);
@@ -2347,9 +2594,22 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           </div>
         ))}
 
+        {/* Lasso Visualizer */}
+        {lassoSelection?.active && (
+          <div 
+            className="absolute bg-blue-500/20 border border-blue-400/50 pointer-events-none z-[100]"
+            style={{
+              left: Math.min(lassoSelection.startX, lassoSelection.currentX),
+              top: Math.min(lassoSelection.startY, lassoSelection.currentY),
+              width: Math.abs(lassoSelection.currentX - lassoSelection.startX),
+              height: Math.abs(lassoSelection.currentY - lassoSelection.startY)
+            }}
+          />
+        )}
+
         {/* Desktop Icons — hidden during init, then fade + stagger in */}
         <div 
-          className={`absolute inset-0 p-6 flex flex-col gap-4 flex-wrap max-h-full transition-opacity duration-700 ${iconsVisible ? 'opacity-100' : 'opacity-0'}`}
+          className={`desktop-icon-container absolute inset-0 p-6 flex flex-col gap-4 flex-wrap max-h-full transition-opacity duration-700 ${iconsVisible ? 'opacity-100' : 'opacity-0'}`}
           style={{ 
             pointerEvents: iconsVisible ? 'auto' : 'none',
             paddingBottom: taskbarPosition === 'bottom' ? tbReserve : undefined,
@@ -2360,27 +2620,66 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault();
-            const id = e.dataTransfer.getData('text/plain');
-            if (id) {
-              const rect = e.currentTarget.getBoundingClientRect();
-              const scale = rect.width / (e.currentTarget as any).offsetWidth || 1;
-              let x = (e.clientX - rect.left) / scale - 40;
-              let y = (e.clientY - rect.top) / scale - 40;
+            const data = e.dataTransfer.getData('text/plain');
+            if (data) {
+              try {
+                const ids: string[] = data.startsWith('[') ? JSON.parse(data) : [data];
+                const rect = e.currentTarget.getBoundingClientRect();
+                const scale = rect.width / (e.currentTarget as any).offsetWidth || 1;
 
-              const cellW = 80;
-              const cellH = 100;
-              const padX = 24;
-              const padY = 24;
+                const cellW = 80;
+                const cellH = 100;
+                const padX = 24;
+                const padY = 24;
 
-              x = Math.round((x - padX) / cellW) * cellW + padX;
-              y = Math.round((y - padY) / cellH) * cellH + padY;
+                ids.forEach((id, i) => {
+                  const draggedNode = vfs.getNode(id);
+                  if (!draggedNode || draggedNode.id === 'recycle_bin') return;
 
-              const maxX = deskDimsRef.current.w - cellW;
-              const maxY = deskDimsRef.current.h - cellH;
-              x = Math.max(padX, Math.min(x, maxX));
-              y = Math.max(padY, Math.min(y, maxY));
-              
-              setIconPositions(prev => ({ ...prev, [id]: { x, y } }));
+                  // Move to desktop if not already there
+                  if (draggedNode.parentId !== 'desktop') {
+                    vfs.queueMove([id], 'desktop');
+                  }
+
+                  // Compute grid-snapped drop position (stagger multi-drop)
+                  let x = (e.clientX - rect.left) / scale - 40 + (i % 3) * cellW;
+                  let y = (e.clientY - rect.top) / scale - 40 + Math.floor(i / 3) * cellH;
+                  x = Math.round((x - padX) / cellW) * cellW + padX;
+                  y = Math.round((y - padY) / cellH) * cellH + padY;
+                  
+                  setIconPositions(prev => {
+                    let finalX = x;
+                    let finalY = y;
+                    const maxW = deskDimsRef.current.w - cellW;
+                    const maxH = deskDimsRef.current.h - cellH;
+                    
+                    finalX = Math.max(padX, Math.min(finalX, maxW));
+                    finalY = Math.max(padY, Math.min(finalY, maxH));
+                    
+                    let attempts = 0;
+                    const isOccupied = (tx: number, ty: number) => {
+                      return Object.entries(prev).some(([key, pos]) => {
+                        if (key === id) return false;
+                        return Math.abs(pos.x - tx) < 10 && Math.abs(pos.y - ty) < 10;
+                      });
+                    };
+
+                    while (isOccupied(finalX, finalY) && attempts < 50) {
+                      finalY += cellH;
+                      if (finalY > maxH) {
+                        finalY = padY;
+                        finalX += cellW;
+                        if (finalX > maxW) {
+                           finalX = padX;
+                        }
+                      }
+                      attempts++;
+                    }
+
+                    return { ...prev, [id]: { x: finalX, y: finalY } };
+                  });
+                });
+              } catch (e) {}
             }
           }}
         >
@@ -2443,9 +2742,15 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
               return (
             <div 
               key={node.id}
+              data-nodeid={node.id}
               draggable
               onDragStart={(e) => {
-                e.dataTransfer.setData('text/plain', node.id);
+                let dragSet = selectedDesktopNodes;
+                if (!dragSet.has(node.id)) {
+                  dragSet = new Set([node.id]);
+                  setSelectedDesktopNodes(dragSet);
+                }
+                e.dataTransfer.setData('text/plain', JSON.stringify(Array.from(dragSet)));
               }}
               style={{
                 position: iconPositions[node.id] ? 'absolute' : 'relative',
@@ -2453,12 +2758,22 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 top: iconPositions[node.id]?.y,
                 animationDelay: `${nodeIndex * 120}ms`,
               }}
-              className={`flex flex-col items-center gap-1 w-20 p-1 hover:bg-white/10 active:bg-blue-800/50 rounded group cursor-pointer ${iconsVisible ? 'animate-icon-pop' : 'opacity-0'}`}
+              className={`desktop-icon-node flex flex-col items-center gap-1 w-20 p-1 rounded group cursor-pointer transition-colors ${iconsVisible ? 'animate-icon-pop' : 'opacity-0'} ${selectedDesktopNodes.has(node.id) ? 'bg-blue-800/60 outline outline-1 outline-white/50' : 'hover:bg-white/10 active:bg-blue-800/50'}`}
               onContextMenu={(e) => handleContextMenu(e, node.id)}
               onDoubleClick={(e) => {
                 e.stopPropagation();
-                if (node.type === 'directory') {
-                  openWindow("files");
+                if (node.type === 'directory' || node.name?.toLowerCase().endsWith('.zip')) {
+                  // .zip archives open in VersaZip, not the file manager
+                  if (node.name?.toLowerCase().endsWith('.zip')) {
+                    setActiveZipId(node.id);
+                    openWindow('versa_zip');
+                    // Update window title to match archive name
+                    setWindows(prev => prev.map(w => w.id === 'versa_zip' ? { ...w, title: `VersaZip - ${node.name}` } : w));
+                  } else {
+                    setFmDirFocusId(node.id);
+                    setFmDirFocusNonce(n => n + 1);
+                    openWindow("files");
+                  }
                 } else if (node.type === 'shortcut') {
                   if (node.id === 'recycle_bin_lnk') {
                     setFmDirFocusId('recycle_bin');
@@ -2477,10 +2792,48 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 if (renamingNodeId !== node.id) {
                   setRenamingNodeId(null);
                 }
+                if (e.ctrlKey || e.metaKey) {
+                  setSelectedDesktopNodes(prev => {
+                    const next = new Set(prev);
+                    if (next.has(node.id)) next.delete(node.id);
+                    else next.add(node.id);
+                    return next;
+                  });
+                } else {
+                  setSelectedDesktopNodes(new Set([node.id]));
+                }
+              }}
+              onDragOver={(e) => {
+                if (node.type === 'directory' || (node.type === 'shortcut' && node.iconType === 'folder')) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
+              }}
+              onDrop={(e) => {
+                const targetFolderId = node.type === 'directory' ? node.id : (node.type === 'shortcut' && node.iconType === 'folder' ? node.content : null);
+                if (targetFolderId) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const data = e.dataTransfer.getData('text/plain');
+                  try {
+                    const ids = JSON.parse(data);
+                    if (Array.isArray(ids)) {
+                      ids.forEach(id => {
+                        const draggedNode = vfs.getNode(id);
+                        if (draggedNode && draggedNode.id !== targetFolderId && draggedNode.id !== 'recycle_bin') {
+                          vfs.updateNode(id, { parentId: targetFolderId });
+                        }
+                      });
+                      setSelectedDesktopNodes(new Set());
+                    }
+                  } catch (err) {
+                    // fallback
+                  }
+                }
               }}
             >
               {renderIcon ? (
-                <div className="relative">
+                <div className="relative pointer-events-none">
                   <img src={renderIcon} alt="icon" className="w-[32px] h-[32px] drop-shadow-md pointer-events-none" style={{ imageRendering: 'pixelated' }} draggable={false} />
                   {node.type === 'shortcut' && (
                     <div className="absolute -bottom-1 -left-1 bg-white border border-dotted border-black w-3 h-3 flex items-center justify-center">
@@ -2489,29 +2842,29 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                   )}
                 </div>
               ) : node.type === 'directory' ? (
-                <Folder size={32} className="text-yellow-400 drop-shadow-md" />
+                <Folder size={32} className="text-yellow-400 drop-shadow-md pointer-events-none" />
               ) : node.type === 'shortcut' ? (
-                <div className="relative">
+                <div className="relative pointer-events-none">
                   {renderIcon ? (
                     <img
                       src={renderIcon}
                       alt={node.name}
-                      className="w-8 h-8 object-contain drop-shadow-md"
+                      className="w-8 h-8 object-contain drop-shadow-md pointer-events-none"
                       style={{ imageRendering: 'pixelated' }}
                       onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
-                  ) : node.iconType === 'folder' ? <Folder size={32} className="text-yellow-400 drop-shadow-md" /> :
-                   node.iconType === 'system' ? <Settings size={32} className="text-gray-400 drop-shadow-md" /> :
-                   node.iconType === 'app' ? <TerminalIcon size={32} className="text-gray-400 drop-shadow-md" /> :
-                   node.iconType === 'pen' ? <PenTool size={32} className="text-red-500 drop-shadow-md" /> :
-                   node.iconType === 'network' ? <Monitor size={32} className="text-blue-400 drop-shadow-md" /> :
-                   <FileText size={32} className="text-white drop-shadow-md" />}
+                  ) : node.iconType === 'folder' ? <Folder size={32} className="text-yellow-400 drop-shadow-md pointer-events-none" /> :
+                   node.iconType === 'system' ? <Settings size={32} className="text-gray-400 drop-shadow-md pointer-events-none" /> :
+                   node.iconType === 'app' ? <TerminalIcon size={32} className="text-gray-400 drop-shadow-md pointer-events-none" /> :
+                   node.iconType === 'pen' ? <PenTool size={32} className="text-red-500 drop-shadow-md pointer-events-none" /> :
+                   node.iconType === 'network' ? <Monitor size={32} className="text-blue-400 drop-shadow-md pointer-events-none" /> :
+                   <FileText size={32} className="text-white drop-shadow-md pointer-events-none" />}
                   <div className="absolute -bottom-1 -left-1 bg-white border border-dotted border-black w-3 h-3 flex items-center justify-center">
                     <div className="w-1 h-1 bg-black" />
                   </div>
                 </div>
               ) : (
-                <FileText size={32} className="text-white drop-shadow-md" />
+                <FileText size={32} className="text-white drop-shadow-md pointer-events-none" />
               )}
               
               {renamingNodeId === node.id ? (
@@ -2558,8 +2911,8 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         {showShortcutWizard && (
           <ShortcutWizard 
             onClose={() => setShowShortcutWizard(false)}
-            onCreate={(name, target, iconType) => {
-              vfs.createNode(name, "shortcut", "desktop", "", target, iconType);
+            onCreate={(name, target, customIcon) => {
+              vfs.createNode(name, "shortcut", "desktop", target, target, 'app', { customIcon });
               setShowShortcutWizard(false);
             }}
             installedApps={installedApps}
@@ -2607,18 +2960,15 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           desktopRef={desktopRef} 
         />
 
-        {/* Window Management Workspace - Focus Shield */}
+        {/* Window Management Workspace */}
         <div 
-          className="absolute inset-0 overflow-hidden"
+          className="absolute inset-0 overflow-hidden pointer-events-none"
           style={{
-            // Only intercept events when: menu is closed AND there are visible windows
-            // Without this, the shield blocks all desktop icon clicks/right-clicks
-            pointerEvents: (menuOpen || windows.every(w => !w.isOpen || w.isMinimized)) ? 'none' : 'auto',
             cursor: resizing ? resizeCursorMap[resizing.edge] : undefined
           }}
         >
           {windows.map((win, index) => {
-            const isPersistentMinimized = win.isMinimized && ["media_player", "vstore", "vmail"].includes(win.id);
+            const isPersistentMinimized = win.isMinimized && ["media_player", "vstore", "vmail", "workbench", "versaslide"].includes(win.id);
             if (!win.isOpen) return null;
             if (win.isMinimized && !isPersistentMinimized) return null;
             
@@ -2995,7 +3345,13 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                       onMouseLeave={(e) => { if (!isSubOpen) { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = chromeTheme.bodyText; } }}
                     >
                       <div className="flex items-center gap-3 shrink-0 text-left">
-                        {item.icon && ICON_MAP[item.icon] ? React.createElement(ICON_MAP[item.icon], { size: 16, className: 'shrink-0' }) : <FolderOpen size={16} className="shrink-0" />}
+                        {item.customIcon ? (
+                          <img src={item.customIcon} alt="icon" className="w-[16px] h-[16px] pointer-events-none drop-shadow-sm shrink-0" style={{ imageRendering: 'pixelated' }} draggable={false} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        ) : item.icon && ICON_MAP[item.icon] ? (
+                          React.createElement(ICON_MAP[item.icon], { size: 16, className: 'shrink-0' })
+                        ) : (
+                          <FolderOpen size={16} className="shrink-0" />
+                        )}
                         <span className="break-words text-left leading-tight">{item.label}</span>
                       </div>
                       <ChevronRight size={14} className="shrink-0 opacity-70" />
@@ -3052,9 +3408,14 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
               }
               
               // App / action items
-              let customImgSrc = null;
-              if (item.action && APP_DICTIONARY[item.action] && APP_DICTIONARY[item.action].customIcon) {
-                customImgSrc = APP_DICTIONARY[item.action].customIcon;
+              let customImgSrc = item.customIcon || null;
+              if (!customImgSrc && item.action) {
+                const node = vfs.nodes.find(n => n.id === item.action || n.id === `${item.action}_exe` || (n.isApp && n.id.replace('_exe', '') === item.action));
+                if (node && node.customIcon) {
+                  customImgSrc = node.customIcon;
+                } else if (APP_DICTIONARY[item.action] && APP_DICTIONARY[item.action].customIcon) {
+                  customImgSrc = APP_DICTIONARY[item.action].customIcon;
+                }
               }
               const IconComp = item.icon && ICON_MAP[item.icon] ? ICON_MAP[item.icon] : FileText;
               const isShutdown = item.type === 'shutdown';
@@ -3069,7 +3430,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = isShutdown ? '#cc0000' : chromeTheme.bodyText; }}
                 >
                   {customImgSrc ? (
-                    <img src={customImgSrc} alt="icon" className="w-[16px] h-[16px] pointer-events-none drop-shadow-sm shrink-0" style={{ imageRendering: 'pixelated' }} draggable={false} />
+                    <img src={customImgSrc} alt="icon" className="w-[16px] h-[16px] pointer-events-none drop-shadow-sm shrink-0" style={{ imageRendering: 'pixelated' }} draggable={false} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                   ) : (
                     <IconComp size={16} className="shrink-0" />
                   )}
@@ -3876,6 +4237,21 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 >
                   Copy
                 </button>
+                <div className="h-[1px] bg-gray-400 mx-1 my-1" />
+                {selectedDesktopNodes.size > 1 && selectedDesktopNodes.has(contextMenu.nodeId) && (
+                  <>
+                    <button 
+                      className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        compressDesktopToZip('desktop');
+                      }}
+                    >
+                      Compress to .zip ({selectedDesktopNodes.size} items)
+                    </button>
+                    <div className="h-[1px] bg-gray-400 mx-1 my-1" />
+                  </>
+                )}
                 {contextMenu.nodeId === 'recycle_bin_lnk' && (
                   <>
                     <button 
@@ -3941,7 +4317,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                   className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm"
                   onClick={(e) => {
                     e.stopPropagation();
-                    vfs.createNode("New Folder", "directory", "desktop");
+                    vfs.createNode("New Folder", "directory", "desktop", undefined, undefined, undefined, { customIcon: "/Icons/Extra Icons/directory_closed.ico" });
                     setContextMenu(null);
                   }}
                 >
@@ -3951,11 +4327,21 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                   className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm"
                   onClick={(e) => {
                     e.stopPropagation();
-                    vfs.createNode("New Text File.txt", "file", "desktop");
+                    vfs.createNode("New Text File.txt", "file", "desktop", undefined, undefined, undefined, { customIcon: "/Icons/Extra Icons/message_file.ico" });
                     setContextMenu(null);
                   }}
                 >
                   New Text File
+                </button>
+                <button 
+                  className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    vfs.createNode("Archive.zip", "directory", "desktop", undefined, undefined, undefined, { customIcon: "/Icons/Extra Icons/directory_zipper.ico" });
+                    setContextMenu(null);
+                  }}
+                >
+                  New Zip File
                 </button>
                 <button 
                   className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm"
@@ -3968,6 +4354,18 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                   New Shortcut
                 </button>
                 <div className="h-0.5 bg-gray-500 border-b border-white my-1 mx-1" />
+                {/* Compress selected items to zip — only shown when 2+ items are selected */}
+                {selectedDesktopNodes.size > 1 && (
+                  <button 
+                    className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      compressDesktopToZip('desktop');
+                    }}
+                  >
+                    Compress to .zip ({selectedDesktopNodes.size} items)
+                  </button>
+                )}
                 <button 
                   className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm"
                   onClick={(e) => {

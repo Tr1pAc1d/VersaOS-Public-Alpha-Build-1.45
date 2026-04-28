@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useVFS } from '../hooks/useVFS';
+import { useVFS, VFSNode } from '../hooks/useVFS';
+import { VersaSlideFilePicker } from './VersaSlideFilePicker';
 
 interface VesperaWriteProps {
   vfs: ReturnType<typeof useVFS>;
@@ -14,25 +15,66 @@ export const VesperaWrite: React.FC<VesperaWriteProps> = ({ vfs, fileId, onSave,
   
   const [fontSize, setFontSize] = useState('12px');
   
+  const [currentFileId, setCurrentFileId] = useState<string | null>(fileId);
+  const [showSaveAs, setShowSaveAs] = useState(false);
+  const [showOpenDlg, setShowOpenDlg] = useState(false);
+  
   useEffect(() => {
     if (fileId) {
       const node = vfs.getNode(fileId);
       if (node && node.type === 'file') {
         setContent(node.content || '');
         setFileName(node.name);
+        setCurrentFileId(node.id);
       }
     } else {
       setContent('');
       setFileName('Untitled');
+      setCurrentFileId(null);
     }
-  }, [fileId, vfs]);
+  }, [fileId]);
 
   const handleSave = () => {
-    onSave(content);
+    if (currentFileId) {
+      vfs.updateFileContent(currentFileId, content);
+      onSave(content);
+    } else {
+      setShowSaveAs(true);
+    }
+  };
+
+  const handleSaveAs = (folderId: string, filename: string) => {
+    const extMatch = filename.match(/\.[^/.]+$/);
+    const ext = extMatch ? extMatch[0].toLowerCase() : '.txt';
+    let finalName = filename;
+    if (!extMatch) finalName += '.txt';
+    
+    const existing = vfs.nodes.find((n: VFSNode) => n.parentId === folderId && n.name === finalName);
+    if (existing) {
+      vfs.updateFileContent(existing.id, content);
+      setCurrentFileId(existing.id);
+    } else {
+      const node = vfs.createNode(finalName, 'file', folderId, content, undefined, 'file', { customIcon: '/Icons/Microsoft Office/97_word_32.png' });
+      setCurrentFileId(node.id);
+    }
+    setFileName(finalName);
+    setShowSaveAs(false);
   };
 
   const handleOpen = () => {
-    alert("Open module LOAD_FILE.DLL not found in this version.");
+    setShowOpenDlg(true);
+  };
+
+  const performOpen = (folderId: string, filename: string) => {
+    const existing = vfs.nodes.find((n: VFSNode) => n.parentId === folderId && n.name === filename);
+    if (existing && existing.type === 'file') {
+      setContent(existing.content || '');
+      setFileName(existing.name);
+      setCurrentFileId(existing.id);
+    } else {
+      alert('File not found.');
+    }
+    setShowOpenDlg(false);
   };
 
   return (
@@ -44,6 +86,7 @@ export const VesperaWrite: React.FC<VesperaWriteProps> = ({ vfs, fileId, onSave,
           <div className="absolute left-0 top-full hidden group-hover:block bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-lg z-[100] min-w-[120px] py-1">
             <div onClick={handleOpen} className="px-4 py-1 hover:bg-[#000080] hover:text-white text-black">Open...</div>
             <div onClick={handleSave} className="px-4 py-1 hover:bg-[#000080] hover:text-white text-black">Save</div>
+            <div onClick={() => setShowSaveAs(true)} className="px-4 py-1 hover:bg-[#000080] hover:text-white text-black">Save As...</div>
             <div className="h-[1px] bg-gray-600 my-1 mx-1" />
             <div onClick={onClose} className="px-4 py-1 hover:bg-[#000080] hover:text-white text-black">Exit</div>
           </div>
@@ -110,6 +153,28 @@ export const VesperaWrite: React.FC<VesperaWriteProps> = ({ vfs, fileId, onSave,
         <span>File: {fileName}</span>
         <span>Size: {fontSize}</span>
       </div>
+
+      {showSaveAs && (
+        <VersaSlideFilePicker
+          vfs={vfs as any}
+          title="Save As"
+          defaultName={fileName === 'Untitled' ? 'New Text File' : fileName.replace(/\.[^/.]+$/, '')}
+          allowedExtensions={[{ value: '.txt', label: 'Text Document (*.txt)' }, { value: '.md', label: 'Markdown Document (*.md)' }, { value: '.csv', label: 'Comma Separated Values (*.csv)' }]}
+          onConfirm={handleSaveAs}
+          onCancel={() => setShowSaveAs(false)}
+        />
+      )}
+
+      {showOpenDlg && (
+        <VersaSlideFilePicker
+          vfs={vfs as any}
+          title="Open"
+          mode="open"
+          allowedExtensions={[{ value: '.txt', label: 'Text Document (*.txt)' }, { value: '.md', label: 'Markdown Document (*.md)' }, { value: '.csv', label: 'Comma Separated Values (*.csv)' }]}
+          onConfirm={performOpen}
+          onCancel={() => setShowOpenDlg(false)}
+        />
+      )}
     </div>
   );
 };

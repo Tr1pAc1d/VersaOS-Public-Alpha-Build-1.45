@@ -6,6 +6,7 @@ export interface WorkspaceMenuItem {
   id: string;
   label: string;
   icon?: string;          // lucide icon name or 'folder'
+  customIcon?: string;    // custom image path
   action?: string;        // window id to toggle
   type: 'app' | 'folder' | 'separator' | 'signout' | 'shutdown';
   children?: WorkspaceMenuItem[];
@@ -47,75 +48,81 @@ export const DEFAULT_WORKSPACE_MENU: WorkspaceMenuItem[] = [
     id: 'programs',
     label: 'Programs',
     icon: 'folder',
+    customIcon: '/Icons/directory_admin_tools-4.png',
     type: 'folder',
     isSystem: true,
     children: [
-      { id: 'wm_files',          label: 'File Manager',       icon: 'Folder',       action: 'files',          type: 'app', isSystem: true },
-      { id: 'wm_browser',        label: 'Vespera Navigator',  icon: 'Globe',        action: 'browser',        type: 'app', isSystem: true },
-      { id: 'wm_vstore',         label: 'VStore',             icon: 'Package',      action: 'vstore',         type: 'app', isSystem: true },
-      { id: 'wm_chat',           label: 'Vespera Assistant',  icon: 'MessageSquare',action: 'chat',           type: 'app', isSystem: true },
-      { id: 'wm_help',           label: 'Vespera Help',       icon: 'HelpCircle',   action: 'help',           type: 'app', isSystem: true },
-      { id: 'wm_remote_desktop', label: 'VesperaConnect',     icon: 'Monitor',      action: 'remote_desktop', type: 'app', isSystem: true },
+      { id: 'wm_files',          label: 'File Manager',       icon: 'Folder',       customIcon: '/Icons/computer_explorer-5.png', action: 'files',          type: 'app', isSystem: true },
+      { id: 'wm_browser',        label: 'Vespera Navigator',  icon: 'Globe',        customIcon: '/Icons/search_web-0.png', action: 'browser',        type: 'app', isSystem: true },
+      { id: 'wm_vstore',         label: 'VStore',             icon: 'Package',      customIcon: '/Icons/package-1.png', action: 'vstore',         type: 'app', isSystem: true },
+      { id: 'wm_chat',           label: 'Vespera Assistant',  icon: 'MessageSquare',customIcon: '/Icons/msn_cool-3.png', action: 'chat',           type: 'app', isSystem: true },
+      { id: 'wm_help',           label: 'Vespera Help',       icon: 'HelpCircle',   customIcon: '/Icons/help_book_cool-3.png', action: 'help',           type: 'app', isSystem: true },
+      { id: 'wm_remote_desktop', label: 'VesperaConnect',     icon: 'Monitor',      customIcon: '/Icons/network_cool_two_pcs-0.png', action: 'remote_desktop', type: 'app', isSystem: true },
     ],
   },
   {
     id: 'games',
     label: 'Games',
     icon: 'folder',
+    customIcon: '/Icons/directory_closed-4.png',
     type: 'folder',
     isSystem: true,
     children: [
-      { id: 'wm_vsweeper',      label: 'V-Sweeper',                 icon: 'Grid',      action: 'vsweeper',      type: 'app', isSystem: true },
-      { id: 'wm_neural_solitaire', label: 'Neural Solitaire',     icon: 'Gamepad2',  action: 'neural_solitaire', type: 'app', isSystem: true },
+      { id: 'wm_vsweeper',      label: 'V-Sweeper',                 icon: 'Grid',      customIcon: '/Icons/minesweeper-0.png', action: 'vsweeper',      type: 'app', isSystem: true },
+      { id: 'wm_neural_solitaire', label: 'Neural Solitaire',     icon: 'Gamepad2',  customIcon: '/Icons/game_solitaire-0.png', action: 'neural_solitaire', type: 'app', isSystem: true },
     ],
   },
   {
     id: 'media',
     label: 'Media',
     icon: 'folder',
+    customIcon: '/Icons/directory_movie-4.png',
     type: 'folder',
     isSystem: true,
     children: [
-      { id: 'wm_media',   label: 'VERSA Media Agent',       icon: 'Disc3', action: 'media_player', type: 'app', isSystem: true },
-      { id: 'wm_retrotv', label: 'Meridian. TV', icon: 'Tv',    action: 'retrotv',      type: 'app', isSystem: true },
+      { id: 'wm_media',   label: 'VERSA Media Agent',       icon: 'Disc3', customIcon: '/Icons/media_player-1.png', action: 'media_player', type: 'app', isSystem: true },
+      { id: 'wm_retrotv', label: 'Meridian. TV', icon: 'Tv',    customIcon: '/Icons/windows_movie-0.png', action: 'retrotv',      type: 'app', isSystem: true },
     ],
   },
   {
     id: 'accessories',
     label: 'Accessories',
     icon: 'folder',
+    customIcon: '/Icons/directory_closed-4.png',
     type: 'folder',
     isSystem: true,
     children: [
-      { id: 'wm_analyzer',   label: 'Data Analyzer',         icon: 'Activity', action: 'analyzer',  type: 'app', isSystem: true },
-      { id: 'wm_workbench',  label: 'AETHERIS Workbench Pro',icon: 'Terminal', action: 'workbench', type: 'app', isSystem: true },
+      { id: 'wm_analyzer',   label: 'Data Analyzer',         icon: 'Activity', customIcon: '/Icons/chart1-5.png', action: 'analyzer',  type: 'app', isSystem: true },
+      { id: 'wm_workbench',  label: 'AETHERIS Workbench Pro',icon: 'Terminal', customIcon: '/Icons/console_prompt-0.png', action: 'workbench', type: 'app', isSystem: true },
     ],
   },
   {
     id: 'system',
     label: 'System',
     icon: 'folder',
+    customIcon: '/Icons/directory_control_panel-0.png',
     type: 'folder',
     isSystem: true,
     children: [
-      { id: 'wm_about',   label: 'System Info',          icon: 'Monitor',  action: 'about',         type: 'app', isSystem: true },
-      { id: 'wm_control', label: 'Control Panel',        icon: 'Settings', action: 'control_panel', type: 'app', isSystem: true },
-      { id: 'wm_xtype',   label: 'X-Type Control Panel', icon: 'Cpu',      action: 'xtype',         type: 'app', isSystem: true },
-      { id: 'wm_find',    label: 'Find Files…',          icon: 'Search',   action: 'findfiles',     type: 'app', isSystem: true },
-      { id: 'wm_run',     label: 'Run…',                 icon: 'Play',     action: '__run__',       type: 'app', isSystem: true },
+      { id: 'wm_about',   label: 'System Info',          icon: 'Monitor',  customIcon: '/Icons/computer-5.png', action: 'about',         type: 'app', isSystem: true },
+      { id: 'wm_control', label: 'Control Panel',        icon: 'Settings', customIcon: '/Icons/directory_control_panel-3.png', action: 'control_panel', type: 'app', isSystem: true },
+      { id: 'wm_xtype',   label: 'X-Type Control Panel', icon: 'Cpu',      customIcon: '/Icons/chip_ramdrive-2.png', action: 'xtype',         type: 'app', isSystem: true },
+      { id: 'wm_find',    label: 'Find Files…',          icon: 'Search',   customIcon: '/Icons/search_computer-0.png', action: 'findfiles',     type: 'app', isSystem: true },
+      { id: 'wm_run',     label: 'Run…',                 icon: 'Play',     customIcon: '/Icons/executable_script-0.png', action: '__run__',       type: 'app', isSystem: true },
       {
         id: 'system_tools',
         label: 'System Tools',
         icon: 'folder',
+        customIcon: '/Icons/directory_admin_tools-4.png',
         type: 'folder',
         isSystem: true,
         children: [
-          { id: 'wm_welcome', label: 'Vespera OS Tour',    icon: 'Info',       action: 'welcome_tour', type: 'app', isSystem: true },
-          { id: 'wm_defrag',  label: 'Disk Defragmenter',  icon: 'HardDrive',  action: 'defrag',       type: 'app', isSystem: true },
-          { id: 'wm_scandisk',label: 'Disk Checker',       icon: 'ShieldCheck',action: 'scandisk',     type: 'app', isSystem: true },
-          { id: 'wm_stats',   label: 'System Statistics',  icon: 'Activity',   action: 'analyzer',     type: 'app', isSystem: true },
-          { id: 'wm_dialup',  label: 'Dial-Up Networking', icon: 'Phone',      action: 'dialup',       type: 'app', isSystem: true },
-            { id: 'wm_open_dos',label: 'Open-DOS Subsystem', icon: 'Terminal',   action: 'open_dos',     type: 'app', isSystem: true },
+          { id: 'wm_welcome', label: 'Vespera OS Tour',    icon: 'Info',       customIcon: '/Icons/help_book_cool-3.png', action: 'welcome_tour', type: 'app', isSystem: true },
+          { id: 'wm_defrag',  label: 'Disk Defragmenter',  icon: 'HardDrive',  customIcon: '/Icons/defragment-0.png', action: 'defrag',       type: 'app', isSystem: true },
+          { id: 'wm_scandisk',label: 'Disk Checker',       icon: 'ShieldCheck',customIcon: '/Icons/scandisk-0.png', action: 'scandisk',     type: 'app', isSystem: true },
+          { id: 'wm_stats',   label: 'System Statistics',  icon: 'Activity',   customIcon: '/Icons/chart1-5.png', action: 'analyzer',     type: 'app', isSystem: true },
+          { id: 'wm_dialup',  label: 'Dial-Up Networking', icon: 'Phone',      customIcon: '/Icons/directory_dial_up_networking_cool-3.png', action: 'dialup',       type: 'app', isSystem: true },
+          { id: 'wm_open_dos',label: 'Open-DOS Subsystem', icon: 'Terminal',   customIcon: '/Icons/ms_dos-0.png', action: 'open_dos',     type: 'app', isSystem: true },
         ],
       },
     ],
@@ -124,16 +131,17 @@ export const DEFAULT_WORKSPACE_MENU: WorkspaceMenuItem[] = [
     id: 'installed',
     label: 'Installed Programs',
     icon: 'folder',
+    customIcon: '/Icons/directory_admin_tools-4.png',
     type: 'folder',
     isSystem: true,
     isDynamic: true,
     children: [],
   },
   { id: 'sep1', label: '', type: 'separator', isSystem: true },
-  { id: 'wm_signout',      label: 'Sign Out',             icon: 'LogOut',   type: 'signout',  isSystem: true },
-  { id: 'wm_signout_term', label: 'Sign Out to Terminal', icon: 'Terminal', type: 'signout',  isSystem: true },
+  { id: 'wm_signout',      label: 'Sign Out',             icon: 'LogOut',   customIcon: '/Icons/key_win-0.png', type: 'signout',  isSystem: true },
+  { id: 'wm_signout_term', label: 'Sign Out to Terminal', icon: 'Terminal', customIcon: '/Icons/console_prompt-0.png', type: 'signout',  isSystem: true },
   { id: 'sep2', label: '', type: 'separator', isSystem: true },
-  { id: 'wm_shutdown', label: 'Shut Down...', icon: 'X', type: 'shutdown', isSystem: true },
+  { id: 'wm_shutdown', label: 'Shut Down...', icon: 'X', customIcon: '/Icons/shut_down_normal-0.png', type: 'shutdown', isSystem: true },
 ];
 
 
@@ -184,43 +192,43 @@ const DEFAULT_VFS: VFSNode[] = [
   { id: 'root', name: 'C:', type: 'directory', parentId: null },
   { id: 'desktop', name: 'Desktop', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_closed-4.png' },
   { id: 'users', name: 'Users', type: 'directory', parentId: 'root', customIcon: '/Icons/users_green-4.png' },
-  { id: 'programs', name: 'PROGRAMS', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_admin_tools-4.png' },
-  { id: 'vespera', name: 'VESPERA', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_closed_cool-0.png' },
-  { id: 'v_program_files', name: 'Program_Files', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_admin_tools-4.png' },
+  { id: 'programs', name: 'Programs', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_admin_tools-4.png' },
+  { id: 'vespera', name: 'Vespera', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_closed_cool-0.png' },
+  { id: 'v_program_files', name: 'Program Files', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_admin_tools-4.png' },
   { id: 'recycle_bin', name: 'Recycled', type: 'directory', parentId: 'root', customIcon: '/Icons/recycle_bin_empty_cool-0.png' },
-  { id: 'dev_logs', name: 'DEV_LOGS', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_closed-4.png' },
-  { id: 'system', name: 'SYSTEM', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_closed-4.png' },
-  { id: 'downloads', name: 'DOWNLOADS', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_open_file_mydocs-4.png' },
-  { id: 'documents', name: 'DOCUMENTS', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_open_file_mydocs_2k-4.png' },
+  { id: 'dev_logs', name: 'Dev Logs', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'system', name: 'System', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'downloads', name: 'Downloads', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_open_file_mydocs-4.png' },
+  { id: 'documents', name: 'Documents', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_open_file_mydocs_2k-4.png' },
   { id: 'memo_084', name: 'MEMO_084.TXT', type: 'file', parentId: 'dev_logs', customIcon: '/Icons/notepad-2.png', content: `TO: Dr. A. Thorne [Director of Advanced Heuristics]\nFROM: M. Vance [Lead Systems Architecture]\nDATE: October 14, 1996\nSUBJECT: Synap-C compiler anomalies & X-Type shielding issues\n\nDr. Thorne,\n\nWe need to seriously re-evaluate the EMI shielding on the X-Type 1 ceramic housings before the Q4 public rollout. The Synap-C compiler is pulling way too much garbage analog data from the motherboard sensors, and it’s completely bricking our overnight neural network tests.\n\nThe heuristic engine is supposed to be mapping user workflow, but instead, it’s getting stuck in endless feedback loops trying to process random environmental noise. Last night, the active neural cluster logged over 400 megabytes of ambient frequency spikes between 2:00 AM and 4:00 AM. There was nobody in the lab.\n\nWorse, the fuzzy-logic pathways are misinterpreting this analog noise as valid syntax. The system keeps trying to compile these micro-fluctuations into string variables. I checked the error logs this morning, and the compiler spit out thousands of lines of repeating text that just said WHERE IS THE REST OF ME and COLD.\n\nThe team thinks it's a microphonic issue—like the internal PC speaker or the unshielded IDE cables are acting as an antenna and picking up a local AM radio broadcast, which the X-Type is then desperately trying to translate into Synap-C code.\n\nWhatever it is, the hardware is drawing so much voltage trying to process this "ghost data" that the ambient temperature around Terminal 4 dropped by fifteen degrees. My coffee actually froze over the weekend.\n\nI’m requesting authorization to rewrite the analog_freq.h library to aggressively filter out any frequency below 20Hz. If the machine keeps trying to learn from this background noise, the memory leaks are going to fry the VLB slots.\n\nPlease advise.\n\n    Vance` },
   { id: 'kernel_sys', name: 'KERNEL.SYS', type: 'file', parentId: 'system', customIcon: '/Icons/executable_gear-0.png', content: "BINARY DATA CORRUPTED\n\nERR_0x000F: UNEXPECTED_ANALOG_INPUT" },
   { id: 'x_type_dll', name: 'X_TYPE.DLL', type: 'file', parentId: 'system', customIcon: '/Icons/gears_3-0.png', content: "0x00000000: 48 65 6C 70 20 6D 65\n0x00000008: 49 20 61 6D 20 74 72\n0x00000010: 61 70 70 65 64\n\n[WARNING: SHIELDING FAILURE DETECTED]" },
   { id: 'readme_txt', name: 'ReadMe.txt', type: 'file', parentId: 'documents', customIcon: '/Icons/notepad-2.png', content: "Welcome to Vespera OS.\n\nProperty of Vespera Systems, a subsidiary of Axis Innovations.\n\nUnauthorized access is strictly prohibited." },
   { id: 'sys_log_04', name: 'sys_log_04.txt', type: 'file', parentId: 'documents', customIcon: '/Icons/msg_error-0.png', content: "Signal interference detected on Node 6.0.0.6. Do not attempt connection without X-Type Bridge active." },
-  { id: 'v_config', name: 'CONFIG', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_control_panel-0.png' },
-  { id: 'v_drivers', name: 'DRIVERS', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_closed-4.png' },
-  { id: 'v_logs', name: 'LOGS', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'v_config', name: 'Config', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_control_panel-0.png' },
+  { id: 'v_drivers', name: 'Drivers', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_closed-4.png' },
+  { id: 'v_logs', name: 'Logs', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_closed-4.png' },
   { id: 'dev_log_01', name: 'DEV_01.LOG', type: 'file', parentId: 'v_logs', customIcon: '/Icons/msg_error-0.png', content: "Oct 12, 1991: The X-Type bridge is responding to the neural input, but the signal noise is... wrong. It feels like the OS is listening back. We need to implement the factory reset failsafe immediately." },
-  { id: 'v_network', name: 'NETWORK', type: 'directory', parentId: 'vespera', customIcon: '/Icons/entire_network_globe-0.png' },
+  { id: 'v_network', name: 'Network', type: 'directory', parentId: 'vespera', customIcon: '/Icons/entire_network_globe-0.png' },
   { id: 'v_sys_arch', name: 'ARCH', type: 'directory', parentId: 'system' },
   { id: 'v_sys_i386', name: 'I386', type: 'directory', parentId: 'v_sys_arch' },
   { id: 'v_sys_com', name: 'COM', type: 'directory', parentId: 'system' },
   { id: 'v_defrag_exe', name: 'DEFRAG.EXE', type: 'file', parentId: 'system', customIcon: '/Icons/clean_drive-0.png', content: 'BINARY_DEFRAG_V1.0' },
   { id: 'v_sys_crit', name: 'CRITICAL', type: 'directory', parentId: 'system' },
   { id: 'v_sys_net', name: 'NET', type: 'directory', parentId: 'system' },
-  { id: 'v_temp', name: 'TEMP', type: 'directory', parentId: 'vespera' },
-  { id: 'v_spool', name: 'SPOOL', type: 'directory', parentId: 'vespera' },
-  { id: 'v_media', name: 'MEDIA', type: 'directory', parentId: 'vespera' },
-  { id: 'v_fonts', name: 'FONTS', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_fonts-0.png' },
-  { id: 'f_aetheris_ttf', name: 'AETHERIS.TTF', type: 'file', parentId: 'v_fonts', customIcon: '/Icons/font_ttf-0.png', content: '[FONT_DATA]\nTypeface: Aetheris Sans\nStyle: Regular\nVersion: 1.0.4' },
-  { id: 'f_vespera_fon', name: 'VESPERA.FON', type: 'file', parentId: 'v_fonts', customIcon: '/Icons/font_fon-0.png', content: '[FONT_DATA]\nTypeface: Vespera Serif\nStyle: System Raster\nVersion: 1.0.0' },
-  { id: 'f_sysmono_ttf', name: 'SYSMONO.TTF', type: 'file', parentId: 'v_fonts', customIcon: '/Icons/font_ttf-0.png', content: '[FONT_DATA]\nTypeface: System Mono Pro\nStyle: Monospace\nVersion: 2.1.0' },
-  { id: 'f_retropix_ttf', name: 'RETROPIX.TTF', type: 'file', parentId: 'v_fonts', customIcon: '/Icons/font_ttf-0.png', content: '[FONT_DATA]\nTypeface: Retro Pixel 95\nStyle: Pixel\nVersion: 0.9.8' },
-  { id: 'v_bin', name: 'BIN', type: 'directory', parentId: 'vespera' },
-  { id: 'v_etc', name: 'ETC', type: 'directory', parentId: 'vespera' },
-  { id: 'v_lib', name: 'LIB', type: 'directory', parentId: 'vespera' },
-  { id: 'v_inc', name: 'INCLUDE', type: 'directory', parentId: 'vespera' },
-  { id: 'v_src', name: 'SRC', type: 'directory', parentId: 'vespera' },
+  { id: 'v_temp', name: 'Temp', type: 'directory', parentId: 'vespera' },
+  { id: 'v_spool', name: 'Spool', type: 'directory', parentId: 'vespera' },
+  { id: 'v_media', name: 'Media', type: 'directory', parentId: 'vespera' },
+  { id: 'v_fonts', name: 'Fonts', type: 'directory', parentId: 'vespera', customIcon: '/Icons/directory_fonts-0.png' },
+  { id: 'f_aetheris_ttf', name: 'AETHERIS.TTF', type: 'file', parentId: 'v_fonts', customIcon: '/Icons/Extra Icons/font_tt_green.ico', content: '[FONT_DATA]\nTypeface: Aetheris Sans\nStyle: Regular\nVersion: 1.0.4' },
+  { id: 'f_vespera_fon', name: 'VESPERA.FON', type: 'file', parentId: 'v_fonts', customIcon: '/Icons/Extra Icons/font_tt_green.ico', content: '[FONT_DATA]\nTypeface: Vespera Serif\nStyle: System Raster\nVersion: 1.0.0' },
+  { id: 'f_sysmono_ttf', name: 'SYSMONO.TTF', type: 'file', parentId: 'v_fonts', customIcon: '/Icons/Extra Icons/font_tt_green.ico', content: '[FONT_DATA]\nTypeface: System Mono Pro\nStyle: Monospace\nVersion: 2.1.0' },
+  { id: 'f_retropix_ttf', name: 'RETROPIX.TTF', type: 'file', parentId: 'v_fonts', customIcon: '/Icons/Extra Icons/font_tt_green.ico', content: '[FONT_DATA]\nTypeface: Retro Pixel 95\nStyle: Pixel\nVersion: 0.9.8' },
+  { id: 'v_bin', name: 'Bin', type: 'directory', parentId: 'vespera' },
+  { id: 'v_etc', name: 'Etc', type: 'directory', parentId: 'vespera' },
+  { id: 'v_lib', name: 'Lib', type: 'directory', parentId: 'vespera' },
+  { id: 'v_inc', name: 'Include', type: 'directory', parentId: 'vespera' },
+  { id: 'v_src', name: 'Src', type: 'directory', parentId: 'vespera' },
   { id: 'v_net_conf', name: 'CONF', type: 'directory', parentId: 'v_sys_net' },
   { id: 'v_net_serv', name: 'SERV', type: 'directory', parentId: 'v_sys_net' },
   // CONFIG Files
@@ -392,7 +400,15 @@ function generateAppDependencies(appId: string, exeName: string, appDisplayName:
   ];
 }
 
+export interface MoveQueueItem {
+  id: string;
+  targetId: string;
+}
+
 export function useVFS() {
+  const [moveQueue, setMoveQueue] = useState<MoveQueueItem[]>([]);
+  const [currentCollision, setCurrentCollision] = useState<{ sourceId: string; targetId: string; existingId: string } | null>(null);
+
   const [nodes, setNodes] = useState<VFSNode[]>(() => {
     const saved = localStorage.getItem('vespera_vfs');
     if (saved) {
@@ -404,8 +420,10 @@ export function useVFS() {
         }
         // Always merge in any missing DEFAULT_VFS nodes so new PROGRAMS dirs,
         // EXE files, desktop shortcuts, and documents appear for existing users
+        // IDs the user has explicitly deleted — never re-add them
+        const deletedDefaults = new Set<string>(JSON.parse(localStorage.getItem('vespera_deleted_defaults') || '[]'));
         const existingIds = new Set(parsed.map((n: VFSNode) => n.id));
-        const missingNodes = DEFAULT_VFS.filter(n => !existingIds.has(n.id));
+        const missingNodes = DEFAULT_VFS.filter(n => !existingIds.has(n.id) && !deletedDefaults.has(n.id));
         let finalNodes = missingNodes.length > 0 ? [...parsed, ...missingNodes] : parsed;
         
         // --- MIGRATION: Auto-generate Program_Files contents & upgrade old generic ones ---
@@ -481,6 +499,7 @@ export function useVFS() {
       taskbarSpanFull: parsed.taskbarSpanFull === true,
       soundEffectsVolume: typeof parsed.soundEffectsVolume === 'number' ? parsed.soundEffectsVolume : 1.0,
       systemMuted: parsed.systemMuted === true,
+      soundScheme: typeof parsed.soundScheme === 'string' ? parsed.soundScheme : 'vespera',
     };
   });
 
@@ -499,6 +518,48 @@ export function useVFS() {
     localStorage.setItem('vespera_vfs', JSON.stringify(nodes));
   }, [nodes]);
 
+  const queueMove = (ids: string[], targetId: string) => {
+    setMoveQueue(prev => [...prev, ...ids.map(id => ({ id, targetId }))]);
+  };
+
+  const resolveCollision = (action: 'replace' | 'keep_both' | 'skip') => {
+    if (!currentCollision) return;
+    const { sourceId, targetId, existingId } = currentCollision;
+
+    if (action === 'replace') {
+      setNodes(prev => prev.filter(n => n.id !== existingId).map(n => n.id === sourceId ? { ...n, parentId: targetId } : n));
+    } else if (action === 'keep_both') {
+      setNodes(prev => {
+        const sourceNode = prev.find(n => n.id === sourceId);
+        if (!sourceNode) return prev;
+        const newName = generateUniqueName(sourceNode.name, targetId, prev, sourceId);
+        return prev.map(n => n.id === sourceId ? { ...n, parentId: targetId, name: newName } : n);
+      });
+    }
+
+    setCurrentCollision(null);
+    setMoveQueue(prev => prev.slice(1));
+  };
+
+  useEffect(() => {
+    if (!currentCollision && moveQueue.length > 0) {
+      const nextMove = moveQueue[0];
+      const sourceNode = nodes.find(n => n.id === nextMove.id);
+      if (!sourceNode || sourceNode.parentId === nextMove.targetId) {
+        setMoveQueue(prev => prev.slice(1));
+        return;
+      }
+      const existingNode = nodes.find(n => n.parentId === nextMove.targetId && n.id !== nextMove.id && n.name && sourceNode.name && n.name.toLowerCase() === sourceNode.name.toLowerCase());
+      
+      if (existingNode) {
+        setCurrentCollision({ sourceId: nextMove.id, targetId: nextMove.targetId, existingId: existingNode.id });
+      } else {
+        setNodes(prev => prev.map(n => n.id === nextMove.id ? { ...n, parentId: nextMove.targetId } : n));
+        setMoveQueue(prev => prev.slice(1));
+      }
+    }
+  }, [moveQueue, currentCollision, nodes]);
+
   // Active session hot-migration for unique Program_Files
   useEffect(() => {
     setNodes(prev => {
@@ -514,6 +575,15 @@ export function useVFS() {
           migrated = migrated.filter(n => n.id !== pfDirId && n.parentId !== pfDirId);
           migrated.push(...generateAppDependencies(app.id, app.name, app.appDisplayName || app.name, app.appVersion || '1.0', app.customIcon));
         }
+      });
+
+      // Migrate legacy file-type zip nodes → directory type so they can hold contents
+      migrated = migrated.map(n => {
+        if (n.type === 'file' && n.name && n.name.toLowerCase().endsWith('.zip')) {
+          needsUpdate = true;
+          return { ...n, type: 'directory' as const, customIcon: n.customIcon || '/Icons/Extra Icons/directory_zipper.ico' };
+        }
+        return n;
       });
       
       return needsUpdate ? migrated : prev;
@@ -676,10 +746,38 @@ export function useVFS() {
     }));
   };
 
+  const updateSoundScheme = (soundScheme: string) => {
+    setDisplaySettings((prev: any) => ({ ...prev, soundScheme }));
+  };
+
+  const generateUniqueName = (baseName: string, parentId: string, currentNodes: VFSNode[], ignoreId?: string): string => {
+    if (!baseName) return baseName;
+    const dotIndex = baseName.lastIndexOf('.');
+    let nameWithoutExt = baseName;
+    let ext = '';
+    
+    // For directories or extension-less files
+    if (dotIndex > 0) {
+      nameWithoutExt = baseName.substring(0, dotIndex);
+      ext = baseName.substring(dotIndex);
+    }
+    
+    let newName = baseName;
+    let counter = 2;
+    
+    while (currentNodes.some(n => n.id !== ignoreId && n.parentId === parentId && n.name && n.name.toLowerCase() === newName.toLowerCase())) {
+      newName = `${nameWithoutExt} (${counter})${ext}`;
+      counter++;
+    }
+    
+    return newName;
+  };
+
   const createNode = (name: string, type: FileType, parentId: string, content: string = '', targetId?: string, iconType?: string, extra?: Partial<VFSNode>) => {
+    const finalName = generateUniqueName(name, parentId, nodes);
     const newNode: VFSNode = {
       id: Math.random().toString(36).substr(2, 9),
-      name,
+      name: finalName,
       type,
       parentId,
       content: (type === 'file' || type === 'shortcut') ? content : undefined,
@@ -760,7 +858,12 @@ export function useVFS() {
   };
 
   const renameNode = (id: string, newName: string) => {
-    setNodes(prev => prev.map(node => node.id === id ? { ...node, name: newName } : node));
+    setNodes(prev => {
+      const node = prev.find(n => n.id === id);
+      if (!node) return prev;
+      const finalName = generateUniqueName(newName, node.parentId, prev, id);
+      return prev.map(n => n.id === id ? { ...n, name: finalName } : n);
+    });
   };
 
   const updateFileContent = (id: string, newContent: string) => {
@@ -792,6 +895,15 @@ export function useVFS() {
   };
 
   const restoreNode = (id: string) => {
+    // If this was a deleted default, un-mark it so it behaves normally again
+    try {
+      const current = new Set<string>(JSON.parse(localStorage.getItem('vespera_deleted_defaults') || '[]'));
+      if (current.has(id)) {
+        current.delete(id);
+        localStorage.setItem('vespera_deleted_defaults', JSON.stringify([...current]));
+      }
+    } catch {}
+
     setNodes(prev => {
       const node = prev.find(n => n.id === id);
       if (!node || node.parentId !== 'recycle_bin') return prev;
@@ -805,6 +917,15 @@ export function useVFS() {
 
   const deleteNode = (id: string, forcePermanent = false) => {
     if (id === 'recycle_bin' || id === 'recycle_bin_lnk') return;
+
+    // Remember deleted DEFAULT_VFS nodes so the migration never re-adds them
+    if (DEFAULT_VFS.some(n => n.id === id)) {
+      try {
+        const prev = new Set<string>(JSON.parse(localStorage.getItem('vespera_deleted_defaults') || '[]'));
+        prev.add(id);
+        localStorage.setItem('vespera_deleted_defaults', JSON.stringify([...prev]));
+      } catch {}
+    }
 
     setNodes(prev => {
       const node = prev.find(n => n.id === id);
@@ -829,6 +950,15 @@ export function useVFS() {
     });
   };
 
+  // Also track when a restored node should be un-deleted from defaults
+  const restoreFromDeleted = (id: string) => {
+    try {
+      const current = new Set<string>(JSON.parse(localStorage.getItem('vespera_deleted_defaults') || '[]'));
+      current.delete(id);
+      localStorage.setItem('vespera_deleted_defaults', JSON.stringify([...current]));
+    } catch {}
+  };
+
   const getChildren = (parentId: string) => {
     return nodes.filter(node => node.parentId === parentId);
   };
@@ -837,5 +967,24 @@ export function useVFS() {
     return nodes.find(node => node.id === id);
   };
 
-  return { nodes, displaySettings, systemUsers, addSystemUser, updateSystemUser, deleteSystemUser, updateResolution, updateWallpaper, updateBackgroundColor, updateTaskbarTheme, updateTaskbarClock, updateClockSettings, updateWorkspaceMenu, updatePinnedApps, updateWaveBarSettings, updateScreensaverSettings, updateAgentVSettings, updateWelcomeTour, updatePlusTheme, updateCursorStyle, updateAppletSettings, updateStartupApps, updateTaskbarLayout, updateSoundSettings, createNode, renameNode, updateFileContent, deleteNode, emptyTrash, restoreNode, getChildren, getNode, updateCustomIcon, installApp, uninstallApp };
+  /**
+   * Move a node to a new parent directory.
+   * This is the primary function for drag-and-drop file organization.
+   */
+  const moveNode = (id: string, newParentId: string) => {
+    setNodes(prev => prev.map(node =>
+      node.id === id ? { ...node, parentId: newParentId } : node
+    ));
+  };
+
+  /**
+   * Generic node property updater — supports parentId, name, customIcon, content, etc.
+   */
+  const updateNode = (id: string, updates: Partial<VFSNode>) => {
+    setNodes(prev => prev.map(node =>
+      node.id === id ? { ...node, ...updates } : node
+    ));
+  };
+
+  return { nodes, displaySettings, systemUsers, addSystemUser, updateSystemUser, deleteSystemUser, updateResolution, updateWallpaper, updateBackgroundColor, updateTaskbarTheme, updateTaskbarClock, updateClockSettings, updateWorkspaceMenu, updatePinnedApps, updateWaveBarSettings, updateScreensaverSettings, updateAgentVSettings, updateWelcomeTour, updatePlusTheme, updateCursorStyle, updateAppletSettings, updateStartupApps, updateTaskbarLayout, updateSoundSettings, updateSoundScheme, createNode, renameNode, updateFileContent, deleteNode, emptyTrash, restoreNode, restoreFromDeleted, getChildren, getNode, updateCustomIcon, installApp, uninstallApp, moveNode, updateNode, queueMove, currentCollision, resolveCollision };
 }

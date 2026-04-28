@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Mail, ShieldAlert, KeyRound, ArrowRight, Server, Inbox, Send, FileEdit, Trash2, BookUser, Search, RefreshCw, AlertTriangle, UserCircle2, UserPlus, Network, Paperclip, Save, CornerUpLeft, CornerUpRight, Printer, Book } from 'lucide-react';
 import { getAccounts, VStoreAccount, getSession, setSession } from './VStoreAuth';
 import { useVMail } from '../contexts/VMailContext';
 import { playBrowserBootSound, playInfoSound } from '../utils/audio';
 import { VersaFileManager } from './VersaFileManager';
+import { VesperaSplash } from './VesperaSplash';
 
 export const CONTACTS = [
   { name: 'SysAdmin', email: 'admin@vesperanet.sys' },
@@ -51,6 +52,18 @@ export const VMail: React.FC<{ onClose: () => void, vfs?: any }> = ({ onClose, v
   const [showAddressBook, setShowAddressBook] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [alertModal, setAlertModal] = useState<{isOpen: boolean, message: string}>({isOpen: false, message: ''});
+
+  // Splash Screen State
+  const [splashDone, setSplashDone] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Hide the parent window frame until the splash screen is done
+  useEffect(() => {
+    const parentWin = containerRef.current?.closest('.absolute.bg-\\[\\#c0c0c0\\]') as HTMLElement;
+    if (parentWin) {
+      parentWin.style.visibility = splashDone ? 'visible' : 'hidden';
+    }
+  }, [splashDone]);
 
   const handleCreateAccount = () => {
      window.dispatchEvent(new CustomEvent('launch-app', { detail: { id: 'browser', defaultUrl: 'vespera:account' } }));
@@ -181,7 +194,18 @@ export const VMail: React.FC<{ onClose: () => void, vfs?: any }> = ({ onClose, v
   // 1. Unauthenticated or Dialing Views
   if (!activeAccount) {
     return (
-      <div className="h-full overflow-hidden relative">
+      <div ref={containerRef} className="h-full overflow-hidden relative">
+        {!splashDone && (
+          <VesperaSplash
+            appName="VMail"
+            subtitle="VesperaNET Secure Mail"
+            version="Version 1.0"
+            developer="Vespera Systems"
+            icon="/Icons/mailbox_world-2.png"
+            durationMs={2500}
+            onDone={() => setSplashDone(true)}
+          />
+        )}
         <div className="absolute inset-0 bg-[#004c66] flex flex-col justify-end">
           <div className="h-4 bg-white/20 border-t border-white/40"></div>
           <div className="h-2 bg-white/10 border-t border-white/20 mt-1"></div>
@@ -283,8 +307,18 @@ export const VMail: React.FC<{ onClose: () => void, vfs?: any }> = ({ onClose, v
   const unreadCount = emails.filter(e => e.folder === 'inbox' && !e.read).length;
 
   return (
-    <div className="flex flex-col h-full bg-[#c0c0c0] text-black font-sans border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 relative">
-      
+    <div ref={containerRef} className="flex flex-col h-full bg-[#c0c0c0] text-black font-sans border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 relative">
+      {!splashDone && (
+        <VesperaSplash
+          appName="VMail"
+          subtitle="VesperaNET Secure Mail"
+          version="Version 1.0"
+          developer="Vespera Systems"
+          icon="/Icons/mailbox_world-2.png"
+          durationMs={2500}
+          onDone={() => setSplashDone(true)}
+        />
+      )}
       {/* VMail Menu Bar */}
       <div className="flex items-center gap-4 py-1 px-2 border-b border-gray-500 text-xs">
          <div className="flex gap-4">

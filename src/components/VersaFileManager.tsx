@@ -45,19 +45,24 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
     const n = vfs.getNode(focusDirectoryId);
     if (n && n.type === 'directory') {
       setCurrentDir((prev) => (prev === focusDirectoryId ? prev : focusDirectoryId));
-      setSelectedNode(null);
+      setSelectedNodes(new Set());
     }
   }, [focusDirectoryNonce, focusDirectoryId, vfs]);
 
   const [currentDir, setCurrentDir] = useState<string>('root');
-  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [selectedNodes, setSelectedNodes] = useState<Set<string>>(new Set());
+  const [lassoSelection, setLassoSelection] = useState<{ startX: number, startY: number, currentX: number, currentY: number, active: boolean } | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
   const [associationModal, setAssociationModal] = useState<{ isOpen: boolean, nodeId: string, fileName: string }>({ isOpen: false, nodeId: '', fileName: '' });
   const [accessDeniedModal, setAccessDeniedModal] = useState<{ isOpen: boolean, fileName: string }>({ isOpen: false, fileName: '' });
-  // File-manager-local context menu
+  // File-manager-local context menu (on a file/folder node)
   const [fmCtx, setFmCtx] = useState<{ x: number; y: number; nodeId: string } | null>(null);
-  useEffect(() => {
-    if (!fmCtx) setOpenWithNodeId(null);
-  }, [fmCtx]);
+  // Background (empty-area) context menu
+  const [fmBgCtx, setFmBgCtx] = useState<{ x: number; y: number } | null>(null);
+  // Zip compression dialog
+  const [zipDialog, setZipDialog] = useState<{ active: boolean; progress: number; fileName: string } | null>(null);
+  const zipTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => { if (!fmCtx) setOpenWithNodeId(null); }, [fmCtx]);
   const [fmRenamingId, setFmRenamingId] = useState<string | null>(null);
   const [fmRenameValue, setFmRenameValue] = useState('');
   const [openWithNodeId, setOpenWithNodeId] = useState<string | null>(null);
@@ -65,6 +70,52 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
   const fmAreaRef = useRef<HTMLDivElement>(null);
 
   const currentDirNode = vfs.getNode(currentDir);
+
+  /** Returns true for nodes that are zip archives (directory type + .zip name) */
+  const isZipNode = (node: VFSNode) => node.type === 'directory' && node.name.toLowerCase().endsWith('.zip');
+
+  /** Simulate compression then move files into the zip node */
+  const compressIntoZip = (fileIds: string[], zipNodeId: string, zipName: string) => {
+    let prog = 0;
+    setZipDialog({ active: true, progress: 0, fileName: zipName });
+    if (zipTimerRef.current) clearInterval(zipTimerRef.current);
+    
+    const targetDuration = Math.floor(Math.random() * 25000) + 5000; // 5 to 30 seconds
+    const updateInterval = 250;
+    let elapsed = 0;
+
+    zipTimerRef.current = setInterval(() => {
+      elapsed += updateInterval;
+      prog = Math.min(100, (elapsed / targetDuration) * 100 + (Math.random() * 5));
+      
+      if (elapsed >= targetDuration || prog >= 100) {
+        prog = 100;
+        clearInterval(zipTimerRef.current!);
+        zipTimerRef.current = null;
+        const validIds = fileIds.filter(id => {
+          const n = vfs.getNode(id);
+          return n && n.id !== zipNodeId && n.id !== 'recycle_bin';
+        });
+        if (validIds.length > 0) vfs.queueMove(validIds, zipNodeId);
+        setTimeout(() => setZipDialog(null), 400);
+      }
+      setZipDialog({ active: true, progress: Math.floor(prog), fileName: zipName });
+    }, updateInterval);
+  };
+
+  /** Create a new zip archive from the currently selected nodes */
+  const addSelectedToZip = () => {
+    const ids = Array.from(selectedNodes).filter(id => {
+      const n = vfs.getNode(id);
+      return n && !isZipNode(n);
+    });
+    if (ids.length === 0) return;
+    const zipNode = vfs.createNode('Archive.zip', 'directory', currentDir, undefined, undefined, undefined, { customIcon: '/Icons/Extra Icons/directory_zipper.ico' });
+    compressIntoZip(ids, zipNode.id, 'Archive.zip');
+    setSelectedNodes(new Set());
+    setFmCtx(null);
+    setFmBgCtx(null);
+  };
 
   const TECHNICAL_EXTENSIONS = ['.DLL', '.SYS', '.VXD', '.INF', '.DRV'];
   const PROTECTED_EXTENSIONS = ['.DLL', '.SYS', '.VXD'];
@@ -82,6 +133,8 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
     if (name.endsWith('.MP3') || name.endsWith('.WAV') || name.endsWith('.MID') ||
         name.endsWith('.OGG')) return 'media_player';
     if (name.endsWith('.AWJ')) return 'workbench';  // Aetheris Workbench Project files
+    // Zip archives open in VersaZip archive manager
+    if (name.endsWith('.ZIP')) return 'versa_zip';
     return null;
   };
 
@@ -89,8 +142,8 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
   const getAbsolutePath = (nodeId: string): string => {
     const node = vfs.getNode(nodeId);
     if (!node) return '';
-    if (!node.parentId) return node.name.toUpperCase();
-    return `${getAbsolutePath(node.parentId)}\\${node.name.toUpperCase()}`;
+    if (!node.parentId) return node.name;
+    return `${getAbsolutePath(node.parentId)}\\${node.name}`;
   };
 
   const getFileIcon = (node: VFSNode) => {
@@ -116,9 +169,19 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
       case '.INF':
         return '/Icons/settings_gear-2.png';
       case '.AWJ':
-        return '/Icons/notepad_file_gear-0.png';  // Aetheris Workbench Project
+        return '/Icons/Extra Icons/java_ocx.ico';  // Aetheris Workbench Project
       case '.TXT':
       case '.LOG':
+        return '/Icons/Extra Icons/file_lines.ico';
+      case '.PNG':
+      case '.JPG':
+      case '.JPEG':
+      case '.BMP':
+      case '.GIF':
+        return '/Icons/Extra Icons/imagPNG.ico';
+      case '.PPTX':
+      case '.VSP':
+        return '/Icons/Microsoft_PowerPoint_1994.svg';
       default:
         return '/Icons/notepad-2.png';
     }
@@ -156,7 +219,7 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
       
       if (foundNode) {
         setCurrentDir(foundNode.id);
-        setSelectedNode(null);
+        setSelectedNodes(new Set());
       } else {
         setPathError(true);
       }
@@ -166,9 +229,18 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
   let children = vfs.getChildren(currentDir);
 
   const handleDoubleClick = (node: VFSNode) => {
+    // Zip archives (by name) open in VersaZip
+    if (node.name.toLowerCase().endsWith('.zip')) {
+      // Ensure it's a directory type (migrate stale file-type zips)
+      if (node.type === 'file') vfs.updateNode(node.id, { type: 'directory' as any });
+      onOpenFile(node.id);
+      if (onLaunchApp) onLaunchApp('versa_zip');
+      return;
+    }
+    // Regular directories navigate into them
     if (node.type === 'directory') {
       setCurrentDir(node.id);
-      setSelectedNode(null);
+      setSelectedNodes(new Set());
       return;
     }
 
@@ -264,7 +336,7 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
   const handleUp = () => {
     if (currentDirNode?.parentId) {
       setCurrentDir(currentDirNode.parentId);
-      setSelectedNode(null);
+      setSelectedNodes(new Set());
     }
   };
 
@@ -302,24 +374,117 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
         {/* Left Sidebar */}
         <div className="w-32 flex flex-col gap-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#c0c0c0] p-2 shrink-0 overflow-y-auto">
           <div className="font-bold text-xs mb-2 border-b-2 border-gray-500 pb-1 text-black">Quick Links</div>
-          <button onClick={() => { setCurrentDir('root'); setSelectedNode(null); }} className="text-left text-xs text-black hover:bg-[#000080] hover:text-white px-1 py-1 w-full truncate border border-transparent active:border-dotted active:border-black">C:\</button>
-          <button onClick={() => { setCurrentDir('desktop'); setSelectedNode(null); }} className="text-left text-xs text-black hover:bg-[#000080] hover:text-white px-1 py-1 w-full truncate border border-transparent active:border-dotted active:border-black">Desktop</button>
-          <button onClick={() => { setCurrentDir('documents'); setSelectedNode(null); }} className="text-left text-xs text-black hover:bg-[#000080] hover:text-white px-1 py-1 w-full truncate border border-transparent active:border-dotted active:border-black">Documents</button>
-          <button onClick={() => { setCurrentDir('vespera'); setSelectedNode(null); }} className="text-left text-xs text-black hover:bg-[#000080] hover:text-white px-1 py-1 w-full truncate border border-transparent active:border-dotted active:border-black">System</button>
+          <button onClick={() => { setCurrentDir('root'); setSelectedNodes(new Set()); }} className="text-left text-xs text-black hover:bg-[#000080] hover:text-white px-1 py-1 w-full truncate border border-transparent active:border-dotted active:border-black">C:\</button>
+          <button onClick={() => { setCurrentDir('desktop'); setSelectedNodes(new Set()); }} className="text-left text-xs text-black hover:bg-[#000080] hover:text-white px-1 py-1 w-full truncate border border-transparent active:border-dotted active:border-black">Desktop</button>
+          <button onClick={() => { setCurrentDir('documents'); setSelectedNodes(new Set()); }} className="text-left text-xs text-black hover:bg-[#000080] hover:text-white px-1 py-1 w-full truncate border border-transparent active:border-dotted active:border-black">Documents</button>
+          <button onClick={() => { setCurrentDir('vespera'); setSelectedNodes(new Set()); }} className="text-left text-xs text-black hover:bg-[#000080] hover:text-white px-1 py-1 w-full truncate border border-transparent active:border-dotted active:border-black">System</button>
         </div>
 
         {/* File Area */}
         <div 
           ref={fmAreaRef}
-          className="flex-1 bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white overflow-y-auto flex flex-wrap gap-4 content-start p-2 relative"
-          onClick={() => { setFmCtx(null); setFmRenamingId(null); }}
+          className={`fm-icon-container flex-1 bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white overflow-y-auto flex flex-wrap gap-4 content-start p-2 relative transition-colors ${isDragOver ? 'bg-blue-50 !border-blue-400' : ''}`}
+          onMouseDown={(e) => {
+            if (e.target === fmAreaRef.current || (e.target as HTMLElement).classList.contains('fm-icon-container')) {
+              setLassoSelection({
+                startX: e.clientX,
+                startY: e.clientY,
+                currentX: e.clientX,
+                currentY: e.clientY,
+                active: true
+              });
+              if (!e.ctrlKey && !e.metaKey) {
+                setSelectedNodes(new Set());
+              }
+            }
+          }}
+          onMouseMove={(e) => {
+            if (lassoSelection?.active) {
+              setLassoSelection(prev => prev ? { ...prev, currentX: e.clientX, currentY: e.clientY } : null);
+            }
+          }}
+          onMouseUp={(e) => {
+            if (lassoSelection?.active) {
+              const rect = fmAreaRef.current?.getBoundingClientRect();
+              if (rect) {
+                const left = Math.min(lassoSelection.startX, lassoSelection.currentX) - rect.left;
+                const right = Math.max(lassoSelection.startX, lassoSelection.currentX) - rect.left;
+                const top = Math.min(lassoSelection.startY, lassoSelection.currentY) - rect.top;
+                const bottom = Math.max(lassoSelection.startY, lassoSelection.currentY) - rect.top;
+                
+                const newSelected = new Set((e.ctrlKey || e.metaKey) ? selectedNodes : []);
+                const icons = document.querySelectorAll('.fm-icon-node');
+                icons.forEach((icon: Element) => {
+                  const iconRect = (icon as HTMLElement).getBoundingClientRect();
+                  const iLeft = iconRect.left - rect.left;
+                  const iRight = iconRect.right - rect.left;
+                  const iTop = iconRect.top - rect.top;
+                  const iBottom = iconRect.bottom - rect.top;
+                  if (iLeft < right && iRight > left && iTop < bottom && iBottom > top) {
+                    const nodeId = icon.getAttribute('data-nodeid');
+                    if (nodeId) newSelected.add(nodeId);
+                  }
+                });
+                setSelectedNodes(newSelected);
+              }
+              setLassoSelection(null);
+            }
+          }}
+          onClick={() => { setFmCtx(null); setFmBgCtx(null); setFmRenamingId(null); if (!lassoSelection?.active) setSelectedNodes(new Set()); }}
           onContextMenu={(e) => {
-            // Right-click on empty area of file pane — no-op (suppress browser menu)
             e.preventDefault();
             e.stopPropagation();
             setFmCtx(null);
+            const rect = fmAreaRef.current?.getBoundingClientRect();
+            setFmBgCtx({
+              x: e.clientX - (rect?.left ?? 0),
+              y: e.clientY - (rect?.top ?? 0),
+            });
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = 'move';
+            setIsDragOver(true);
+          }}
+          onDragEnter={(e) => {
+            e.preventDefault();
+            setIsDragOver(true);
+          }}
+          onDragLeave={(e) => {
+            // Only clear if leaving the file area entirely (not entering a child)
+            if (!fmAreaRef.current?.contains(e.relatedTarget as Node)) {
+              setIsDragOver(false);
+            }
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsDragOver(false);
+            const data = e.dataTransfer.getData('text/plain');
+            if (!data) return;
+            try {
+              const ids: string[] = data.startsWith('[') ? JSON.parse(data) : [data];
+              const validIds = ids.filter(id => {
+                const n = vfs.getNode(id);
+                return n && n.id !== currentDir && n.id !== 'recycle_bin';
+              });
+              if (validIds.length > 0) vfs.queueMove(validIds, currentDir);
+              setSelectedNodes(new Set());
+            } catch (err) {}
           }}
         >
+          {lassoSelection?.active && (
+            <div 
+              className="absolute bg-blue-500/20 border border-blue-400/50 pointer-events-none z-[100]"
+              style={{
+                left: Math.min(lassoSelection.startX, lassoSelection.currentX) - (fmAreaRef.current?.getBoundingClientRect().left ?? 0) + (fmAreaRef.current?.scrollLeft ?? 0),
+                top: Math.min(lassoSelection.startY, lassoSelection.currentY) - (fmAreaRef.current?.getBoundingClientRect().top ?? 0) + (fmAreaRef.current?.scrollTop ?? 0),
+                width: Math.abs(lassoSelection.currentX - lassoSelection.startX),
+                height: Math.abs(lassoSelection.currentY - lassoSelection.startY)
+              }}
+            />
+          )}
           {children.map((node: VFSNode) => {
             const iconUrl = getFileIcon(node);
             const hidden = isHidden(node);
@@ -328,12 +493,66 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
             return (
             <div 
               key={node.id}
-              onClick={(e) => { e.stopPropagation(); setSelectedNode(node.id); setFmCtx(null); }}
+              data-nodeid={node.id}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                setFmCtx(null);
+                if (e.ctrlKey || e.metaKey) {
+                  setSelectedNodes(prev => {
+                    const next = new Set(prev);
+                    if (next.has(node.id)) next.delete(node.id);
+                    else next.add(node.id);
+                    return next;
+                  });
+                } else {
+                  setSelectedNodes(new Set([node.id]));
+                }
+              }}
+              draggable
+              onDragStart={(e) => {
+                let dragSet = selectedNodes;
+                if (!dragSet.has(node.id)) {
+                  dragSet = new Set([node.id]);
+                  setSelectedNodes(dragSet);
+                }
+                e.dataTransfer.setData('text/plain', JSON.stringify(Array.from(dragSet)));
+              }}
+              onDragOver={(e) => {
+                const isDropTarget = node.type === 'directory' || node.name.toLowerCase().endsWith('.zip') || (node.type === 'shortcut' && node.iconType === 'folder');
+                if (isDropTarget) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
+              }}
+              onDrop={(e) => {
+                const isZip = node.name.toLowerCase().endsWith('.zip');
+                const targetFolderId = (node.type === 'directory' || isZip) ? node.id : (node.type === 'shortcut' && node.iconType === 'folder' ? node.content : null);
+                if (targetFolderId) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const data = e.dataTransfer.getData('text/plain');
+                  try {
+                    const ids: string[] = data.startsWith('[') ? JSON.parse(data) : [data];
+                    if (isZip) {
+                      // Ensure zip is migrated to directory before compressing into it
+                      if (node.type === 'file') vfs.updateNode(node.id, { type: 'directory' as any });
+                      compressIntoZip(ids, targetFolderId, node.name);
+                    } else {
+                      const validIds = ids.filter(id => {
+                        const draggedNode = vfs.getNode(id);
+                        return draggedNode && draggedNode.id !== targetFolderId && draggedNode.id !== 'recycle_bin';
+                      });
+                      if (validIds.length > 0) vfs.queueMove(validIds, targetFolderId);
+                    }
+                    setSelectedNodes(new Set());
+                  } catch (err) {}
+                }
+              }}
               onDoubleClick={() => handleDoubleClick(node)}
               onContextMenu={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                setSelectedNode(node.id);
+                setSelectedNodes(new Set([node.id]));
                 const rect = fmAreaRef.current?.getBoundingClientRect();
                 setFmCtx({
                   x: e.clientX - (rect?.left ?? 0),
@@ -341,11 +560,11 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
                   nodeId: node.id,
                 });
               }}
-              className={`flex flex-col items-center gap-1 w-20 p-2 cursor-pointer border border-transparent ${selectedNode === node.id ? 'bg-[#000080] text-white border-dotted !border-white' : 'hover:border-dotted hover:border-gray-400'}`}
+              className={`fm-icon-node flex flex-col items-center gap-1 w-20 p-2 cursor-pointer border border-transparent transition-colors ${selectedNodes.has(node.id) ? 'bg-[#000080] text-white border-dotted !border-white' : isZipNode(node) ? 'hover:border-dotted hover:border-yellow-500' : 'hover:border-dotted hover:border-gray-400'}`}
               style={{ opacity: hidden ? 0.5 : 1 }}
             >
               {iconUrl ? (
-                <div className="relative">
+                <div className="relative pointer-events-none">
                   <img src={iconUrl} alt="icon" className="w-[32px] h-[32px] drop-shadow-md pointer-events-none" style={{ imageRendering: 'pixelated' }} draggable={false} />
                   {node.type === 'shortcut' && (
                     <div className="absolute -bottom-1 -left-1 bg-white border border-dotted border-black w-3 h-3 flex items-center justify-center">
@@ -354,16 +573,20 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
                   )}
                 </div>
               ) : node.type === 'directory' ? (
-                <Folder size={32} className={selectedNode === node.id ? 'text-white' : 'text-yellow-600'} />
+                isZipNode(node) ? (
+                  <img src="/Icons/Extra Icons/directory_zipper.ico" alt="zip" className={`w-[32px] h-[32px] pointer-events-none`} style={{ imageRendering: 'pixelated' }} draggable={false} />
+                ) : (
+                  <Folder size={32} className={`pointer-events-none ${selectedNodes.has(node.id) ? 'text-white' : 'text-yellow-600'}`} />
+                )
               ) : node.type === 'shortcut' ? (
-                <div className="relative">
-                  <Monitor size={32} className={selectedNode === node.id ? 'text-white' : 'text-blue-600'} />
-                  <div className="absolute -bottom-1 -left-1 bg-white rounded-sm p-0.5">
+                <div className="relative pointer-events-none">
+                  <Monitor size={32} className={`pointer-events-none ${selectedNodes.has(node.id) ? 'text-white' : 'text-blue-600'}`} />
+                  <div className="absolute -bottom-1 -left-1 bg-white rounded-sm p-0.5 pointer-events-none">
                     <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M10 9l-6 6 6 6"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
                   </div>
                 </div>
               ) : (
-                <FileText size={32} className={selectedNode === node.id ? 'text-white' : 'text-gray-600'} />
+                <FileText size={32} className={`pointer-events-none ${selectedNodes.has(node.id) ? 'text-white' : 'text-gray-600'}`} />
               )}
               {isRenaming ? (
                 <input
@@ -385,7 +608,7 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
                   }}
                 />
               ) : (
-                <span className="text-xs text-center break-words w-full line-clamp-2">
+                <span className="text-xs text-center break-words w-full line-clamp-2 pointer-events-none">
                   {node.name}
                 </span>
               )}
@@ -534,6 +757,18 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
                     </button>
                   </>
                 )}
+                {/* Add to Zip — when multiple items are selected */}
+                {selectedNodes.size > 1 && (
+                  <>
+                    <div className="h-[1px] bg-gray-400 mx-1 my-1" />
+                    <button
+                      className="text-left px-4 py-1 hover:bg-[#000080] hover:text-white text-black text-sm"
+                      onClick={() => addSelectedToZip()}
+                    >
+                      Add to Zip ({selectedNodes.size} files)
+                    </button>
+                  </>
+                )}
                 <div className="h-[1px] bg-gray-400 mx-1 my-1" />
                 {/* Properties — bubble up to GUIOS FileProperties window */}
                 <button
@@ -551,6 +786,55 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
               </div>
             );
           })()}
+
+          {/* ── Background (empty area) context menu ── */}
+          {fmBgCtx && (
+            <div
+              className="absolute bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] z-[200] flex flex-col py-1"
+              style={{ left: fmBgCtx.x, top: fmBgCtx.y, minWidth: 160 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <button
+                className="text-left px-4 py-1 hover:bg-[#000080] hover:text-white text-black text-sm"
+                onClick={() => {
+                  vfs.createNode("New Folder", "directory", currentDir, undefined, undefined, undefined, { customIcon: "/Icons/Extra Icons/directory_closed.ico" });
+                  setFmBgCtx(null);
+                }}
+              >
+                New Folder
+              </button>
+              <button
+                className="text-left px-4 py-1 hover:bg-[#000080] hover:text-white text-black text-sm"
+                onClick={() => {
+                  vfs.createNode("New Text File.txt", "file", currentDir, undefined, undefined, undefined, { customIcon: "/Icons/Extra Icons/message_file.ico" });
+                  setFmBgCtx(null);
+                }}
+              >
+                New Text File
+              </button>
+              <button
+                className="text-left px-4 py-1 hover:bg-[#000080] hover:text-white text-black text-sm"
+                onClick={() => {
+                  vfs.createNode("Archive.zip", "directory", currentDir, undefined, undefined, undefined, { customIcon: "/Icons/Extra Icons/directory_zipper.ico" });
+                  setFmBgCtx(null);
+                }}
+              >
+                New Zip File
+              </button>
+              {/* Add to Zip when multiple files selected */}
+              {selectedNodes.size > 1 && (
+                <>
+                  <div className="h-[1px] bg-gray-400 mx-1 my-1" />
+                  <button
+                    className="text-left px-4 py-1 hover:bg-[#000080] hover:text-white text-black text-sm"
+                    onClick={() => addSelectedToZip()}
+                  >
+                    Add to Zip ({selectedNodes.size} files)
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -564,8 +848,8 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
       {isPickerMode && (
         <div className="bg-[#c0c0c0] border-t border-gray-500 p-2 flex justify-end gap-2 shadow-inner drop-shadow-md">
            <button 
-             disabled={!selectedNode || vfs.getNode(selectedNode)?.type === 'directory'}
-             onClick={() => { if (selectedNode) onOpenFile(selectedNode); }}
+             disabled={selectedNodes.size === 0 || Array.from(selectedNodes).some(id => vfs.getNode(id)?.type === 'directory')}
+             onClick={() => { if (selectedNodes.size > 0) onOpenFile(Array.from(selectedNodes)[0]); }}
              className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 font-bold active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-black hover:bg-[#d0d0d0] disabled:opacity-50"
            >
              Insert Object
@@ -576,6 +860,29 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
            >
              Cancel
            </button>
+        </div>
+      )}
+
+      {/* ── Zip Compression Dialog ── */}
+      {zipDialog && (
+        <div className="absolute inset-0 z-[9999] flex items-center justify-center bg-black/30">
+          <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] w-72">
+            <div className="bg-[#000080] text-white px-2 py-1 font-bold text-sm tracking-wide flex items-center gap-2">
+              <img src="/Icons/Extra Icons/directory_zipper.ico" alt="" className="w-4 h-4" style={{ imageRendering: 'pixelated' }} />
+              Compressing Files
+            </div>
+            <div className="p-4">
+              <div className="text-sm text-black mb-2 truncate">Compressing: <span className="font-bold">{zipDialog.fileName}</span></div>
+              <div className="text-xs text-black mb-3">Please wait while files are compressed...</div>
+              <div className="w-full h-5 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white overflow-hidden">
+                <div
+                  className="h-full bg-[#000080] transition-all duration-100"
+                  style={{ width: `${zipDialog.progress}%` }}
+                />
+              </div>
+              <div className="text-xs text-right text-black mt-1">{zipDialog.progress}%</div>
+            </div>
+          </div>
         </div>
       )}
 

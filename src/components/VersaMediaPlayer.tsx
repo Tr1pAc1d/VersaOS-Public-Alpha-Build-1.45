@@ -30,6 +30,7 @@ import {
   VERSA_MEDIA_PLAYER_STATE_EVENT,
   type VersaMediaPlayerStateDetail,
 } from "../utils/mediaPlayerBridge";
+import { VesperaSplash } from "./VesperaSplash";
 
 interface VersaMediaPlayerProps {
   onOpenVideoPopup?: (videoUrl: string, title: string) => void;
@@ -435,6 +436,17 @@ export const VersaMediaPlayer: React.FC<VersaMediaPlayerProps> = ({ onOpenVideoP
   const [currentPlaylistId, setCurrentPlaylistId] = useState<string | null>(null);
   const [playlistManagerOpen, setPlaylistManagerOpen] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
+
+  // Splash Screen State
+  const [splashDone, setSplashDone] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const parentWin = containerRef.current?.closest('.absolute.bg-\\[\\#c0c0c0\\]') as HTMLElement;
+    if (parentWin) {
+      parentWin.style.visibility = splashDone ? 'visible' : 'hidden';
+    }
+  }, [splashDone]);
 
   indexRef.current = currentIndex;
   isPlayingRef.current = isPlaying;
@@ -984,7 +996,18 @@ export const VersaMediaPlayer: React.FC<VersaMediaPlayerProps> = ({ onOpenVideoP
   };
 
   return (
-    <div className="flex flex-col h-full min-h-[480px] bg-[#1a1a1a] text-white font-sans select-none overflow-hidden">
+    <div ref={containerRef} className="flex flex-col h-full min-h-[480px] bg-[#1a1a1a] text-white font-sans select-none overflow-hidden relative">
+      {!splashDone && (
+        <VesperaSplash
+          appName="VERSA Media Agent"
+          subtitle="Advanced Multimedia Playback"
+          version="Version 2.0"
+          developer="Vespera Systems"
+          icon="/Icons/media_player-1.png"
+          durationMs={2000}
+          onDone={() => setSplashDone(true)}
+        />
+      )}
       {/* Title Bar - Classic dark blue */}
       <div className="shrink-0 px-2 py-1 flex items-center justify-between text-xs font-bold bg-[#000080] border-b border-[#000040]">
         <div className="flex items-center gap-2">

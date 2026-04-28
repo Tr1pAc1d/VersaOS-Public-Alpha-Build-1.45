@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { VFSNode } from '../hooks/useVFS';
+import { VersaSlideFilePicker } from './VersaSlideFilePicker';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    TYPES
@@ -618,19 +619,25 @@ export const AxisPaint: React.FC<AxisPaintProps> = ({ vfs, onClose }) => {
     setSaveOpen(true);
   }, [currentFileId, currentFileName, vfs]);
 
-  const performSave = () => {
+  const handleSaveAs = (folderId: string, filename: string) => {
     const c = canvasRef.current; if (!c) return;
-    const mime = SAVE_TYPES.find(t=>t.ext===saveExt)?.mime || 'image/png';
+    
+    const extMatch = filename.match(/\.[^/.]+$/);
+    const ext = extMatch ? extMatch[0].toLowerCase() : '.png';
+    const mime = SAVE_TYPES.find(t=>t.ext===ext)?.mime || 'image/png';
     const dataUrl = encodeCanvas(c, mime);
-    let name = saveName.trim();
-    if (!name.toLowerCase().endsWith(saveExt)) name = name.replace(/\.[^.]+$/,'') + saveExt;
-    if (currentFileId) {
-      vfs.updateFileContent(currentFileId, dataUrl); setCurrentFileName(name);
+    
+    const existing = vfs.nodes.find((n: VFSNode) => n.parentId === folderId && n.name === filename);
+    if (existing) {
+      vfs.updateFileContent(existing.id, dataUrl);
+      setCurrentFileId(existing.id);
     } else {
-      const node = vfs.createNode(name,'file',saveFolder,dataUrl);
-      setCurrentFileId(node.id); setCurrentFileName(name);
+      const node = vfs.createNode(filename, 'file', folderId, dataUrl, undefined, 'file', { customIcon: '/Icons/Microsoft Office/97_paintbrush_32.png' });
+      setCurrentFileId(node.id);
     }
-    setStatus(`Saved ${name}`); setSaveOpen(false);
+    setCurrentFileName(filename);
+    setStatus(`Saved ${filename}`);
+    setSaveOpen(false);
   };
 
   const imageNodes = vfs.getChildren(openFolder).filter(n => n.type==='file' && n.content && IMAGE_EXT.test(n.name));
@@ -1015,64 +1022,33 @@ export const AxisPaint: React.FC<AxisPaintProps> = ({ vfs, onClose }) => {
 
       {/* ── Save Dialog ── */}
       {saveOpen && (
-        <Dialog95 title="Save As" onClose={() => setSaveOpen(false)} width={340}>
-          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-            <div>
-              <div style={{ ...W95, marginBottom:2 }}>Save in:</div>
-              <select value={saveFolder} onChange={e => setSaveFolder(e.target.value)}
-                style={{ ...W95, width:'100%', ...sunken, padding:'2px 4px', background:'#fff' }}>
-                {FOLDER_PRESETS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <div style={{ ...W95, marginBottom:2 }}>File name:</div>
-              <input value={saveName} onChange={e => setSaveName(e.target.value)}
-                style={{ ...W95, width:'100%', ...sunken, padding:'2px 4px', background:'#fff', boxSizing:'border-box' }}/>
-            </div>
-            <div>
-              <div style={{ ...W95, marginBottom:2 }}>Save as type:</div>
-              <select value={saveExt} onChange={e => setSaveExt(e.target.value)}
-                style={{ ...W95, width:'100%', ...sunken, padding:'2px 4px', background:'#fff' }}>
-                {SAVE_TYPES.map(t => <option key={t.ext} value={t.ext}>{t.label}</option>)}
-              </select>
-            </div>
-            <div style={{ display:'flex', justifyContent:'flex-end', gap:4, marginTop:4 }}>
-              <Btn95 onClick={performSave}>Save</Btn95>
-              <Btn95 onClick={() => setSaveOpen(false)}>Cancel</Btn95>
-            </div>
-          </div>
-        </Dialog95>
+        <VersaSlideFilePicker
+          vfs={vfs as any}
+          title="Save As"
+          defaultName={currentFileName === 'untitled' ? 'untitled.png' : currentFileName.replace(/\.[^/.]+$/, '')}
+          allowedExtensions={SAVE_TYPES.map(t => ({ value: t.ext, label: t.label }))}
+          onConfirm={handleSaveAs}
+          onCancel={() => setSaveOpen(false)}
+        />
       )}
 
       {/* ── Open Dialog ── */}
       {openDlg && (
-        <Dialog95 title="Open" onClose={() => setOpenDlg(false)} width={360}>
-          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-            <div>
-              <div style={{ ...W95, marginBottom:2 }}>Look in:</div>
-              <select value={openFolder} onChange={e => setOpenFolder(e.target.value)}
-                style={{ ...W95, width:'100%', ...sunken, padding:'2px 4px', background:'#fff' }}>
-                {FOLDER_PRESETS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
-              </select>
-            </div>
-            <div style={{ ...sunken, background:'#fff', minHeight:120, maxHeight:200, overflowY:'auto' }}>
-              {imageNodes.length === 0
-                ? <div style={{ ...W95, padding:8, color:'#808080' }}>No image files in this folder.</div>
-                : imageNodes.map(n => (
-                    <button key={n.id} onClick={() => loadFromVfs(n)}
-                      style={{ ...W95, display:'block', width:'100%', textAlign:'left', padding:'3px 8px', border:'none', background:'transparent', cursor:'default' }}
-                      onMouseEnter={e => (e.currentTarget.style.background='#000080', e.currentTarget.style.color='#fff')}
-                      onMouseLeave={e => (e.currentTarget.style.background='transparent', e.currentTarget.style.color='#000')}>
-                      {n.name}
-                    </button>
-                  ))
-              }
-            </div>
-            <div style={{ display:'flex', justifyContent:'flex-end', gap:4 }}>
-              <Btn95 onClick={() => setOpenDlg(false)}>Cancel</Btn95>
-            </div>
-          </div>
-        </Dialog95>
+        <VersaSlideFilePicker
+          vfs={vfs as any}
+          title="Open"
+          mode="open"
+          allowedExtensions={SAVE_TYPES.map(t => ({ value: t.ext, label: t.label }))}
+          onConfirm={(folderId, filename) => {
+            const existing = vfs.nodes.find((n: VFSNode) => n.parentId === folderId && n.name === filename);
+            if (existing) {
+              loadFromVfs(existing);
+            } else {
+              alert('File not found.');
+            }
+          }}
+          onCancel={() => setOpenDlg(false)}
+        />
       )}
 
       {/* ── Attributes Dialog ── */}

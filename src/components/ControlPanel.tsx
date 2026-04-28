@@ -8,7 +8,7 @@ import { PLUS_THEMES, AVAILABLE_UPDATES, type SystemUpdate } from '../utils/plus
 import { ScreensaverPreview, SCREENSAVER_OPTIONS, type ScreensaverType } from './Screensavers';
 import { WIDGET_COMPONENTS } from './ActiveApplets';
 import { WORKSPACE_MENU_THEME_COLORS, type AppletConfig } from '../hooks/useVFS';
-import { playSound } from '../utils/audio';
+import { playSound, applySchemeOverrides } from '../utils/audio';
 
 
 // ── Panel items definition ────────────────────────────────────────────────────
@@ -317,6 +317,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [soundsPreviewPlaying, setSoundsPreviewPlaying] = useState(false);
   const soundsPreviewRef = useRef<HTMLAudioElement | null>(null);
+  const [soundsScheme, setSoundsScheme] = useState<string>('vespera');
 
   useEffect(() => {
     const timer = setInterval(() => setMockSystemTime(new Date()), 1000);
@@ -2285,7 +2286,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
 
     return (
       <div className="flex flex-col h-full p-3 gap-3 bg-[#c0c0c0]">
-        {PanelHeader('Vespera Update', Download, 'text-[#006400]', '/Icons/windows_update_large-0.png')}
+        {PanelHeader('Vespera Update', Download, 'text-[#006400]', '/Icons/Extra Icons/move_system_file.ico')}
 
         {updateInstallPhase === 'idle' && (
           <div className="flex-1 flex flex-col gap-3 min-h-0">
@@ -2551,7 +2552,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
     
     return (
       <div className="flex flex-col h-full p-3 overflow-hidden">
-        {PanelHeader('Fonts', Type, 'text-[#800080]', '/Icons/directory_fonts-0.png')}
+        {PanelHeader('Fonts', Type, 'text-[#800080]', '/Icons/Extra Icons/font_tt.ico')}
         
         <div className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white overflow-y-auto p-1">
           <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-1">
@@ -2831,18 +2832,155 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
     };
 
     // ── Sound events data & preview handlers (hoisted out of JSX) ──
-    const SOUND_EVENTS = [
-      { id: 'start',           label: 'Start Vespera',    file: 'Vespera_Start_up.mp3',    src: '/Sounds/Startup/Vespera_Start_up.mp3',           category: 'System' },
-      { id: 'shutdown',        label: 'Shut Down',        file: 'Vespera_Shut_Down.mp3',   src: '/Sounds/Shutdown/Vespera_Shut_Down.mp3',         category: 'System' },
-      { id: 'error',           label: 'Critical Stop',    file: 'Error.mp3',               src: '/Sounds/Alerts/Error.mp3',                       category: 'Alerts' },
-      { id: 'fatalError',      label: 'Fatal Error',      file: 'Fatal_Error.mp3',         src: '/Sounds/Alerts/Fatal_Error.mp3',                 category: 'Alerts' },
-      { id: 'alert',           label: 'System Alert',     file: 'Vespera_Alert.mp3',       src: '/Sounds/Alerts/Vespera_Alert.mp3',               category: 'Alerts' },
-      { id: 'installComplete', label: 'Install Complete',  file: 'Install_Complete.mp3',    src: '/Sounds/Alerts/Install_Complete.mp3',            category: 'Alerts' },
-      { id: 'newMail',         label: 'New Mail',         file: 'info-computer-sound.mp3', src: '/Sounds/Misc/info-computer-sound.mp3',           category: 'Misc'   },
-      { id: 'info',            label: 'Information',      file: 'info-computer-sound.mp3', src: '/Sounds/Misc/info-computer-sound.mp3',           category: 'Misc'   },
-      { id: 'click',           label: 'UI Click',         file: 'Click.mp3',               src: '/Sounds/Apps/Misc%20sounds/Click.mp3',           category: 'Misc'   },
-      { id: 'beep',            label: 'Beep',             file: 'Beep-doop-Beep.mp3',      src: '/Sounds/Misc/Beep-doop-Beep.mp3',                category: 'Misc'   },
-    ];
+    // Base (Vespera Default) sound events
+    const BASE_EVENTS = [
+      { id: 'start',           label: 'Start Vespera',   file: 'Vespera_Start_up.mp3',    src: '/Sounds/Startup/Vespera_Start_up.mp3',  category: 'System' },
+      { id: 'shutdown',        label: 'Shut Down',       file: 'Vespera_Shut_Down.mp3',   src: '/Sounds/Shutdown/Vespera_Shut_Down.mp3', category: 'System' },
+      { id: 'error',           label: 'Critical Stop',   file: 'Error.mp3',               src: '/Sounds/Alerts/Error.mp3',              category: 'Alerts' },
+      { id: 'fatalError',      label: 'Fatal Error',     file: 'Fatal_Error.mp3',         src: '/Sounds/Alerts/Fatal_Error.mp3',        category: 'Alerts' },
+      { id: 'alert',           label: 'System Alert',    file: 'Vespera_Alert.mp3',       src: '/Sounds/Alerts/Vespera_Alert.mp3',      category: 'Alerts' },
+      { id: 'installComplete', label: 'Install Complete', file: 'Install_Complete.mp3',   src: '/Sounds/Alerts/Install_Complete.mp3',   category: 'Alerts' },
+      { id: 'newMail',         label: 'New Mail',        file: 'info-computer-sound.mp3', src: '/Sounds/Misc/info-computer-sound.mp3',  category: 'Misc'   },
+      { id: 'info',            label: 'Information',     file: 'info-computer-sound.mp3', src: '/Sounds/Misc/info-computer-sound.mp3',  category: 'Misc'   },
+      { id: 'click',           label: 'UI Click',        file: 'Click.mp3',               src: '/Sounds/Apps/Misc%20sounds/Click.mp3',  category: 'Misc'   },
+      { id: 'beep',            label: 'Beep',            file: 'Beep-doop-Beep.mp3',      src: '/Sounds/Misc/Beep-doop-Beep.mp3',       category: 'Misc'   },
+    ] as const;
+
+    const S = '/Sounds/Addition%20Sound%20options%20for%20Sounds%20in%20Control%20Panel/Sound%20Schemes';
+    const F31  = `${S}/Windows%203.1.x,%2095,%20NT%203.1-4.0`;
+    const F98  = `${S}/Windows%2098,%202000,%20ME`;
+    const FXP  = `${S}/Windows%20XP/Build%202481`;
+    const FV7  = `${S}/Windows%20Vista,%207`;
+    const F8   = `${S}/Windows%208.x`;
+    const F30  = `${S}/Windows%203.0%20MME`;
+
+    type SndMap = Partial<Record<string,{file:string;src:string}>>;
+    const SOUND_SCHEMES: Record<string,{label:string;map:SndMap}> = {
+      vespera: { label: 'Vespera Default', map: {} },
+      win31:   { label: 'Windows 3.x MME', map: {
+        start:           { file:'BELLS (Startup).WAV',  src:`${F30}/BELLS%20(Startup).WAV` },
+        shutdown:        { file:'WATER (Shutdown).WAV', src:`${F30}/WATER%20(Shutdown).WAV` },
+        error:           { file:'BUMMER.WAV',           src:`${F30}/BUMMER.WAV` },
+        fatalError:      { file:'DRAT.WAV',             src:`${F30}/DRAT.WAV` },
+        alert:           { file:'CHORD.WAV',            src:`${F30}/CHORD.WAV` },
+        installComplete: { file:'CLAP.WAV',             src:`${F30}/CLAP.WAV` },
+        newMail:         { file:'GLASS.WAV',            src:`${F30}/GLASS.WAV` },
+        info:            { file:'POP.WAV',              src:`${F30}/POP.WAV` },
+        click:           { file:'POP.WAV',              src:`${F30}/POP.WAV` },
+        beep:            { file:'DRUM.WAV',             src:`${F30}/DRUM.WAV` },
+      }},
+      win95:   { label: 'Windows 95 / NT 4.0', map: {
+        start:           { file:'Windows NT Logon Sound.wav',  src:`${F31}/Windows%20NT%20Logon%20Sound.wav` },
+        shutdown:        { file:'Windows NT Logoff Sound.wav', src:`${F31}/Windows%20NT%20Logoff%20Sound.wav` },
+        error:           { file:'chord.wav',                   src:`${F31}/chord.wav` },
+        fatalError:      { file:'chord.wav',                   src:`${F31}/chord.wav` },
+        alert:           { file:'chimes.wav',                  src:`${F31}/chimes.wav` },
+        installComplete: { file:'tada.wav',                    src:`${F31}/tada.wav` },
+        newMail:         { file:'ding.wav',                    src:`${F31}/ding.wav` },
+        info:            { file:'ding.wav',                    src:`${F31}/ding.wav` },
+        click:           { file:'Start.wav',                   src:`${F31}/Start.wav` },
+        beep:            { file:'ding.wav',                    src:`${F31}/ding.wav` },
+      }},
+      win98:   { label: 'Windows 98 / ME', map: {
+        start:           { file:'The Microsoft Sound.wav',  src:`${F98}/The%20Microsoft%20Sound.wav` },
+        shutdown:        { file:'Windows Logoff Sound.wav', src:`${F98}/Windows%20Logoff%20Sound.wav` },
+        error:           { file:'chord.wav',                src:`${F98}/chord.wav` },
+        fatalError:      { file:'chord.wav',                src:`${F98}/chord.wav` },
+        alert:           { file:'chimes.wav',               src:`${F98}/chimes.wav` },
+        installComplete: { file:'tada.wav',                 src:`${F98}/tada.wav` },
+        newMail:         { file:'notify.wav',               src:`${F98}/notify.wav` },
+        info:            { file:'ding.wav',                 src:`${F98}/ding.wav` },
+        click:           { file:'ding.wav',                 src:`${F98}/ding.wav` },
+        beep:            { file:'ding.wav',                 src:`${F98}/ding.wav` },
+      }},
+      winxp:   { label: 'Windows XP', map: {
+        start:           { file:'Windows XP Startup.wav',       src:`${FXP}/Windows%20XP%20Startup.wav` },
+        shutdown:        { file:'Windows XP Shutdown.wav',      src:`${FXP}/Windows%20XP%20Shutdown.wav` },
+        error:           { file:'Windows XP Critical Stop.wav', src:`${FXP}/Windows%20XP%20Critical%20Stop.wav` },
+        fatalError:      { file:'Windows XP Error.wav',         src:`${FXP}/Windows%20XP%20Error.wav` },
+        alert:           { file:'Windows XP Exclamation.wav',   src:`${FXP}/Windows%20XP%20Exclamation.wav` },
+        installComplete: { file:'Windows XP Notify.wav',        src:`${FXP}/Windows%20XP%20Notify.wav` },
+        newMail:         { file:'Windows XP Notify.wav',        src:`${FXP}/Windows%20XP%20Notify.wav` },
+        info:            { file:'Windows XP Ding.wav',          src:`${FXP}/Windows%20XP%20Ding.wav` },
+        click:           { file:'Windows XP Menu Command.wav',  src:`${FXP}/Windows%20XP%20Menu%20Command.wav` },
+        beep:            { file:'Windows XP Ding.wav',          src:`${FXP}/Windows%20XP%20Ding.wav` },
+      }},
+      vista7:  { label: 'Windows Vista / 7', map: {
+        start:           { file:'Windows Startup.wav',       src:`${FV7}/Windows%20Startup.wav` },
+        shutdown:        { file:'Windows Shutdown.wav',      src:`${FV7}/Windows%20Shutdown.wav` },
+        error:           { file:'Windows Critical Stop.wav', src:`${FV7}/Windows%20Critical%20Stop.wav` },
+        fatalError:      { file:'Windows Error.wav',         src:`${FV7}/Windows%20Error.wav` },
+        alert:           { file:'Windows Exclamation.wav',   src:`${FV7}/Windows%20Exclamation.wav` },
+        installComplete: { file:'Windows Notify.wav',        src:`${FV7}/Windows%20Notify.wav` },
+        newMail:         { file:'Windows Notify.wav',        src:`${FV7}/Windows%20Notify.wav` },
+        info:            { file:'Windows Ding.wav',          src:`${FV7}/Windows%20Ding.wav` },
+        click:           { file:'Windows Menu Command.wav',  src:`${FV7}/Windows%20Menu%20Command.wav` },
+        beep:            { file:'Windows Ding.wav',          src:`${FV7}/Windows%20Ding.wav` },
+      }},
+      win8:    { label: 'Windows 8', map: {
+        start:           { file:'Windows Logon.wav',                 src:`${F8}/Windows%20Logon.wav` },
+        shutdown:        { file:'Windows Foreground.wav',            src:`${F8}/Windows%20Foreground.wav` },
+        error:           { file:'Windows Hardware Fail.wav',         src:`${F8}/Windows%20Hardware%20Fail.wav` },
+        fatalError:      { file:'Windows Hardware Fail.wav',         src:`${F8}/Windows%20Hardware%20Fail.wav` },
+        alert:           { file:'Windows Notify System Generic.wav', src:`${F8}/Windows%20Notify%20System%20Generic.wav` },
+        installComplete: { file:'Windows Notify Email.wav',          src:`${F8}/Windows%20Notify%20Email.wav` },
+        newMail:         { file:'Windows Notify Email.wav',          src:`${F8}/Windows%20Notify%20Email.wav` },
+        info:            { file:'Windows Notify System Generic.wav', src:`${F8}/Windows%20Notify%20System%20Generic.wav` },
+        click:           { file:'Windows Foreground.wav',            src:`${F8}/Windows%20Foreground.wav` },
+        beep:            { file:'Windows Background.wav',            src:`${F8}/Windows%20Background.wav` },
+      }},
+      robotz:  { label: 'Plus! Robotz', map: {
+        start:           { file:'Robotz Windows Start.wav',  src:`${F31}/Robotz%20Windows%20Start.wav` },
+        shutdown:        { file:'Robotz Windows Exit.wav',   src:`${F31}/Robotz%20Windows%20Exit.wav` },
+        error:           { file:'Robotz Critical Stop.wav',  src:`${F31}/Robotz%20Critical%20Stop.wav` },
+        fatalError:      { file:'Robotz Error.wav',          src:`${F31}/Robotz%20Error.wav` },
+        alert:           { file:'Robotz Exclamation.wav',    src:`${F31}/Robotz%20Exclamation.wav` },
+        installComplete: { file:'Robotz Default.wav',        src:`${F31}/Robotz%20Default.wav` },
+        newMail:         { file:'Robotz Default.wav',        src:`${F31}/Robotz%20Default.wav` },
+        info:            { file:'Robotz Asterisk.wav',       src:`${F31}/Robotz%20Asterisk.wav` },
+        click:           { file:'Robotz Menu Command.wav',   src:`${F31}/Robotz%20Menu%20Command.wav` },
+        beep:            { file:'Robotz Default.wav',        src:`${F31}/Robotz%20Default.wav` },
+      }},
+      utopia:  { label: 'Plus! Utopia', map: {
+        start:           { file:'Utopia Windows Start.wav',  src:`${F31}/Utopia%20Windows%20Start.wav` },
+        shutdown:        { file:'Utopia Windows Exit.wav',   src:`${F31}/Utopia%20Windows%20Exit.wav` },
+        error:           { file:'Utopia Critical Stop.wav',  src:`${F31}/Utopia%20Critical%20Stop.wav` },
+        fatalError:      { file:'Utopia Error.wav',          src:`${F31}/Utopia%20Error.wav` },
+        alert:           { file:'Utopia Exclamation.wav',    src:`${F31}/Utopia%20Exclamation.wav` },
+        installComplete: { file:'Utopia Default.wav',        src:`${F31}/Utopia%20Default.wav` },
+        newMail:         { file:'Utopia Default.wav',        src:`${F31}/Utopia%20Default.wav` },
+        info:            { file:'Utopia Asterisk.wav',       src:`${F31}/Utopia%20Asterisk.wav` },
+        click:           { file:'Utopia Menu Command.wav',   src:`${F31}/Utopia%20Menu%20Command.wav` },
+        beep:            { file:'Utopia Default.wav',        src:`${F31}/Utopia%20Default.wav` },
+      }},
+      win2000: { label: 'Windows 2000', map: {
+        start:           { file:'logon (2000 Beta 3, later).wav',  src:`${F98}/logon%20(2000%20Beta%203,%20later).wav` },
+        shutdown:        { file:'logoff (2000 Beta 3, later).wav', src:`${F98}/logoff%20(2000%20Beta%203,%20later).wav` },
+        error:           { file:'chord.wav',                       src:`${F98}/chord.wav` },
+        fatalError:      { file:'chord.wav',                       src:`${F98}/chord.wav` },
+        alert:           { file:'chimes.wav',                      src:`${F98}/chimes.wav` },
+        installComplete: { file:'tada.wav',                        src:`${F98}/tada.wav` },
+        newMail:         { file:'notify.wav',                      src:`${F98}/notify.wav` },
+        info:            { file:'ding.wav',                        src:`${F98}/ding.wav` },
+        click:           { file:'ding.wav',                        src:`${F98}/ding.wav` },
+        beep:            { file:'ding.wav',                        src:`${F98}/ding.wav` },
+      }},
+      macos:   { label: 'macOS (Classic)', map: {
+        start:           { file:'PCI based Power Mac Startup.wav', src:`${S}/MacOS/PCI%20based%20Power%20Mac%20Startup.wav` },
+        shutdown:        { file:'Windows Shutdown.wav',            src:`${FV7}/Windows%20Shutdown.wav` },
+        error:           { file:'Windows Critical Stop.wav',       src:`${FV7}/Windows%20Critical%20Stop.wav` },
+        fatalError:      { file:'Windows Error.wav',               src:`${FV7}/Windows%20Error.wav` },
+        alert:           { file:'chimes.wav',                      src:`${F98}/chimes.wav` },
+        installComplete: { file:'tada.wav',                        src:`${F98}/tada.wav` },
+        newMail:         { file:'notify.wav',                      src:`${F98}/notify.wav` },
+        info:            { file:'ding.wav',                        src:`${F98}/ding.wav` },
+        click:           { file:'ding.wav',                        src:`${F98}/ding.wav` },
+        beep:            { file:'ding.wav',                        src:`${F98}/ding.wav` },
+      }},
+    };
+
+    const schemeMap = SOUND_SCHEMES[soundsScheme]?.map ?? {};
+    const SOUND_EVENTS = BASE_EVENTS.map(ev => ({ ...ev, ...(schemeMap[ev.id] ?? {}) }));
     const SOUND_CATEGORIES = ['System', 'Alerts', 'Misc'] as const;
     const selectedEvent = SOUND_EVENTS.find(e => e.id === selectedEventId) ?? null;
 
@@ -3075,13 +3213,19 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
               <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-2 shrink-0">
                 <p className="text-[10px] font-bold mb-1">Sound Scheme:</p>
                 <div className="flex items-center gap-2">
-                  <select className="flex-1 text-xs bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white px-1 py-0.5">
-                    <option>Vespera Default</option>
-                    <option>Robotica</option>
-                    <option>Nature</option>
-                    <option>(None)</option>
+                  <select
+                    value={soundsScheme}
+                    onChange={(e) => { setSoundsScheme(e.target.value); setSelectedEventId(null); handleStopPreview(); }}
+                    className="flex-1 text-xs bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white px-1 py-0.5"
+                  >
+                    {Object.entries(SOUND_SCHEMES).map(([id, s]) => (
+                      <option key={id} value={id}>{s.label}</option>
+                    ))}
                   </select>
-                  <button className="px-3 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-[10px] font-bold">
+                  <button
+                    className="px-3 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-[10px] font-bold"
+                    title="Scheme is cosmetic — sounds are applied immediately on preview"
+                  >
                     Save As...
                   </button>
                 </div>
