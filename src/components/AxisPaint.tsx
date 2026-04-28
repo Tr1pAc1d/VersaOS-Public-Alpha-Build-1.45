@@ -845,7 +845,7 @@ export const AxisPaint: React.FC<AxisPaintProps> = ({ vfs, onClose }) => {
       </button>
       {openMenu === key && (
         <div style={{ position:'absolute', top:'100%', left:0, minWidth:190, background:'#c0c0c0', ...deepRaised, zIndex:1000 }}>
-          {(MENUS[key] as any[]).map((item: any, i: number) =>
+          {(MENUS[key] as unknown as any[]).map((item: any, i: number) =>
             item.separator
               ? <div key={i} style={{ ...sunken, height:0, margin:'2px 4px', borderBottomColor:'transparent', borderRightColor:'transparent' }}/>
               : <button key={i} onClick={item.action}

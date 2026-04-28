@@ -298,10 +298,10 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
 
   /** Create a zip on the desktop from currently selected desktop icons */
   const compressDesktopToZip = (parentId: string = 'desktop') => {
-    const ids = Array.from(selectedDesktopNodes).filter(id => {
-      const n = vfs.getNode(id);
+    const ids: string[] = Array.from(selectedDesktopNodes).filter((id: any) => {
+      const n = vfs.getNode(id as string);
       return n && !n.name.toLowerCase().endsWith('.zip');
-    });
+    }) as string[];
     if (ids.length === 0) return;
     const zipNode = vfs.createNode('Archive.zip', 'directory', parentId, undefined, undefined, undefined, { customIcon: '/Icons/Extra Icons/directory_zipper.ico' });
     let prog = 0;
@@ -320,7 +320,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         prog = 100;
         clearInterval(deskZipTimerRef.current!);
         deskZipTimerRef.current = null;
-        ids.forEach(id => {
+        ids.forEach((id: string) => {
           const n = vfs.getNode(id);
           if (n && n.id !== zipNode.id && n.id !== 'recycle_bin') {
             vfs.updateNode(id, { parentId: zipNode.id });
@@ -862,7 +862,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
 
     // Build set of already-occupied cells
     const occupied = new Set<string>();
-    Object.values(iconPositions).forEach(pos => {
+    Object.values(iconPositions).forEach((pos: any) => {
       const cx = Math.round((pos.x - padX) / cellW) * cellW + padX;
       const cy = Math.round((pos.y - padY) / cellH) * cellH + padY;
       occupied.add(`${cx},${cy}`);
@@ -2658,7 +2658,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                     
                     let attempts = 0;
                     const isOccupied = (tx: number, ty: number) => {
-                      return Object.entries(prev).some(([key, pos]) => {
+                      return Object.entries(prev).some(([key, pos]: [string, any]) => {
                         if (key === id) return false;
                         return Math.abs(pos.x - tx) < 10 && Math.abs(pos.y - ty) < 10;
                       });

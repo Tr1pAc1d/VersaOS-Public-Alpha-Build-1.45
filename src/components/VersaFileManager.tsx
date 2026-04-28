@@ -105,10 +105,10 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
 
   /** Create a new zip archive from the currently selected nodes */
   const addSelectedToZip = () => {
-    const ids = Array.from(selectedNodes).filter(id => {
-      const n = vfs.getNode(id);
+    const ids: string[] = Array.from(selectedNodes).filter((id: any) => {
+      const n = vfs.getNode(id as string);
       return n && !isZipNode(n);
-    });
+    }) as string[];
     if (ids.length === 0) return;
     const zipNode = vfs.createNode('Archive.zip', 'directory', currentDir, undefined, undefined, undefined, { customIcon: '/Icons/Extra Icons/directory_zipper.ico' });
     compressIntoZip(ids, zipNode.id, 'Archive.zip');

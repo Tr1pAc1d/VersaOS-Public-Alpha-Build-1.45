@@ -282,7 +282,7 @@ export function getPlugin(id: string): InstalledPlugin | undefined {
  */
 export function registerApp(rawManifest: unknown): InstalledPlugin {
   const result = validateManifest(rawManifest);
-  if (!result.valid) throw new Error(result.error);
+  if (!result.valid) throw new Error((result as any).error);
 
   const manifest: AppManifest = {
     ...result.manifest,
