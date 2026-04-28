@@ -23,18 +23,36 @@ export const OS_CONFIG = {
     `,
   },
   HELP_DATA: {
-    ls: "Usage: ls [directory]\nLists files and subdirectories in the current or specified directory.\nAlias: dir",
-    dir: "Usage: dir [directory]\nLists files and subdirectories in the current or specified directory.\nAlias: ls",
-    cd: "Usage: cd <directory>\nChanges the current working directory.\nUse 'cd ..' to go up one level.",
-    cat: "Usage: cat <file>\nDisplays the contents of a text file.\nAlias: type",
-    type: "Usage: type <file>\nDisplays the contents of a text file.\nAlias: cat",
-    help: "Usage: help [command] or h? [command]\nDisplays general help or help for a specific command.",
-    tutorial: "Usage: tutorial\nStarts a brief guide on how to navigate the Aetheris file system.",
-    mem: "Usage: mem\nDisplays current system memory allocation and status.",
-    ver: "Usage: ver\nDisplays the current Aetheris OS version information.",
-    reboot: "Usage: reboot\nRestarts the system and returns to the BIOS splash screen.",
-    startgui: "Usage: startgui\nLaunches the Vespera Desktop Environment (if enabled in BIOS).",
-    xtype: "Usage: xtype init\nInitializes the X-Type Neural Bridge co-processor. WARNING: Experimental hardware.",
+    // ── Filesystem ────────────────────────────────────────────────────────────
+    ls:      "Usage: ls [directory]\nLists files and subdirectories in the current or specified directory.\nAlias: dir",
+    dir:     "Usage: dir [directory]\nLists files and subdirectories in the current or specified directory.\nAlias: ls",
+    cd:      "Usage: cd <directory>\nChanges the current working directory.\nUse 'cd ..' to go up one level, 'cd /' to return to root.",
+    cat:     "Usage: cat <file>\nDisplays the contents of a text file.\nAlias: type",
+    type:    "Usage: type <file>\nDisplays the contents of a text file.\nAlias: cat",
+    echo:    "Usage: echo [text]\n       echo [text] > [filename]\nPrints text to the terminal. Use '>' to write output to a new file in the current directory.",
+    // ── System info ───────────────────────────────────────────────────────────
+    help:    "Usage: help [command]  —OR—  h? [command]\nDisplays general help, or detailed help for a specific command.",
+    ver:     "Usage: ver\nDisplays the current Aetheris OS version and copyright information.",
+    whoami:  "Usage: whoami\nDisplays the current logged-in user and their role.",
+    date:    "Usage: date\nDisplays the current system date and time.",
+    mem:     "Usage: mem\nDisplays current system memory allocation, conventional and extended.",
+    // ── Session ───────────────────────────────────────────────────────────────
+    clear:   "Usage: clear\nClears all output from the terminal screen.",
+    tutorial:"Usage: tutorial\nStarts a step-by-step guide on navigating the Aetheris file system.",
+    reboot:  "Usage: reboot\nRestarts the system and returns to the BIOS splash screen.",
+    startgui:"Usage: startgui\nLaunches the Vespera Desktop Environment (requires XMS enabled in BIOS).",
+    // ── Network ───────────────────────────────────────────────────────────────
+    ping:    "Usage: ping <host>\nSends ICMP echo requests to the specified host and reports round-trip time.",
+    netstat: "Usage: netstat\nDisplays current active network connections and listening ports.",
+    // ── Advanced / Lore ───────────────────────────────────────────────────────
+    imgview: "Usage: imgview <file>\nOpens an image file in fullscreen VSVIEW.EXE mode (simulates VGA graphics mode switch).\nPress any key to return to the terminal.",
+    view:    "Usage: view <file>\nAlias for imgview. Opens an image in fullscreen VSVIEW viewer.",
+    asciiview:"Usage: asciiview <file>\nRenders an image file as ASCII block art directly in the terminal output stream.",
+    shadow:  "Usage: shadow\nAttempts to access restricted shadow sector data. X-Type Neural Bridge required.",
+    decrypt: "Usage: decrypt <file>\nDecrypts an encrypted system file. X-Type Neural Bridge co-processor required.",
+    xtype:   "Usage: xtype init\nInitializes the X-Type Neural Bridge co-processor.\nWARNING: Experimental hardware. Anomalous data streams may be encountered.",
+    js:      "Usage: js <code>\nEvaluates a JavaScript expression or statement in the Open-DOS Subsystem.\nExample: js 2 + 2   →  4\nAlias: eval, script",
+    sudo:    "Usage: sudo <command>\nAttempts to execute a command with elevated privileges.\nNote: User 'thorne' is currently under active surveillance.",
   }
 };
 
@@ -46,7 +64,10 @@ export interface FSNode {
   content?: string;
   children?: FSNode[];
   hidden?: boolean;
+  /** Public URL to the real image asset. Set by the GUI VFS bridge on image-named files. */
+  imagePath?: string;
 }
+
 
 export const INITIAL_FS: FSNode[] = [
   {
