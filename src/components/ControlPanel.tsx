@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Monitor, Cpu, User, Package, Settings, ArrowLeft, HardDrive, Trash2, AlertCircle, Menu, ChevronRight, ChevronDown, FolderOpen, ArrowUp, ArrowDown, Plus, RotateCcw, Minus, Globe, Key, Shield, Download, CheckCircle, Sparkles, Loader, Volume2, MessageSquare, MousePointer2, Clock, Printer, Type, Layout, Activity, Zap, History, Lock, Eye, Network } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Monitor, Cpu, User, Package, Settings, ArrowLeft, HardDrive, Trash2, AlertCircle, Menu, ChevronRight, ChevronDown, FolderOpen, ArrowUp, ArrowDown, Plus, RotateCcw, Minus, Globe, Key, Shield, Download, CheckCircle, Sparkles, Loader, Volume2, Play, MessageSquare, MousePointer2, Clock, Printer, Type, Layout, Activity, Zap, History, Lock, Eye, Network } from 'lucide-react';
 import { DEFAULT_WORKSPACE_MENU } from '../hooks/useVFS';
 import { APP_DICTIONARY } from '../utils/appDictionary';
 import { RETRO_ICONS } from '../utils/retroIcons';
@@ -8,6 +8,8 @@ import { PLUS_THEMES, AVAILABLE_UPDATES, type SystemUpdate } from '../utils/plus
 import { ScreensaverPreview, SCREENSAVER_OPTIONS, type ScreensaverType } from './Screensavers';
 import { WIDGET_COMPONENTS } from './ActiveApplets';
 import { WORKSPACE_MENU_THEME_COLORS, type AppletConfig } from '../hooks/useVFS';
+import { playSound } from '../utils/audio';
+
 
 // ── Panel items definition ────────────────────────────────────────────────────
 interface PanelItem {
@@ -304,6 +306,18 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   const [hardwareStep, setHardwareStep] = useState(0);
   const [hardwareFound, setHardwareFound] = useState<any[]>([]);
 
+  // Sounds panel local state (synced to VFS)
+  const [soundsVolume, setSoundsVolume] = useState(0);
+  const [soundsMuted, setSoundsMuted] = useState(false);
+  const [soundsTab, setSoundsTab] = useState<'Volume' | 'Sounds'>('Volume');
+  const [soundsWaveVol, setSoundsWaveVol] = useState(0.8);
+  const [soundsSynthVol, setSoundsSynthVol] = useState(0.9);
+  const [soundsLineVol, setSoundsLineVol] = useState(0.5);
+  const [soundsCdVol, setSoundsCdVol] = useState(0.7);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [soundsPreviewPlaying, setSoundsPreviewPlaying] = useState(false);
+  const soundsPreviewRef = useRef<HTMLAudioElement | null>(null);
+
   useEffect(() => {
     const timer = setInterval(() => setMockSystemTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -327,6 +341,12 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   useEffect(() => {
     if (initialPanel) setActivePanel(initialPanel);
   }, [initialPanel]);
+
+  // Sync Sounds panel locals when VFS sound settings change externally
+  useEffect(() => {
+    setSoundsVolume(vfs.displaySettings?.soundEffectsVolume ?? 1.0);
+    setSoundsMuted(vfs.displaySettings?.systemMuted ?? false);
+  }, [vfs.displaySettings?.soundEffectsVolume, vfs.displaySettings?.systemMuted]);
 
   // Sync state when returning to hub and vfs changes
   useEffect(() => {
@@ -2798,56 +2818,291 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
     </div>
   );
 
+
   // ── Sub-panel: Sounds ──────────────────────────────────────────────────────
-  const renderSounds = () => (
-    <div className="flex flex-col h-full p-3 overflow-hidden">
-      {PanelHeader('Sounds', Volume2, 'text-[#008000]', '/Icons/loudspeaker_rays-0.png')}
-      
-      <div className="flex-1 flex flex-col gap-4 mt-2 overflow-hidden">
-        <div className="flex flex-col flex-1 min-h-0">
-          <p className="text-[10px] font-bold mb-1">Events:</p>
-          <div className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white overflow-y-auto">
-            {[
-              { id: 'start', label: 'Start Vespera', file: 'vespera_start.wav' },
-              { id: 'stop', label: 'Shutdown', file: 'vespera_stop.wav' },
-              { id: 'error', label: 'Critical Stop', file: 'error.wav' },
-              { id: 'notify', label: 'Question', file: 'notify.wav' },
-              { id: 'trash', label: 'Empty Trash', file: 'recycle.wav' },
-              { id: 'logon', label: 'User Logon', file: 'logon.wav' },
-              { id: 'logoff', label: 'User Logoff', file: 'logoff.wav' },
-            ].map(ev => (
-              <div key={ev.id} className="flex items-center justify-between px-2 py-1 text-xs hover:bg-[#000080] hover:text-white cursor-default group">
-                <span>{ev.label}</span>
-                <span className="text-[10px] opacity-60 group-hover:text-white">{ev.file}</span>
-              </div>
-            ))}
+  const renderSounds = () => {
+    const handleVolumeChange = (vol: number) => {
+      setSoundsVolume(vol);
+      if (vfs.updateSoundSettings) vfs.updateSoundSettings(vol, soundsMuted);
+    };
+    const handleMuteChange = (muted: boolean) => {
+      setSoundsMuted(muted);
+      if (vfs.updateSoundSettings) vfs.updateSoundSettings(soundsVolume, muted);
+    };
+
+    // ── Sound events data & preview handlers (hoisted out of JSX) ──
+    const SOUND_EVENTS = [
+      { id: 'start',           label: 'Start Vespera',    file: 'Vespera_Start_up.mp3',    src: '/Sounds/Startup/Vespera_Start_up.mp3',           category: 'System' },
+      { id: 'shutdown',        label: 'Shut Down',        file: 'Vespera_Shut_Down.mp3',   src: '/Sounds/Shutdown/Vespera_Shut_Down.mp3',         category: 'System' },
+      { id: 'error',           label: 'Critical Stop',    file: 'Error.mp3',               src: '/Sounds/Alerts/Error.mp3',                       category: 'Alerts' },
+      { id: 'fatalError',      label: 'Fatal Error',      file: 'Fatal_Error.mp3',         src: '/Sounds/Alerts/Fatal_Error.mp3',                 category: 'Alerts' },
+      { id: 'alert',           label: 'System Alert',     file: 'Vespera_Alert.mp3',       src: '/Sounds/Alerts/Vespera_Alert.mp3',               category: 'Alerts' },
+      { id: 'installComplete', label: 'Install Complete',  file: 'Install_Complete.mp3',    src: '/Sounds/Alerts/Install_Complete.mp3',            category: 'Alerts' },
+      { id: 'newMail',         label: 'New Mail',         file: 'info-computer-sound.mp3', src: '/Sounds/Misc/info-computer-sound.mp3',           category: 'Misc'   },
+      { id: 'info',            label: 'Information',      file: 'info-computer-sound.mp3', src: '/Sounds/Misc/info-computer-sound.mp3',           category: 'Misc'   },
+      { id: 'click',           label: 'UI Click',         file: 'Click.mp3',               src: '/Sounds/Apps/Misc%20sounds/Click.mp3',           category: 'Misc'   },
+      { id: 'beep',            label: 'Beep',             file: 'Beep-doop-Beep.mp3',      src: '/Sounds/Misc/Beep-doop-Beep.mp3',                category: 'Misc'   },
+    ];
+    const SOUND_CATEGORIES = ['System', 'Alerts', 'Misc'] as const;
+    const selectedEvent = SOUND_EVENTS.find(e => e.id === selectedEventId) ?? null;
+
+    const handlePreview = () => {
+      if (!selectedEvent) return;
+      if (soundsPreviewRef.current) {
+        soundsPreviewRef.current.pause();
+        soundsPreviewRef.current = null;
+      }
+      setSoundsPreviewPlaying(true);
+      const audio = new Audio(selectedEvent.src);
+      audio.volume = Math.max(0, Math.min(1, soundsVolume));
+      soundsPreviewRef.current = audio;
+      audio.onended = () => setSoundsPreviewPlaying(false);
+      audio.onerror = () => setSoundsPreviewPlaying(false);
+      audio.play().catch(() => setSoundsPreviewPlaying(false));
+    };
+
+    const handleStopPreview = () => {
+      if (soundsPreviewRef.current) {
+        soundsPreviewRef.current.pause();
+        soundsPreviewRef.current = null;
+      }
+      setSoundsPreviewPlaying(false);
+    };
+
+
+    // Cosmetic vertical slider (matches VolumeControl.tsx style)
+    const MiniSliderCol = ({
+      title, vol, setVol, muted, setMuted, muteLabel = 'Mute'
+    }: { title: string; vol: number; setVol: (v: number) => void; muted: boolean; setMuted: (m: boolean) => void; muteLabel?: string; }) => (
+      <div className="flex flex-col items-center border-r-[2px] border-r-white border-b-white pr-2 mr-2 last:border-r-0 last:mr-0 last:pr-0">
+        <div className="text-[9px] mb-2 text-center w-[62px] min-h-[28px] font-bold leading-tight">{title}</div>
+        <div className="text-[9px] mb-1 self-start pl-1">Volume:</div>
+        <div
+          className="relative h-24 w-10 flex justify-center mb-3 cursor-pointer"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const rect = e.currentTarget.getBoundingClientRect();
+            const update = (y: number) => {
+              const v = Math.max(0, Math.min(1, 1 - (y - rect.top) / rect.height));
+              setVol(v);
+            };
+            update(e.clientY);
+            const onMove = (me: PointerEvent) => update(me.clientY);
+            const onUp = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); };
+            window.addEventListener('pointermove', onMove);
+            window.addEventListener('pointerup', onUp);
+          }}
+        >
+          <div className="absolute inset-y-0 w-1.5 bg-gray-800 border-r border-b border-white pointer-events-none" />
+          <div
+            className="absolute w-7 h-3 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow shadow-black/20 pointer-events-none"
+            style={{ bottom: (vol * 100) + '%', transform: 'translateY(50%)' }}
+          />
+          <div className="absolute inset-y-0 left-0 w-1.5 flex flex-col justify-between py-1 pointer-events-none">
+            {[...Array(5)].map((_, i) => <div key={i} className="w-1 h-px bg-gray-500" />)}
           </div>
         </div>
-
-        <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-3 shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <p className="text-[10px] font-bold mb-1">Name:</p>
-              <select className="w-full text-xs bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-1">
-                <option>(None)</option>
-                <option selected>Vespera Default</option>
-                <option>Robotica</option>
-                <option>Nature</option>
-              </select>
-            </div>
-            <button className="mt-4 p-2 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white">
-              <Play size={16} />
-            </button>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2 shrink-0">
-          <button className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold">Apply</button>
-          <button onClick={() => setActivePanel(null)} className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold">OK</button>
+        <div className="mt-auto mb-1 flex items-center w-full pl-0.5">
+          <input
+            type="checkbox"
+            id={`snd-mute-${title}`}
+            checked={muted}
+            onChange={(e) => setMuted(e.target.checked)}
+            className="mr-1"
+          />
+          <label htmlFor={`snd-mute-${title}`} className="text-[9px] select-none">{muteLabel}</label>
         </div>
       </div>
-    </div>
-  );
+    );
+
+    return (
+      <div className="flex flex-col h-full p-3 overflow-hidden">
+        {PanelHeader('Sounds Properties', Volume2, 'text-[#008000]', '/Icons/loudspeaker_rays-0.png')}
+
+        {/* Tabs */}
+        <div className="flex gap-[2px] border-b-2 border-white mt-1 relative z-10 px-1">
+          {(['Volume', 'Sounds'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setSoundsTab(tab)}
+              className={`px-3 py-1 text-xs font-bold border-2 border-b-0 rounded-t-sm whitespace-nowrap ${
+                soundsTab === tab
+                  ? 'bg-[#c0c0c0] border-t-white border-l-white border-r-gray-800 pb-2 -mb-0.5 z-20'
+                  : 'bg-gray-300 border-t-white border-l-white border-r-gray-800 mt-1 cursor-pointer'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div className="flex-1 border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 bg-[#c0c0c0] -mt-0.5 relative z-0 overflow-hidden flex flex-col">
+
+          {/* ── Volume Tab ── */}
+          {soundsTab === 'Volume' && (
+            <div className="flex flex-col h-full p-3 gap-3 overflow-y-auto">
+              {/* Header */}
+              <div className="flex items-center gap-3 border-b pb-2 border-gray-400 shrink-0">
+                <Volume2 size={28} className="text-[#008000] shrink-0" />
+                <div>
+                  <p className="font-bold text-xs leading-none">Master Volume</p>
+                  <p className="text-[9px] text-gray-600 mt-0.5">Controls all system sounds. Changes apply immediately.</p>
+                </div>
+              </div>
+
+              {/* Master volume row */}
+              <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-3 shrink-0">
+                <p className="text-[10px] font-bold mb-2">Master System Volume</p>
+                <div className="flex items-center gap-2 w-full">
+                  <Volume2 size={12} className="text-gray-500 shrink-0" />
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.02}
+                    value={soundsVolume}
+                    onChange={(e) => handleVolumeChange(Number(e.target.value))}
+                    className="flex-1 h-2 accent-[#000080] cursor-pointer"
+                  />
+                  <Volume2 size={16} className="text-gray-700 shrink-0" />
+                  <span className="text-[10px] font-mono w-8 text-right">{Math.round(soundsVolume * 100)}%</span>
+                </div>
+                <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={soundsMuted}
+                    onChange={(e) => handleMuteChange(e.target.checked)}
+                    className="accent-[#000080]"
+                  />
+                  <span className="text-[10px] font-bold select-none">Mute All Sounds</span>
+                </label>
+              </div>
+
+              {/* Mixer channels (cosmetic, matching VolumeControl.tsx) */}
+              <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#c0c0c0] p-2 shrink-0">
+                <p className="text-[10px] font-bold mb-2">Audio Mixer</p>
+                <div className="flex overflow-x-auto pb-1">
+                  <MiniSliderCol title="Volume Control" vol={soundsVolume} setVol={handleVolumeChange} muted={soundsMuted} setMuted={handleMuteChange} muteLabel="Mute all" />
+                  <MiniSliderCol title="Wave" vol={soundsWaveVol} setVol={setSoundsWaveVol} muted={false} setMuted={() => {}} />
+                  <MiniSliderCol title="SW Synth" vol={soundsSynthVol} setVol={setSoundsSynthVol} muted={false} setMuted={() => {}} />
+                  <MiniSliderCol title="Line In" vol={soundsLineVol} setVol={setSoundsLineVol} muted={true} setMuted={() => {}} />
+                  <MiniSliderCol title="CD Audio" vol={soundsCdVol} setVol={setSoundsCdVol} muted={false} setMuted={() => {}} />
+                </div>
+                <div className="text-[9px] text-gray-500 mt-1 border-t border-gray-400 pt-1">ESS Maestro</div>
+              </div>
+
+              {/* Open Volume Control link */}
+              <div className="shrink-0 flex items-center gap-2">
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent('launch-app', { detail: 'volume_control' }))}
+                  className="text-[10px] underline text-blue-800 hover:text-blue-600 bg-transparent border-none cursor-pointer p-0"
+                >
+                  Open Volume Control...
+                </button>
+                <span className="text-[9px] text-gray-500">(Advanced mixer window)</span>
+              </div>
+            </div>
+          )}
+
+          {/* ── Sound Events Tab ── */}
+          {soundsTab === 'Sounds' && (
+            <div className="flex flex-col h-full p-3 gap-2 overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center gap-2 border-b pb-2 border-gray-400 shrink-0">
+                <Volume2 size={18} className="text-[#008000] shrink-0" />
+                <div>
+                  <p className="text-xs font-bold leading-none">Sound Events</p>
+                  <p className="text-[9px] text-gray-600 mt-0.5">Select an event then click Preview to hear it.</p>
+                </div>
+              </div>
+
+              {/* Event list */}
+              <div className="flex-1 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white overflow-y-auto min-h-0">
+                {SOUND_CATEGORIES.map(cat => (
+                  <div key={cat}>
+                    <div className="px-2 py-0.5 bg-[#d9d9d9] border-b border-gray-300 text-[9px] font-bold uppercase tracking-wider text-gray-600">
+                      {cat}
+                    </div>
+                    {SOUND_EVENTS.filter(e => e.category === cat).map(ev => (
+                      <div
+                        key={ev.id}
+                        onClick={() => { setSelectedEventId(ev.id); if (soundsPreviewPlaying) handleStopPreview(); }}
+                        className={`flex items-center justify-between px-2 py-1 text-xs cursor-default select-none ${
+                          selectedEventId === ev.id
+                            ? 'bg-[#000080] text-white'
+                            : 'hover:bg-[#c0e0ff]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Volume2 size={10} className={selectedEventId === ev.id ? 'text-white opacity-80' : 'text-gray-400'} />
+                          <span className="font-bold">{ev.label}</span>
+                        </div>
+                        <span className={`text-[9px] font-mono truncate max-w-[120px] ${
+                          selectedEventId === ev.id ? 'text-blue-200' : 'text-gray-500'
+                        }`}>{ev.file}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              {/* Preview controls */}
+              <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-2 shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold mb-0.5">Sound for this event:</p>
+                    <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-white px-2 py-0.5 text-[10px] font-mono truncate">
+                      {selectedEvent ? selectedEvent.file : '(select an event above)'}
+                    </div>
+                  </div>
+                  <button
+                    disabled={!selectedEvent && !soundsPreviewPlaying}
+                    onClick={soundsPreviewPlaying ? handleStopPreview : handlePreview}
+                    title={soundsPreviewPlaying ? 'Stop' : 'Preview'}
+                    className="mt-4 flex items-center gap-1 px-3 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-[10px] font-bold disabled:opacity-40 whitespace-nowrap"
+                  >
+                    {soundsPreviewPlaying
+                      ? <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 bg-black" />Stop</span>
+                      : <span className="flex items-center gap-1"><Play size={10} />Preview</span>
+                    }
+                  </button>
+                </div>
+              </div>
+
+              {/* Scheme selector */}
+              <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-2 shrink-0">
+                <p className="text-[10px] font-bold mb-1">Sound Scheme:</p>
+                <div className="flex items-center gap-2">
+                  <select className="flex-1 text-xs bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white px-1 py-0.5">
+                    <option>Vespera Default</option>
+                    <option>Robotica</option>
+                    <option>Nature</option>
+                    <option>(None)</option>
+                  </select>
+                  <button className="px-3 py-0.5 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-[10px] font-bold">
+                    Save As...
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer buttons */}
+        <div className="flex justify-end gap-2 shrink-0 mt-2">
+          <button
+            onClick={() => setActivePanel(null)}
+            className="px-6 py-1 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white text-xs font-bold"
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    );
+  };
+
 
   // ── Sub-panel: Security Center ─────────────────────────────────────────────
   const renderSecurity = () => (

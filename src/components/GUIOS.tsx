@@ -233,7 +233,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
     videoTitle?: string;
   }[]>([
     { id: "about", title: "System Information", x: 40, y: 40, width: 450, height: 500, minWidth: 300, minHeight: 400, isOpen: false },
-    { id: "control_panel", title: "CRT Control Panel", x: 100, y: 100, width: 460, height: 600, minWidth: 460, minHeight: 500, isOpen: false },
+    { id: "control_panel", title: "Control Panel", x: 100, y: 100, width: 460, height: 600, minWidth: 460, minHeight: 500, isOpen: false },
     { id: "files", title: "File Manager", x: 80, y: 80, width: 450, height: 350, minWidth: 400, minHeight: 300, isOpen: false },
     { id: "analyzer", title: "Data Stream Analyzer", x: 120, y: 60, width: 600, height: 400, minWidth: 400, minHeight: 300, isOpen: false },
     { id: "browser", title: "Vespera Navigator", x: 100, y: 50, width: 800, height: 600, minWidth: 600, minHeight: 400, isOpen: false },
@@ -3676,7 +3676,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                   className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm font-bold"
                   onClick={(e) => {
                     e.stopPropagation();
-                    addWindow({ id: 'control_panel', title: 'CRT Control Panel', x: Math.max(0, Math.round((deskDimsRef.current.w - 460) / 2)), y: Math.max(0, Math.round((deskDimsRef.current.h - 600) / 2)), width: 460, height: 600, target: 'taskbar' });
+                    addWindow({ id: 'control_panel', title: 'Control Panel', x: Math.max(0, Math.round((deskDimsRef.current.w - 460) / 2)), y: Math.max(0, Math.round((deskDimsRef.current.h - 600) / 2)), width: 460, height: 600, target: 'taskbar' });
                     setContextMenu(null);
                   }}
                 >
@@ -3993,7 +3993,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                   className="text-left px-4 py-1 enabled:hover:[background-color:var(--vm-hover-bg)] enabled:hover:[color:var(--vm-hover-fg)] text-black text-sm"
                   onClick={(e) => {
                     e.stopPropagation();
-                    addWindow({ id: 'control_panel', title: 'CRT Control Panel', x: Math.max(0, Math.round((deskDimsRef.current.w - 460) / 2)), y: Math.max(0, Math.round((deskDimsRef.current.h - 600) / 2)), width: 460, height: 600, target: 'display' });
+                    addWindow({ id: 'control_panel', title: 'Control Panel', x: Math.max(0, Math.round((deskDimsRef.current.w - 460) / 2)), y: Math.max(0, Math.round((deskDimsRef.current.h - 600) / 2)), width: 460, height: 600, target: 'display' });
                     setContextMenu(null);
                   }}
                 >
@@ -4144,7 +4144,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           openAppId={lastFocusedApp}
           neuralBridgeActive={neuralBridgeActive}
           tourActive={windows.some(w => w.id === 'welcome_tour' && w.isOpen)}
-          onOpenSettings={() => addWindow({ id: 'control_panel', title: 'CRT Control Panel', x: Math.max(0, Math.round((deskDimsRef.current.w - 460) / 2)), y: Math.max(0, Math.round((deskDimsRef.current.h - 600) / 2)), width: 460, height: 600, target: 'agent_v' })}
+          onOpenSettings={() => addWindow({ id: 'control_panel', title: 'Control Panel', x: Math.max(0, Math.round((deskDimsRef.current.w - 460) / 2)), y: Math.max(0, Math.round((deskDimsRef.current.h - 600) / 2)), width: 460, height: 600, target: 'agent_v' })}
           onHide={() => {
             if (vfs.updateAgentVSettings) {
                vfs.updateAgentVSettings(false, vfs.displaySettings?.agentVSkin || 'classic', vfs.displaySettings?.agentVSpeak);
