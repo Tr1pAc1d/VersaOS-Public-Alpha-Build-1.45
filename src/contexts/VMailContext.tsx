@@ -165,6 +165,11 @@ export const VMailProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   });
 
+  const deliveredIdsRef = useRef<Set<string>>(deliveredIds);
+  useEffect(() => {
+    deliveredIdsRef.current = deliveredIds;
+  }, [deliveredIds]);
+
   // ── New-mail notification signal ───────────────────────────────
   const [newMailArrived, setNewMailArrived] = useState(0);
   const [latestMail, setLatestMail] = useState<{ from: string; subject: string } | null>(null);
@@ -286,43 +291,42 @@ export const VMailProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const scheduleNextDelivery = useCallback(() => {
     if (!deliveryActiveRef.current) return;
 
-    // First delivery: 90-180 seconds. Subsequent: 2-10 minutes.
+    // Time adjustment: First delivery 45-90s. Subsequent 10-25 minutes.
     const delayMs = isFirstDeliveryRef.current
-      ? randInt(5, 10) * 1000
-      : randInt(2 * 60, 10 * 60) * 1000;
+      ? randInt(45, 90) * 1000
+      : randInt(10 * 60, 25 * 60) * 1000;
 
     isFirstDeliveryRef.current = false;
 
     timerRef.current = setTimeout(() => {
       if (!deliveryActiveRef.current) return;
 
-      setDeliveredIds(prev => {
-        const email = pickNextLoreEmail(prev);
-        if (!email) {
-          // Pool exhausted — stop delivering
-          deliveryActiveRef.current = false;
-          return prev;
-        }
+      const email = pickNextLoreEmail(deliveredIdsRef.current);
+      if (!email) {
+        // Pool exhausted — stop delivering
+        deliveryActiveRef.current = false;
+        return;
+      }
 
-        // Deliver the email
-        const newEmail: VMailMessage = {
-          id: Date.now() + Math.random(),
-          from: email.from,
-          subject: email.subject,
-          date: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-          body: email.body,
-          folder: 'inbox',
-          read: false
-        };
-        setEmails(prevEmails => [newEmail, ...prevEmails]);
-        setLatestMail({ from: email.from, subject: email.subject });
-        setNewMailArrived(n => n + 1);
+      setDeliveredIds(prev => new Set([...prev, email.loreId]));
 
-        // Schedule next
-        scheduleNextDelivery();
+      // Deliver the email
+      const newEmail: VMailMessage = {
+        id: Date.now() + Math.random(),
+        from: email.from,
+        subject: email.subject,
+        date: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        body: email.body,
+        folder: 'inbox',
+        read: false
+      };
+      
+      setEmails(prevEmails => [newEmail, ...prevEmails]);
+      setLatestMail({ from: email.from, subject: email.subject });
+      setNewMailArrived(n => n + 1);
 
-        return new Set([...prev, email.loreId]);
-      });
+      // Schedule next
+      scheduleNextDelivery();
     }, delayMs);
   }, []);
 

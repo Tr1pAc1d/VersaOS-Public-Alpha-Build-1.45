@@ -41,6 +41,7 @@ export const APP_DICTIONARY: Record<string, { icon: any, customIcon?: string, co
   'versaslide': { icon: Layers, customIcon: '/Icons/Microsoft_PowerPoint_1995.svg', color: 'text-orange-500', defaultTitle: 'VersaSlide Presentation Suite' },
   'versaslide_setup': { icon: Layers, customIcon: '/Icons/Microsoft_PowerPoint_1995.svg', color: 'text-orange-500', defaultTitle: 'VersaSlide Setup' },
   'vmail': { icon: Mail, customIcon: '/Icons/Extra Icons/mailbox_world.ico', color: 'text-blue-500', defaultTitle: 'VesperaNet Mail', isSystem: true },
+  'offline_cache_setup': { icon: HardDrive, customIcon: '/Icons/Extra Icons/executable.ico', color: 'text-green-500', defaultTitle: 'Offline Cache Utility Setup' },
   'default': { icon: Package, customIcon: '/Icons/Extra Icons/executable.ico', color: 'text-gray-400', defaultTitle: 'Application' }
 };
 

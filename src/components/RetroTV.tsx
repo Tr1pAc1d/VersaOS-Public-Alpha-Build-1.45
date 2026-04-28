@@ -225,11 +225,46 @@ export const RetroTV: React.FC<RetroTVProps> = ({ onClose, isMaximized = false, 
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const switchingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const bufferingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const staticAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize static audio
+  useEffect(() => {
+    staticAudioRef.current = new Audio('/Sounds/TV white noise static.mp3');
+    staticAudioRef.current.loop = true;
+    
+    return () => {
+      if (staticAudioRef.current) {
+        staticAudioRef.current.pause();
+        staticAudioRef.current = null;
+      }
+    };
+  }, []);
+
+  // Update static audio volume
+  useEffect(() => {
+    if (staticAudioRef.current) {
+      staticAudioRef.current.volume = isMuted ? 0 : volume * 0.4;
+    }
+  }, [volume, isMuted]);
+
+  // Play/pause static audio based on buffering state
+  useEffect(() => {
+    if (!staticAudioRef.current) return;
+    
+    if (isPowered && isBuffering && setupStage === 'ready') {
+      const playPromise = staticAudioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((e) => console.log('Audio playback prevented:', e));
+      }
+    } else {
+      staticAudioRef.current.pause();
+    }
+  }, [isBuffering, isPowered, setupStage]);
 
   useEffect(() => {
     if (setupStage === 'ready') {
       setIsBuffering(true);
-      bufferingTimeoutRef.current = setTimeout(() => setIsBuffering(false), 2000);
+      bufferingTimeoutRef.current = setTimeout(() => setIsBuffering(false), 6000); // 6s hides youtube UI popup
     }
   }, [setupStage]);
 
@@ -294,7 +329,7 @@ export const RetroTV: React.FC<RetroTVProps> = ({ onClose, isMaximized = false, 
       } else {
         bufferingTimeoutRef.current = setTimeout(() => {
           setIsBuffering(false);
-        }, 2000); // 2s hides youtube UI popup
+        }, 6000); // 6s hides youtube UI popup
       }
     }, 450);
   };
@@ -549,7 +584,7 @@ export const RetroTV: React.FC<RetroTVProps> = ({ onClose, isMaximized = false, 
                 transition={{ duration: 0.15 }}
                 className="absolute inset-0 z-[100] pointer-events-none"
                 style={{
-                  backgroundImage: `url('/Television_static.gif')`,
+                  backgroundImage: `url('/Television_static_HD.gif')`,
                   backgroundSize: 'cover',
                   mixBlendMode: 'overlay',
                 }}
@@ -570,7 +605,7 @@ export const RetroTV: React.FC<RetroTVProps> = ({ onClose, isMaximized = false, 
                 <div 
                   className="absolute inset-0 opacity-40 mix-blend-screen"
                   style={{
-                    backgroundImage: `url('/Television_static.gif')`,
+                    backgroundImage: `url('/Television_static_HD.gif')`,
                     backgroundSize: 'cover',
                   }}
                 />

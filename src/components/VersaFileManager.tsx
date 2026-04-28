@@ -268,12 +268,15 @@ export const VersaFileManager: React.FC<VersaFileManagerProps> = ({
     }
 
     // 2. Legacy DOWNLOADS folder special-cases (setup wizards)
-    if (upperName.endsWith('.EXE') && currentDirNode?.name === 'DOWNLOADS' && onLaunchApp) {
-      if (node.name === 'AETHERIS_NET_MON_SETUP.EXE') {
+    const sanitizedName = upperName.replace(/\\s+/g, '');
+    if (upperName.endsWith('.EXE') && currentDirNode?.name.toUpperCase() === 'DOWNLOADS' && onLaunchApp) {
+      if (sanitizedName.includes('AETHERIS_NET_MON')) {
         onLaunchApp('netmon_setup');
-      } else if (node.name === 'RHID_SUBSYSTEM_SETUP.EXE') {
+      } else if (sanitizedName.includes('RHID_SUBSYSTEM')) {
         onLaunchApp('rhid_setup');
-      } else if (node.name === 'AW_RELEASE_RADAR_SETUP.EXE') {
+      } else if (sanitizedName.includes('OFFLINE_CACHE')) {
+        onLaunchApp('offline_cache_setup');
+      } else if (sanitizedName.includes('AW_RELEASE_RADAR')) {
         onLaunchApp('aw_release_radar_setup');
       } else if (onLaunchApp) {
         onLaunchApp(node.id);

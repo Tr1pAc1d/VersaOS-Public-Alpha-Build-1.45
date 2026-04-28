@@ -13,11 +13,34 @@ interface FullArticle {
   summary: string;
   body: string[];
   imageUrl?: string;
+  additionalImages?: string[];
   quote?: { text: string; attribution: string };
   relatedIds?: string[];
 }
 
 const ARTICLES: FullArticle[] = [
+  {
+    id: 'v-script-archive-crackdown',
+    title: 'Vespera Systems Escalates Crackdown on Underground \'V-Script Archive\'',
+    date: 'October 30, 1996',
+    author: 'David Chen, Internet Culture Reporter',
+    category: 'TECHNOLOGY',
+    summary: 'An underground website known as the \'V-Script Archive\' is drawing intense legal scrutiny from Vespera Systems over unauthorized documentation and exploits.',
+    body: [
+      'A digital game of cat-and-mouse is escalating between corporate giant Vespera Systems and a ragtag collective of rogue developers operating a site known as the "V-Script Archive." Located on a hidden subnet of VesperaNET, the Archive has become a thriving hub for unauthorized documentation, deep-system exploits, and workarounds that Vespera would rather keep buried.',
+      'The Archive offers everything from detailed schematics of the X-Type Neural Bridge to custom patches that disable V-Shield monitoring. For teenage hackers and disillusioned enterprise sysadmins alike, it has become required reading. "The official SDK is practically useless if you want to push the hardware," says a frequent Archive contributor who goes by the handle \'Null_Pointer\'. "The real documentation is on the Archive. We\'re just doing what Axis should have done in the first place."',
+      'Vespera Systems sees it differently. The company has reportedly deployed a dedicated task force of network engineers and corporate investigators to scrub the site from VesperaNET. Last week, Vespera issued a wave of DMCA takedown notices and ISP block requests, attempting to choke off traffic to the site\'s primary routing nodes.',
+      'Despite the aggressive tactics, the Archive continues to resurface. The site\'s administrators use a combination of IP hopping, encrypted peer-to-peer VFS shares, and mirrored routing tables to stay one step ahead of Vespera\'s sweepers. "Every time they shut down a node, three more pop up," said Dr. Patricia Wu, a cybersecurity analyst. "It\'s a classic Hydra problem. Vespera built a network so robust that even they can\'t fully control it."',
+      'Legal experts are closely watching the situation. If Vespera is unable to contain the spread of proprietary exploits on its own network, it could undermine confidence in the security of the AETHERIS architecture, which handles billions of dollars in financial transactions daily. For now, the Archive remains a resilient bastion of the underground internet — and a persistent thorn in Vespera\'s side.',
+    ],
+    imageUrl: '/The V-Script Archive/654564.png',
+    additionalImages: [
+      '/The V-Script Archive/453543345.png',
+      '/The V-Script Archive/543543534.png'
+    ],
+    quote: { text: 'They built a network so robust that even they can\'t fully control it. It\'s a classic Hydra problem.', attribution: 'Dr. Patricia Wu, Cybersecurity Analyst' },
+    relatedIds: ['demo-scene', 'vscript-virus'],
+  },
   {
     id: 'axiscorps-echosoft',
     title: 'AxisCorps to Pay About $3.6 Bln for EchoSoft, Beating Rival Bid by Vespera Systems',
@@ -765,6 +788,15 @@ const ArticleView: React.FC<{ article: FullArticle; onBack: () => void; onOpen: 
       {article.body.map((para, i) => (
         <p key={i} style={{ fontSize: '13px', fontFamily: 'Georgia, serif', color: '#333', lineHeight: '1.7', margin: '0 0 12px 0', textAlign: 'justify' }}>{para}</p>
       ))}
+      {article.additionalImages && article.additionalImages.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '20px 0' }}>
+          {article.additionalImages.map((imgSrc, idx) => (
+            <div key={idx} style={{ border: '1px solid #ccc', padding: '4px', backgroundColor: '#fff', width: 'fit-content', maxWidth: '100%' }}>
+              <img src={imgSrc} alt={`Additional image ${idx + 1}`} style={{ maxWidth: '100%', display: 'block' }} />
+            </div>
+          ))}
+        </div>
+      )}
       {article.quote && (
         <blockquote style={{ borderLeft: '4px solid #000080', paddingLeft: '16px', margin: '16px 0', backgroundColor: '#f8f8f0', padding: '12px 16px' }}>
           <p style={{ fontSize: '14px', fontStyle: 'italic', fontFamily: 'Georgia, serif', color: '#333', margin: '0 0 4px' }}>"{article.quote.text}"</p>
@@ -885,7 +917,20 @@ const HomePage: React.FC<{ onOpen: (id: string) => void }> = ({ onOpen }) => (
   <div style={{ display: 'flex', minHeight: '480px' }}>
     <Sidebar onOpen={onOpen} />
     <div style={{ flex: 1, padding: '12px 16px' }}>
-      {/* Lead Story */}
+      {/* Lead Story 1 */}
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ fontSize: '10px', color: '#cc0000', fontWeight: 'bold', fontFamily: 'Arial', marginBottom: '2px', letterSpacing: '1px' }}>BREAKING NEWS</div>
+        <h2 onClick={() => onOpen('v-script-archive-crackdown')} style={{ fontSize: '20px', fontWeight: 'bold', fontFamily: 'Georgia, serif', color: '#cc0000', margin: '0 0 4px 0', lineHeight: '1.3', cursor: 'pointer', textDecoration: 'underline' }}>
+          Vespera Systems Escalates Crackdown on Underground 'V-Script Archive'
+        </h2>
+        <div style={{ fontSize: '10px', color: '#999', fontFamily: 'Arial', marginBottom: '6px' }}>October 30, 1996 — <em>David Chen, Internet Culture Reporter</em></div>
+        <p style={{ fontSize: '13px', fontFamily: 'Georgia, serif', color: '#333', lineHeight: '1.6', margin: 0 }}>
+          An underground website known as the 'V-Script Archive' is drawing intense legal scrutiny from Vespera Systems over unauthorized documentation and exploits. A digital game of cat-and-mouse is escalating between corporate giant Vespera Systems and a ragtag collective of rogue developers...
+          {' '}<span className="mbn-link" onClick={() => onOpen('v-script-archive-crackdown')}>Full Story »</span>
+        </p>
+      </div>
+      <HR />
+      {/* Lead Story 2 */}
       <div style={{ marginBottom: '16px' }}>
         <div style={{ fontSize: '10px', color: '#cc0000', fontWeight: 'bold', fontFamily: 'Arial', marginBottom: '2px', letterSpacing: '1px' }}>TOP STORY</div>
         <h2 onClick={() => onOpen('axiscorps-echosoft')} style={{ fontSize: '20px', fontWeight: 'bold', fontFamily: 'Georgia, serif', color: '#000080', margin: '0 0 4px 0', lineHeight: '1.3', cursor: 'pointer', textDecoration: 'underline' }}>
@@ -899,7 +944,7 @@ const HomePage: React.FC<{ onOpen: (id: string) => void }> = ({ onOpen }) => (
       </div>
       <HR />
       {/* Article list */}
-      {ARTICLES.filter(a => a.id !== 'axiscorps-echosoft').slice(0, 8).map(a => (
+      {ARTICLES.filter(a => a.id !== 'axiscorps-echosoft' && a.id !== 'v-script-archive-crackdown').slice(0, 8).map(a => (
         <React.Fragment key={a.id}>
           <ArticlePreview article={a} onOpen={onOpen} />
           <HR />

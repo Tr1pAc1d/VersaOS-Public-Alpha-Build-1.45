@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Home, RefreshCw, Search, Globe, Hourglass, Plus,
 import { GoogleGenAI } from '@google/genai';
 import { AetherisNewsNetwork } from './AetherisNewsNetwork';
 import { XArchiveSite } from './XArchiveSite';
+import { VScriptArchiveSite } from './VScriptArchiveSite';
 import { VesperaSystemsSite } from './VesperaSystemsSite';
 import { AtlanticWavesSite } from './AtlanticWavesSite';
 import { MeridianBroadcastingSite } from './MeridianBroadcastingSite';
@@ -69,6 +70,7 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
     { name: 'Meridian Broadcasting Network', url: 'mbn:home' },
     { name: 'Atlantic Waves', url: 'atlanticwaves:home' },
     { name: 'X-Arch Login', url: 'vespera:x-arch' },
+    { name: 'V-Script Archive', url: 'vscript-archive:home' },
   ];
   const [bookmarks, setBookmarks] = useState(() => {
     try {
@@ -333,6 +335,7 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
     }
     if (fullUrl === 'atlanticwaves:home') return 'http://www.atlanticwaves.ca/index.html';
     if (fullUrl === 'mbn:home') return 'http://www.mbn-online.net/index.html';
+    if (fullUrl === 'vscript-archive:home') return 'http://www.vscript-archive.org/index.html';
     
     // Improved regex to handle standard and iframe-friendly (if_) Wayback URLs
     const match = fullUrl.match(/web\.archive\.org\/web\/\d+(?:[a-z]{2}_)?\/(.*)/i);
@@ -391,7 +394,9 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
       finalUrl = 'vespera:404';
     } else if (newUrl.toLowerCase().includes('vespera.sys/x-arch/login.htm')) {
       finalUrl = 'vespera:x-arch';
-    } else if (newUrl !== 'home' && !newUrl.startsWith('vespera:') && !newUrl.startsWith('atlanticwaves:') && !newUrl.startsWith('mbn:')) {
+    } else if (normalizedUrl === 'vscript-archive.org' || normalizedUrl === 'www.vscript-archive.org' || normalizedUrl === 'vscript-archive.org/index.html') {
+      finalUrl = 'vscript-archive:home';
+    } else if (newUrl !== 'home' && !newUrl.startsWith('vespera:') && !newUrl.startsWith('atlanticwaves:') && !newUrl.startsWith('mbn:') && !newUrl.startsWith('vscript-archive:')) {
       // If it's not already a wayback URL, make it one
       if (!newUrl.includes('web.archive.org')) {
         const cleanUrl = newUrl.replace(/^https?:\/\//, '');
@@ -416,7 +421,7 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
       historyIndex: newHistory.length - 1,
       url: finalUrl,
       addressBar: getDisplayUrl(finalUrl),
-      isLoading: finalUrl !== 'home' && !finalUrl.startsWith('vespera:') && !finalUrl.startsWith('mbn:') && !finalUrl.startsWith('atlanticwaves:')
+      isLoading: finalUrl !== 'home' && !finalUrl.startsWith('vespera:') && !finalUrl.startsWith('mbn:') && !finalUrl.startsWith('atlanticwaves:') && !finalUrl.startsWith('vscript-archive:')
     });
   };
 
@@ -428,7 +433,7 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
         historyIndex: newIndex,
         url: prevUrl,
         addressBar: getDisplayUrl(prevUrl),
-        isLoading: prevUrl !== 'home' && !prevUrl.startsWith('vespera:') && !prevUrl.startsWith('mbn:') && !prevUrl.startsWith('atlanticwaves:')
+        isLoading: prevUrl !== 'home' && !prevUrl.startsWith('vespera:') && !prevUrl.startsWith('mbn:') && !prevUrl.startsWith('atlanticwaves:') && !prevUrl.startsWith('vscript-archive:')
       });
     }
   };
@@ -441,7 +446,7 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
         historyIndex: newIndex,
         url: nextUrl,
         addressBar: getDisplayUrl(nextUrl),
-        isLoading: nextUrl !== 'home' && !nextUrl.startsWith('vespera:') && !nextUrl.startsWith('mbn:') && !nextUrl.startsWith('atlanticwaves:')
+        isLoading: nextUrl !== 'home' && !nextUrl.startsWith('vespera:') && !nextUrl.startsWith('mbn:') && !nextUrl.startsWith('atlanticwaves:') && !nextUrl.startsWith('vscript-archive:')
       });
     }
   };
@@ -646,6 +651,7 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
             if (activeTab.url === 'home') defaultName = "Vespera Systems";
             else if (activeTab.url.startsWith('mbn:')) defaultName = "Meridian Broadcasting";
             else if (activeTab.url.startsWith('vespera:news')) defaultName = "AETHERIS News";
+            else if (activeTab.url.startsWith('vscript-archive:')) defaultName = "The V-Script Archive";
             else defaultName = activeTab.addressBar.replace('http://', '').split('/')[0];
             
             setBookmarkNameInput(defaultName);
@@ -712,6 +718,8 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
               />
             ) : tab.url === 'mbn:home' ? (
               <MeridianBroadcastingSite />
+            ) : tab.url === 'vscript-archive:home' ? (
+              <VScriptArchiveSite onDownload={onDownload} />
             ) : (tab.url === 'home' || tab.url.startsWith('vespera:')) ? (
               <VesperaSystemsSite 
                 url={tab.url}
@@ -748,7 +756,7 @@ export const WebBrowser: React.FC<WebBrowserProps> = ({ onDownload, onLaunchApp,
         <div className="flex-1 border-2 border-t-gray-600 border-l-gray-600 border-b-white border-r-white px-2 py-0.5 bg-[#c0c0c0] truncate">
           {activeTab.isLoading
             ? `Opening: ${activeTab.addressBar}...`
-            : (activeTab.url === 'home' || activeTab.url.startsWith('vespera:') || activeTab.url.startsWith('mbn:') || activeTab.url.startsWith('atlanticwaves:'))
+            : (activeTab.url === 'home' || activeTab.url.startsWith('vespera:') || activeTab.url.startsWith('mbn:') || activeTab.url.startsWith('atlanticwaves:') || activeTab.url.startsWith('vscript-archive:'))
               ? `Document: Done`
               : `Wayback Machine: ${activeTab.addressBar}`}
         </div>

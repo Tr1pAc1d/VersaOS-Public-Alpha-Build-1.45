@@ -36,7 +36,7 @@ export const DownloadDialog: React.FC<DownloadDialogProps> = ({ filename, source
   };
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/20">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/20">
       <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] w-96 flex flex-col font-sans text-black select-none">
         
         {/* Title Bar */}

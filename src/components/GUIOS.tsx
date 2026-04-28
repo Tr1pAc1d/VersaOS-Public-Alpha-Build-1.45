@@ -40,6 +40,7 @@ import { UninstallWizard } from "./UninstallWizard";
 import { DiskDefrag } from "./DiskDefrag";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { RHIDSetupWizard, RHIDIcon } from "./RHIDSetupWizard";
+import { OfflineCacheSetupWizard } from "./OfflineCacheSetupWizard";
 import { RHIDTerminal } from "./RHIDTerminal";
 import { OpenDOSPrompt } from "./OpenDOSPrompt";
 import { VStore } from "./VStore";
@@ -1742,6 +1743,14 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           }}
           onCancel={() => closeWindow("rhid_setup", { stopPropagation: () => {} } as any)}
           onReboot={onReboot}
+        />;
+      case "offline_cache_setup":
+        return <OfflineCacheSetupWizard
+          vfs={vfs}
+          onComplete={() => {
+            closeWindow(win.id, { stopPropagation: () => {} } as any);
+          }}
+          onCancel={() => closeWindow(win.id, { stopPropagation: () => {} } as any)}
         />;
       case "agentv_plus_setup":
         return <AgentVPlusSetupWizard
