@@ -5,6 +5,9 @@
 Vespera OS is a high-fidelity, interactive operating system simulation and psychological horror experience built with React and TypeScript. Set in the mid-1990s, it captures the raw, mechanical aesthetic of early graphical user interfaces (Motif/CDE) while hiding a deep, unsettling narrative within its system files and kernel logs.
 
 This isn't just a UI skin—it is a robust system simulation featuring a persistent Virtual File System, realistic hardware-level boot sequences, and specialized 1990s system utilities.
+
+📜 **[Read the Full Version History & Patch Notes (CHANGELOG.md)](CHANGELOG.md)**
+
 🛠️ Core System Modules
 
     Aetheris Kernel v4.2: A custom-built terminal and command-line interface. Supports standard DOS-style navigation, directory probing, and hidden system commands for deep-web exploration.
