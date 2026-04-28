@@ -4,6 +4,19 @@ This document chronicles the exhaustive evolution of VersaOS, detailing why chan
 
 ---
 
+## [Commit 1cd69c8] - 2026-04-28
+**Author:** Tr1pAc1d
+**Message:** feat: implement automated changelog generation script and add project CHANGELOG.md file
+
+### 🟢 Added (2 files)
+- `CHANGELOG.md`
+- `scratch/generate_changelog.cjs`
+
+### 🟡 Modified (1 files)
+- `README.md`
+
+---
+
 ## [Commit d521448] - 2026-04-28
 **Author:** Tr1pAc1d
 **Message:** refactor: reorganize project structure by moving utility scripts to scratch directory and adding new UI components and data models
@@ -56,6 +69,9 @@ This document chronicles the exhaustive evolution of VersaOS, detailing why chan
 ### ✨ Core OS Shell Integration (GUIOS)
 - **GUIOS Foundation**: Rebuilt the core GUIOS shell to manage window rendering, z-indexing, and global state.
 - **System Registry Infrastructure**: Built the underlying system registry to store and manage persistent OS settings.
+
+### 🔊 Audio Asset Adjustments
+- **Sound Library Optimization**: The 3000+ sound files added in the [Commit 6d968e1] - 2026-04-27 commit were removed because of memory/file size limits. New sounds and sound scheme options will be added in the future.
 
 ### 🟡 Modified (4 files)
 - `src/components/AxisPaint.tsx`
