@@ -30,7 +30,7 @@ import {
 import { PLUS_THEMES } from "../utils/plusThemes";
 import { useVMail } from "../contexts/VMailContext";
 import { APP_DICTIONARY, getCompatibleApps } from "../utils/appDictionary";
-import { useVFS, VFSNode, WorkspaceMenuItem, DEFAULT_WORKSPACE_MENU, WORKSPACE_MENU_THEME_COLORS } from "../hooks/useVFS";
+import { useVFS, VFSNode, WorkspaceMenuItem, DEFAULT_WORKSPACE_MENU, WORKSPACE_MENU_THEME_COLORS, DEFAULT_VFS } from "../hooks/useVFS";
 import { VersaFileManager } from "./VersaFileManager";
 import { VesperaWrite } from "./VesperaWrite";
 import { ControlPanel } from "./ControlPanel";
@@ -697,6 +697,98 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   const mailToastTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevNewMailRef = React.useRef(newMailArrived);
 
+  // ── Global System Notifications History ─────────────────────────────
+  const [notificationHistory, setNotificationHistory] = useState<{ id: string; type: 'mail' | 'system' | 'app'; title: string; message: string; route?: any; timestamp: number }[]>([]);
+  const [notificationTrayOpen, setNotificationTrayOpen] = useState(false);
+
+  // ── Global System Toasts (Fake Update Reminders) ──────────────────────
+  const [systemToasts, setSystemToasts] = useState<{ id: string; title: string; message: string; icon?: React.ReactNode; route?: any }[]>([]);
+
+  useEffect(() => {
+    const handleSystemNotify = (e: Event) => {
+      const customEvent = e as CustomEvent<{ message: string; title?: string; icon?: any; route?: any; duration?: number; type?: 'mail' | 'system' | 'app' }>;
+      const { message, title = 'System Notification', icon, route, duration = 10000, type = 'system' } = customEvent.detail;
+      const id = Math.random().toString(36).substr(2, 9);
+      
+      const notifSettings = vfs.displaySettings?.notificationSettings || { muted: false, hideMail: false, hideSystem: false, hideApps: false };
+      
+      setNotificationHistory(prev => [{ id, type, title, message, route, timestamp: Date.now() }, ...prev].slice(0, 50));
+
+      if (type === 'system' && notifSettings.hideSystem) return;
+      if (type === 'app' && notifSettings.hideApps) return;
+
+      setSystemToasts(prev => [...prev, { id, title, message, icon, route }]);
+      if (!notifSettings.muted) import('../utils/audio').then(m => m.playInfoSound());
+      
+      setTimeout(() => {
+        setSystemToasts(prev => prev.filter(t => t.id !== id));
+      }, duration);
+    };
+    window.addEventListener('vespera-system-notify', handleSystemNotify);
+    
+    // Also listen to the old plugin notify to route it through the same system
+    const handlePluginNotify = (e: Event) => {
+      const { message, pluginId } = (e as CustomEvent).detail;
+      window.dispatchEvent(new CustomEvent('vespera-system-notify', { detail: { title: `App: ${pluginId}`, message, type: 'app' } }));
+    };
+    window.addEventListener('vespera-plugin-notify', handlePluginNotify);
+
+    return () => {
+      window.removeEventListener('vespera-system-notify', handleSystemNotify);
+      window.removeEventListener('vespera-plugin-notify', handlePluginNotify);
+    };
+  }, []);
+
+  // ── Random Fake Reminder Generator ──────────────────────────────────────
+  useEffect(() => {
+    if (bootPhase !== 99) return;
+    
+    const REMINDERS = [
+      {
+        title: 'New Hardware Found',
+        message: 'A newer driver software package was found for S3 86C911 GUI Accelerator. Click here to open Device Manager.',
+        route: { panel: 'system', initialTab: 'Device Manager', initialDevice: 'gpu_s3' }
+      },
+      {
+        title: 'Vespera Update',
+        message: 'Critical Vespera OS Service Pack 1 is ready to download. Click here to open Vespera Update.',
+        route: { panel: 'vespera_update' }
+      },
+      {
+        title: 'Hardware Update Wizard',
+        message: 'NE2000 Compatible Ethernet Adapter requires a firmware refresh to maintain AETHERIS connection.',
+        route: { panel: 'system', initialTab: 'Device Manager', initialDevice: 'nic_ne2k' }
+      }
+    ];
+
+    const interval = setInterval(() => {
+      // 10% chance every 60 seconds to show a random notification
+      if (Math.random() < 0.10) {
+        const reminder = REMINDERS[Math.floor(Math.random() * REMINDERS.length)];
+        window.dispatchEvent(new CustomEvent('vespera-system-notify', {
+           detail: { title: reminder.title, message: reminder.message, route: reminder.route, duration: 15000 }
+        }));
+      }
+    }, 60000);
+    
+    // Initial reminder shortly after boot
+    const initialTimer = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('vespera-system-notify', {
+         detail: { 
+           title: 'System Maintenance', 
+           message: 'It has been 30 days since your last system backup. Please check Vespera Update for new security patches.',
+           route: { panel: 'vespera_update' },
+           duration: 12000
+         }
+      }));
+    }, 35000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(initialTimer);
+    };
+  }, [bootPhase]);
+
   // Window resize state
   const [resizing, setResizing] = useState<{
     id: string;
@@ -792,8 +884,8 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   
   // Derive installed apps from VFS
   const installedApps = vfs.nodes
-    .filter(n => n.isApp)
-    .map(n => n.id === 'netmon_exe' ? 'netmon' : n.id === 'rhid_exe' ? 'rhid' : n.id === 'retrotv_exe' ? 'retrotv' : n.id);
+    .filter((n: VFSNode) => n.isApp && !DEFAULT_VFS.find(d => d.id === n.id))
+    .map((n: VFSNode) => n.id === 'netmon_exe' ? 'netmon' : n.id === 'rhid_exe' ? 'rhid' : n.id === 'retrotv_exe' ? 'retrotv' : n.id.replace('_exe', ''));
 
   const vmailInstalled = installedApps.includes('vmail');
 
@@ -904,11 +996,21 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   useEffect(() => {
     if (newMailArrived > 0 && newMailArrived !== prevNewMailRef.current) {
       prevNewMailRef.current = newMailArrived;
-      playNewMailSound();
+      
+      const notifSettings = vfs.displaySettings?.notificationSettings || { muted: false, hideMail: false, hideSystem: false, hideApps: false };
+
+      if (latestMail) {
+        const id = Math.random().toString(36).substr(2, 9);
+        setNotificationHistory(prev => [{
+          id, type: 'mail', title: `New Mail: ${latestMail.from}`, message: latestMail.subject, timestamp: Date.now()
+        }, ...prev].slice(0, 50));
+      }
+
+      if (!notifSettings.muted) playNewMailSound();
       
       if (latestMail && vfs.displaySettings?.agentVEnabled !== false) {
         window.dispatchEvent(new CustomEvent('agent-v-notify', { detail: { type: 'new_mail', from: latestMail.from, subject: latestMail.subject } }));
-      } else if (latestMail) {
+      } else if (latestMail && !notifSettings.hideMail) {
         setMailToast({ from: latestMail.from, subject: latestMail.subject });
         // Auto-dismiss after 6 seconds
         if (mailToastTimerRef.current) clearTimeout(mailToastTimerRef.current);
@@ -916,7 +1018,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
       }
       clearNewMailFlag();
     }
-  }, [newMailArrived, latestMail, clearNewMailFlag, vfs.displaySettings?.agentVEnabled]);
+  }, [newMailArrived, latestMail, clearNewMailFlag, vfs.displaySettings?.agentVEnabled, vfs.displaySettings?.notificationSettings]);
 
   const setTaskbarPlaybackVolume = React.useCallback((v: number) => {
     const clamped = Math.max(0, Math.min(1, v));
@@ -953,16 +1055,17 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
   }, []);
 
   useEffect(() => {
-    if (!internetTrayOpen && !volumeTrayOpen) return;
+    if (!internetTrayOpen && !volumeTrayOpen && !notificationTrayOpen) return;
     const close = (e: MouseEvent) => {
       const el = taskbarTrayRef.current;
       if (el && e.target instanceof Node && el.contains(e.target)) return;
       setInternetTrayOpen(false);
       setVolumeTrayOpen(false);
+      setNotificationTrayOpen(false);
     };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
-  }, [internetTrayOpen, volumeTrayOpen]);
+  }, [internetTrayOpen, volumeTrayOpen, notificationTrayOpen]);
 
   useEffect(() => () => stopGuiAmbientHum(), []);
 
@@ -2208,7 +2311,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
 
   // ── Taskbar layout ─────────────────────────────────────────────────────────
   const taskbarPosition = (vfs.displaySettings?.taskbarPosition || 'bottom') as 'top' | 'bottom' | 'left' | 'right';
-  const taskbarSize = Math.max(40, Math.min(80, Number(vfs.displaySettings?.taskbarSize) || 56));
+  const taskbarSize = Math.max(40, Math.min(80, Number(vfs.displaySettings?.taskbarSize) || 40));
   const taskbarSpanFull = vfs.displaySettings?.taskbarSpanFull === true;
   const isVerticalTaskbar = taskbarPosition === 'left' || taskbarPosition === 'right';
 
@@ -3111,7 +3214,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         }}
       >
         {/* Dock Left Applet */}
-        {!taskbarSpanFull && <TaskbarAppletSlot side="dock_left" vfs={vfs} chromeTheme={chromeTheme} />}
+        {!taskbarSpanFull && <div style={{ order: -20, height: '100%', display: 'flex' }}><TaskbarAppletSlot side="dock_left" vfs={vfs} chromeTheme={chromeTheme} /></div>}
         
         {/* Left: Clock / Status (Recessed) */}
         {vfs.displaySettings?.taskbarShowClock !== false && (() => {
@@ -3121,7 +3224,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           const is12Hour = vfs.displaySettings?.clockFormat === '12h';
           
           return (
-            <div className={`${isVerticalTaskbar ? 'w-full py-1' : 'h-full'} flex items-center gap-1 border-2 p-1 ${theme.bgRecessed} ${theme.borderRecessed}`}>
+            <div className={`${isVerticalTaskbar ? 'w-full py-1' : 'h-full'} flex items-center gap-1 border-2 p-1 ${theme.bgRecessed} ${theme.borderRecessed}`} style={{ order: vfs.displaySettings?.taskbarClockPosition === 'left' ? -10 : 10 }}>
               <div 
                 className={`${isVerticalTaskbar ? 'w-full py-2 min-w-0 text-[10px] leading-tight break-words text-center' : 'h-full px-2 min-w-[60px] text-xs'} border-2 ${tTheme === 'dark' ? 'border-t-[#222] border-l-[#222] border-b-[#555] border-r-[#555]' : 'border-t-[#2a3f5c] border-l-[#2a3f5c] border-b-[#ffffff] border-r-[#ffffff]'} flex flex-col items-center justify-center ${fontClass}`}
                 style={{ backgroundColor: bgCol, color: textCol }}
@@ -3150,7 +3253,18 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           const effectiveMenu: WorkspaceMenuItem[] = JSON.parse(JSON.stringify(savedMenu));
           
           // Inject installed apps into the "Installed Programs" folder
-          const installedFolder = effectiveMenu.find(item => item.id === 'installed');
+          // Recursive find for 'installed' folder in case the user moved it
+          const findFolderDeep = (items: WorkspaceMenuItem[], id: string): WorkspaceMenuItem | undefined => {
+            for (const item of items) {
+              if (item.id === id) return item;
+              if (item.children) {
+                const found = findFolderDeep(item.children, id);
+                if (found) return found;
+              }
+            }
+            return undefined;
+          };
+          const installedFolder = findFolderDeep(effectiveMenu, 'installed');
           if (installedFolder) {
             const dynamicChildren: WorkspaceMenuItem[] = [];
             if (installedApps.includes('netmon')) {
@@ -3159,8 +3273,8 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
             if (installedApps.includes('rhid')) {
               dynamicChildren.push({ id: 'wm_rhid', label: 'RHID Terminal', icon: 'Terminal', action: 'rhid', type: 'app', isDynamic: true });
             }
-            // Add any other future installed apps from VFS
-            vfs.nodes.filter((n: any) => n.isApp && n.id !== 'netmon_exe' && n.id !== 'rhid_exe').forEach((n: any) => {
+            // Add any other user-installed apps
+            vfs.nodes.filter((n: any) => n.isApp && !DEFAULT_VFS.find(d => d.id === n.id) && n.id !== 'netmon_exe' && n.id !== 'rhid_exe').forEach((n: any) => {
               const appId = n.id.replace('_exe', '');
               if (!dynamicChildren.find(c => c.action === appId)) {
                 dynamicChildren.push({ id: `wm_${appId}`, label: n.appDisplayName || n.name, icon: 'Package', action: appId, type: 'app', isDynamic: true });
@@ -3450,7 +3564,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           };
           
           return (
-            <div className={`relative ${isVerticalTaskbar ? 'w-full' : 'h-full'} flex items-center justify-center border-2 p-1 shrink-0 ${theme.bgRecessed} ${theme.borderRecessed}`}>
+            <div className={`relative ${isVerticalTaskbar ? 'w-full' : 'h-full'} flex items-center justify-center border-2 p-1 shrink-0 ${theme.bgRecessed} ${theme.borderRecessed}`} style={{ order: 0 }}>
               <button 
                 onClick={() => setMenuOpen(!menuOpen)}
                 className={`${isVerticalTaskbar ? 'w-full py-3 flex-col' : 'h-full px-4'} font-bold flex items-center justify-center gap-2 border-2 ${menuOpen ? `${theme.bgRecessed} ${theme.borderRecessed} ${theme.textMain}` : `${theme.bgButton} ${theme.borderButton} ${theme.textMain} ${theme.activeClass}`}`}
@@ -3540,7 +3654,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         })()}
 
         {/* Right: App Dock (Recessed) */}
-        <div className={`${isVerticalTaskbar ? 'w-full flex-col min-h-0' : 'h-full min-w-0'} flex items-center gap-1 border-2 p-1 overflow-y-auto ${theme.bgRecessed} ${theme.borderRecessed}`}>
+        <div className={`${isVerticalTaskbar ? 'w-full flex-col min-h-0' : 'h-full min-w-0'} flex items-center gap-1 border-2 p-1 overflow-y-auto flex-1 ${theme.bgRecessed} ${theme.borderRecessed}`} style={{ order: 0 }}>
           {(() => {
             const activeWindowId = windows.filter(w => w.isOpen && !w.isMinimized).pop()?.id;
             
@@ -3664,7 +3778,8 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
         {/* Tray: Internet, playback volume, spectrum when Media Agent is playing */}
         <div
           ref={taskbarTrayRef}
-          className={`relative ${isVerticalTaskbar ? 'w-full flex-col' : 'h-full'} flex items-stretch gap-0.5 border-2 p-1 shrink-0 ${theme.bgRecessed} ${theme.borderRecessed} ${taskbarSpanFull ? (isVerticalTaskbar ? 'mt-auto' : 'ml-auto') : ''}`}
+          className={`relative ${isVerticalTaskbar ? 'w-full flex-col' : 'h-full'} flex items-stretch gap-0.5 border-2 p-1 shrink-0 ${theme.bgRecessed} ${theme.borderRecessed}`}
+          style={{ order: vfs.displaySettings?.taskbarTrayPosition === 'left' ? -5 : 5 }}
         >
           <div className={`relative ${isVerticalTaskbar ? 'w-full' : 'h-full'} flex items-stretch`}>
             <button
@@ -3834,6 +3949,7 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
                 onClick={() => {
                   setInternetTrayOpen(false);
                   setVolumeTrayOpen(false);
+                  setNotificationTrayOpen(false);
                   toggleWindow('vmail');
                 }}
                 className={`h-full w-9 flex items-center justify-center border-2 relative ${theme.bgButton} ${theme.borderButton} ${theme.activeClass}`}
@@ -3845,6 +3961,73 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
               </button>
             </div>
           )}
+
+          {/* Tray: Notification History icon */}
+          <div className="relative h-full flex items-stretch">
+            <button
+              type="button"
+              title="System Notifications"
+              aria-expanded={notificationTrayOpen}
+              onClick={() => {
+                setInternetTrayOpen(false);
+                setVolumeTrayOpen(false);
+                setNotificationTrayOpen(o => !o);
+              }}
+              className={`h-full w-9 flex items-center justify-center border-2 relative ${theme.bgButton} ${theme.borderButton} ${theme.activeClass}`}
+            >
+              <MessageSquare size={16} className={theme.textMain.includes('black') ? 'text-black' : 'text-white'} />
+              {notificationHistory.length > 0 && (
+                <span className="absolute top-[6px] right-[6px] w-[5px] h-[5px] bg-[#000080] border border-white rounded-none" />
+              )}
+            </button>
+            {notificationTrayOpen && (
+              <div className={`absolute z-[10001] w-[300px] max-h-[400px] overflow-hidden flex flex-col box-border bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] ${taskbarPosition === 'bottom' ? 'bottom-[calc(100%+6px)] right-0' : taskbarPosition === 'top' ? 'top-[calc(100%+6px)] right-0' : taskbarPosition === 'left' ? 'left-[calc(100%+6px)] top-0' : 'right-[calc(100%+6px)] top-0'}`}>
+                <div className="bg-gradient-to-r from-[#000080] to-[#1084d0] px-2 py-1 flex justify-between items-center text-white shrink-0">
+                  <span className="text-[10px] font-bold tracking-wider">Notification History</span>
+                  <button 
+                    className="text-[9px] underline text-[#aaffaa] hover:text-white cursor-pointer p-0 border-none bg-transparent font-bold"
+                    onClick={() => setNotificationHistory([])}
+                  >
+                    Clear All
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-1 bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white mx-1 my-1">
+                  {notificationHistory.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500 text-[10px] italic">No notifications</div>
+                  ) : (
+                    notificationHistory.map((notif, index) => (
+                      <div 
+                        key={`${notif.id}-${index}`} 
+                        className={`p-2 border-b border-gray-300 hover:bg-[#000080] hover:text-white group cursor-pointer ${index === notificationHistory.length - 1 ? 'border-b-0' : ''}`}
+                        onClick={() => {
+                          setNotificationTrayOpen(false);
+                          if (notif.route) {
+                            if (notif.route.panel) {
+                              openWindow('control_panel');
+                              setTimeout(() => {
+                                window.dispatchEvent(new CustomEvent('vespera-open-control-panel-route', { detail: notif.route }));
+                              }, 100);
+                            } else {
+                              openWindow(notif.route);
+                            }
+                          }
+                        }}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          {notif.type === 'mail' && <Mail size={12} className="shrink-0 text-blue-600 group-hover:text-white" />}
+                          {notif.type === 'system' && <Settings size={12} className="shrink-0 text-gray-600 group-hover:text-white" />}
+                          {notif.type === 'app' && <Activity size={12} className="shrink-0 text-green-600 group-hover:text-white" />}
+                          <span className="font-bold text-[10px] truncate leading-tight flex-1" style={{ color: 'inherit' }}>{notif.title}</span>
+                          <span className="text-[9px] opacity-70 shrink-0">{new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <p className="text-[9px] leading-tight opacity-90 line-clamp-2" style={{ color: 'inherit' }}>{notif.message}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {(() => {
             const mediaPlayerOpen = windows.some((w) => w.id === "media_player" && w.isOpen);
@@ -3967,6 +4150,52 @@ export const GUIOS: React.FC<GUIOSProps> = ({ onExit, onReboot, neuralBridgeActi
           />
         )}
       </div>
+
+        {/* System Notification Toasts */}
+        <AnimatePresence>
+          {systemToasts.map((toast, index) => (
+            <motion.div
+              key={toast.id}
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 60, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              className={`absolute z-[9999] cursor-pointer ${taskbarPosition === 'right' ? 'top-8 right-[calc(80px+8px)]' : taskbarPosition === 'top' ? 'top-[calc(80px+8px)] right-8' : taskbarPosition === 'left' ? 'top-8 left-[calc(80px+8px)]' : 'bottom-[calc(80px+8px)] right-8'}`}
+              style={{ transform: `translateY(-${index * 80}px)` }}
+              onClick={() => {
+                setSystemToasts(prev => prev.filter(t => t.id !== toast.id));
+                if (toast.route) {
+                  window.dispatchEvent(new CustomEvent('vespera-open-control-panel-route', { detail: toast.route }));
+                  addWindow({ id: 'control_panel', title: 'Control Panel', x: Math.max(0, Math.round((deskDimsRef.current.w - 460) / 2)), y: Math.max(0, Math.round((deskDimsRef.current.h - 600) / 2)), width: 460, height: 600, target: 'control_panel' });
+                }
+              }}
+            >
+              <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] w-[260px] mb-2">
+                <div className="bg-[#000080] text-white text-[11px] font-bold px-2 py-0.5 flex items-center gap-1.5">
+                  <span className="truncate">{toast.title}</span>
+                  <button
+                    className="ml-auto w-4 h-3.5 flex items-center justify-center bg-[#c0c0c0] border border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-black text-[9px] font-bold leading-none active:border-t-gray-800 active:border-l-gray-800 active:border-b-white active:border-r-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSystemToasts(prev => prev.filter(t => t.id !== toast.id));
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="p-2.5 flex items-start gap-2">
+                  <div className="shrink-0 mt-0.5">
+                    {toast.icon || <Settings size={20} className="text-[#000080]" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] text-black leading-tight">{toast.message}</p>
+                    {toast.route && <p className="text-[9px] text-gray-500 mt-1">Click to view details</p>}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
         {/* Mail Notification Toast */}
         <AnimatePresence>

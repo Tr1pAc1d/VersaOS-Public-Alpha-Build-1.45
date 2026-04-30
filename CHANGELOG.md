@@ -5,7 +5,7 @@ This document chronicles the exhaustive evolution of VersaOS, detailing why chan
 ---
 
 ## [Commit 1cd69c8] - 2026-04-28
-**Author:** Tr1pAc1d
+**Author:** Tr1pAc1d, GitGhost709
 **Message:** feat: implement automated changelog generation script and add project CHANGELOG.md file
 
 ### 🟢 Added (2 files)

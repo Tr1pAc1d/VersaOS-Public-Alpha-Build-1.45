@@ -118,14 +118,16 @@ interface SystemPropertiesProps {
   vfs: any;
   currentUser?: string;
   neuralBridgeActive?: boolean;
+  initialTab?: SysTab;
+  initialDevice?: string | null;
 }
 
-type SysTab = 'General' | 'Device Manager' | 'Hardware Profiles' | 'User Profiles' | 'Performance';
+type SysTab = 'General' | 'Devices' | 'Hardware' | 'Performance';
 type DevicePropTab = 'General' | 'Driver' | 'Resources' | 'Settings';
 type AdvDialog = null | 'startup' | 'virtual_memory' | 'env_vars' | 'sys_report';
 
-export const SystemProperties: React.FC<SystemPropertiesProps> = ({ onBack, vfs, currentUser, neuralBridgeActive }) => {
-  const [tab, setTab] = useState<SysTab>('General');
+export const SystemProperties: React.FC<SystemPropertiesProps> = ({ onBack, vfs, currentUser, neuralBridgeActive, initialTab, initialDevice }) => {
+  const [tab, setTab] = useState<SysTab>(initialTab || 'General');
 
   // General tab
   const [clickCount, setClickCount] = useState(0);
@@ -135,7 +137,7 @@ export const SystemProperties: React.FC<SystemPropertiesProps> = ({ onBack, vfs,
 
   // Device Manager tab
   const [expanded, setExpanded] = useState<Set<string>>(new Set(DEVICE_TREE.map(c => c.id)));
-  const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
+  const [selectedDevice, setSelectedDevice] = useState<string | null>(initialDevice || null);
   const [showDeviceProps, setShowDeviceProps] = useState(false);
   const [devicePropTab, setDevicePropTab] = useState<DevicePropTab>('General');
   const [deviceConflicts, setDeviceConflicts] = useState<Record<string, boolean>>({});
@@ -365,7 +367,7 @@ export const SystemProperties: React.FC<SystemPropertiesProps> = ({ onBack, vfs,
   );
 
   // ── Tab bar ─────────────────────────────────────────────────────────────────
-  const TABS: SysTab[] = ['General', 'Device Manager', 'Hardware Profiles', 'User Profiles', 'Performance'];
+  const TABS: SysTab[] = ['General', 'Devices', 'Hardware', 'Performance'];
 
   // ── General Tab ─────────────────────────────────────────────────────────────
   const renderGeneral = () => (
@@ -681,9 +683,8 @@ export const SystemProperties: React.FC<SystemPropertiesProps> = ({ onBack, vfs,
       {/* Content */}
       <div className="flex-1 border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 p-3 bg-[#c0c0c0] flex flex-col relative z-0 -mt-2 overflow-hidden min-h-0">
         {tab === 'General' && renderGeneral()}
-        {tab === 'Device Manager' && renderDeviceManager()}
-        {tab === 'Hardware Profiles' && renderHardwareProfiles()}
-        {tab === 'User Profiles' && renderUserProfiles()}
+        {tab === 'Devices' && renderDeviceManager()}
+        {tab === 'Hardware' && renderHardwareProfiles()}
         {tab === 'Performance' && renderPerformance()}
       </div>
 

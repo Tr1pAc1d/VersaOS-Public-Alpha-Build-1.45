@@ -188,7 +188,7 @@ export interface VFSNode {
   appVersion?: string;
 }
 
-const DEFAULT_VFS: VFSNode[] = [
+export const DEFAULT_VFS: VFSNode[] = [
   { id: 'root', name: 'C:', type: 'directory', parentId: null },
   { id: 'desktop', name: 'Desktop', type: 'directory', parentId: 'root', customIcon: '/Icons/directory_closed-4.png' },
   { id: 'users', name: 'Users', type: 'directory', parentId: 'root', customIcon: '/Icons/users_green-4.png' },
@@ -495,11 +495,19 @@ export function useVFS() {
       activeApplets: parsed.activeApplets || {},
       startupApps: parsed.startupApps || [],
       taskbarPosition: (parsed.taskbarPosition as 'top' | 'bottom' | 'left' | 'right') || 'bottom',
-      taskbarSize: typeof parsed.taskbarSize === 'number' ? Math.max(40, Math.min(80, parsed.taskbarSize)) : 56,
+      taskbarSize: typeof parsed.taskbarSize === 'number' ? Math.max(40, Math.min(80, parsed.taskbarSize)) : 40,
       taskbarSpanFull: parsed.taskbarSpanFull === true,
       soundEffectsVolume: typeof parsed.soundEffectsVolume === 'number' ? parsed.soundEffectsVolume : 1.0,
       systemMuted: parsed.systemMuted === true,
       soundScheme: typeof parsed.soundScheme === 'string' ? parsed.soundScheme : 'vespera',
+      notificationSettings: parsed.notificationSettings || {
+        muted: false,
+        hideMail: false,
+        hideSystem: false,
+        hideApps: false
+      },
+      taskbarClockPosition: (parsed.taskbarClockPosition as 'left' | 'right') || 'right',
+      taskbarTrayPosition: (parsed.taskbarTrayPosition as 'left' | 'right') || 'right',
     };
   });
 
@@ -729,12 +737,14 @@ export function useVFS() {
     setDisplaySettings((prev: any) => ({ ...prev, startupApps: apps }));
   };
 
-  const updateTaskbarLayout = (taskbarPosition: 'top' | 'bottom' | 'left' | 'right', taskbarSize: number, taskbarSpanFull?: boolean) => {
+  const updateTaskbarLayout = (taskbarPosition: 'top' | 'bottom' | 'left' | 'right', taskbarSize: number, taskbarSpanFull?: boolean, taskbarClockPosition?: 'left' | 'right', taskbarTrayPosition?: 'left' | 'right') => {
     setDisplaySettings((prev: any) => ({
       ...prev,
       taskbarPosition,
       taskbarSize: Math.max(40, Math.min(80, taskbarSize)),
       taskbarSpanFull: !!taskbarSpanFull,
+      ...(taskbarClockPosition ? { taskbarClockPosition } : {}),
+      ...(taskbarTrayPosition ? { taskbarTrayPosition } : {})
     }));
   };
 
@@ -748,6 +758,16 @@ export function useVFS() {
 
   const updateSoundScheme = (soundScheme: string) => {
     setDisplaySettings((prev: any) => ({ ...prev, soundScheme }));
+  };
+
+  const updateNotificationSettings = (settings: Partial<{ muted: boolean, hideMail: boolean, hideSystem: boolean, hideApps: boolean }>) => {
+    setDisplaySettings((prev: any) => ({
+      ...prev,
+      notificationSettings: {
+        ...(prev.notificationSettings || { muted: false, hideMail: false, hideSystem: false, hideApps: false }),
+        ...settings
+      }
+    }));
   };
 
   const generateUniqueName = (baseName: string, parentId: string, currentNodes: VFSNode[], ignoreId?: string): string => {

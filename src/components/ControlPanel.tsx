@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Monitor, Cpu, User, Package, Settings, ArrowLeft, HardDrive, Trash2, AlertCircle, Menu, ChevronRight, ChevronDown, FolderOpen, ArrowUp, ArrowDown, Plus, RotateCcw, Minus, Globe, Key, Shield, Download, CheckCircle, Sparkles, Loader, Volume2, Play, MessageSquare, MousePointer2, Clock, Printer, Type, Layout, Activity, Zap, History, Lock, Eye, Network } from 'lucide-react';
-import { DEFAULT_WORKSPACE_MENU } from '../hooks/useVFS';
+import { DEFAULT_WORKSPACE_MENU, DEFAULT_VFS } from '../hooks/useVFS';
 import { APP_DICTIONARY } from '../utils/appDictionary';
 import { RETRO_ICONS } from '../utils/retroIcons';
 import { SystemProperties } from './SystemProperties';
@@ -224,6 +224,24 @@ const COLORS = [
 export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenMode, setScreenMode, initialPanel, currentUser, neuralBridgeActive }: any) => {
   const isMaximized = windows?.find((w: any) => w.id === 'control_panel')?.isMaximized;
   const [activePanel, setActivePanel] = useState<string | null>(initialPanel || null);
+  const [systemTabOverride, setSystemTabOverride] = useState<any>(null);
+  const [systemDeviceOverride, setSystemDeviceOverride] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleRoute = (e: Event) => {
+      const customEvent = e as CustomEvent<{ panel: string, initialTab?: string, initialDevice?: string }>;
+      if (customEvent.detail.panel) {
+        setActivePanel(customEvent.detail.panel);
+        if (customEvent.detail.initialTab) {
+           setSystemTabOverride(customEvent.detail.initialTab);
+           setSystemDeviceOverride(customEvent.detail.initialDevice || null);
+        }
+      }
+    };
+    window.addEventListener('vespera-open-control-panel-route', handleRoute);
+    return () => window.removeEventListener('vespera-open-control-panel-route', handleRoute);
+  }, []);
+
   const [hoverDesc, setHoverDesc] = useState<string>('');
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [selectedAppletId, setSelectedAppletId] = useState<string | null>(null);
@@ -261,12 +279,19 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   const [selectedScreensaverTimeout, setSelectedScreensaverTimeout] = useState<number>(vfs.displaySettings?.screensaverTimeout || 5);
 
   const [displayTab, setDisplayTab] = useState<'Background' | 'Screen Saver' | 'Settings' | 'Monitor' | 'Cursors' | 'Themes'>('Background');
-  const [taskbarTab, setTaskbarTab] = useState<'Appearance' | 'Position' | 'Clock' | 'Shortcuts' | 'Workspace Menu' | 'Wave bar' | 'Active Applets'>('Appearance');
+  const [taskbarTab, setTaskbarTab] = useState<'Appearance' | 'Position' | 'Shortcuts' | 'Menu' | 'Wave bar' | 'Alerts'>('Appearance');
   const [activeApplets, setActiveApplets] = useState<Record<string, AppletConfig>>(vfs.displaySettings?.activeApplets || {});
 
+  // Notifications settings
+  const [notifSettings, setNotifSettings] = useState<{ muted: boolean, hideMail: boolean, hideSystem: boolean, hideApps: boolean }>(
+    vfs.displaySettings?.notificationSettings || { muted: false, hideMail: false, hideSystem: false, hideApps: false }
+  );
+
   const [taskbarPosition, setTaskbarPosition] = useState<'top' | 'bottom' | 'left' | 'right'>(vfs.displaySettings?.taskbarPosition || 'bottom');
-  const [taskbarSize, setTaskbarSize] = useState<number>(typeof vfs.displaySettings?.taskbarSize === 'number' ? vfs.displaySettings.taskbarSize : 56);
+  const [taskbarSize, setTaskbarSize] = useState<number>(typeof vfs.displaySettings?.taskbarSize === 'number' ? vfs.displaySettings.taskbarSize : 40);
   const [taskbarSpanFull, setTaskbarSpanFull] = useState<boolean>(vfs.displaySettings?.taskbarSpanFull === true);
+  const [taskbarClockPosition, setTaskbarClockPosition] = useState<'left' | 'right'>(vfs.displaySettings?.taskbarClockPosition || 'right');
+  const [taskbarTrayPosition, setTaskbarTrayPosition] = useState<'left' | 'right'>(vfs.displaySettings?.taskbarTrayPosition || 'right');
 
   const [confirming, setConfirming] = useState(false);
   const [countdown, setCountdown] = useState(15);
@@ -303,6 +328,48 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   const [highContrast, setHighContrast] = useState(false);
   const [securityLogs, setSecurityLogs] = useState<string[]>([]);
   const [diagPulse, setDiagPulse] = useState(0);
+  const [secTab, setSecTab] = useState<'Overview'|'Firewall'|'Antivirus'|'Security Log'|'Permissions'>('Overview');
+  const [firewallEnabled, setFirewallEnabled] = useState(true);
+  const [firewallProfile, setFirewallProfile] = useState<'Domain'|'Private'|'Public'>('Private');
+  const [firewallInbound, setFirewallInbound] = useState(true);
+  const [firewallOutbound, setFirewallOutbound] = useState(false);
+  const [firewallNotify, setFirewallNotify] = useState(true);
+  const [fwRules] = useState([
+    { name: 'VesperaNET Dial-Up', dir: 'In', action: 'Allow', protocol: 'TCP', port: '1723', profile: 'All', status: true },
+    { name: 'Vespera Navigator', dir: 'In', action: 'Allow', protocol: 'TCP', port: '80,443', profile: 'All', status: true },
+    { name: 'AETHERIS Network Monitor', dir: 'In', action: 'Allow', protocol: 'TCP', port: '4200', profile: 'Domain', status: true },
+    { name: 'VesperaConnect RDP', dir: 'In', action: 'Allow', protocol: 'TCP', port: '3389', profile: 'Domain', status: false },
+    { name: 'File & Printer Sharing', dir: 'In', action: 'Allow', protocol: 'TCP', port: '139,445', profile: 'Private', status: true },
+    { name: 'ICMP Echo Request', dir: 'In', action: 'Block', protocol: 'ICMP', port: '*', profile: 'Public', status: true },
+    { name: 'Outbound SMTP', dir: 'Out', action: 'Allow', protocol: 'TCP', port: '25,587', profile: 'All', status: true },
+    { name: 'Block Telnet', dir: 'Out', action: 'Block', protocol: 'TCP', port: '23', profile: 'All', status: true },
+  ]);
+  const [avEnabled, setAvEnabled] = useState(true);
+  const [avRealtime, setAvRealtime] = useState(true);
+  const [avScheduled, setAvScheduled] = useState(true);
+  const [avLastScan] = useState('Oct 14, 1996  11:42 PM');
+  const [avDefs] = useState('Oct 13, 1996  v1.4.221');
+  const [avThreats] = useState(0);
+  const [selectedFwRule, setSelectedFwRule] = useState<number|null>(null);
+  const [secLogEntries] = useState([
+    { type: 'Success Audit', date: 'Oct 14, 1996', time: '11:48:02 PM', source: 'Security', category: 'Logon/Logoff', event: 528, user: 'THORNE', desc: 'Successful Logon' },
+    { type: 'Success Audit', date: 'Oct 14, 1996', time: '11:47:55 PM', source: 'Security', category: 'Account Mgmt', event: 643, user: 'SYSTEM', desc: 'Domain Policy Changed' },
+    { type: 'Failure Audit', date: 'Oct 14, 1996', time: '11:31:07 PM', source: 'Security', category: 'Logon/Logoff', event: 529, user: 'UNKNOWN', desc: 'Logon Failure: Unknown username' },
+    { type: 'Failure Audit', date: 'Oct 14, 1996', time: '11:30:58 PM', source: 'Security', category: 'Logon/Logoff', event: 529, user: 'UNKNOWN', desc: 'Logon Failure: Unknown username' },
+    { type: 'Success Audit', date: 'Oct 14, 1996', time: '09:12:44 PM', source: 'Security', category: 'Policy Change', event: 612, user: 'SYSTEM', desc: 'Audit Policy Changed' },
+    { type: 'Success Audit', date: 'Oct 14, 1996', time: '08:55:11 PM', source: 'Security', category: 'Logon/Logoff', event: 538, user: 'THORNE', desc: 'User Logoff' },
+    { type: 'Success Audit', date: 'Oct 14, 1996', time: '08:01:33 PM', source: 'Security', category: 'Privilege Use', event: 576, user: 'ADMIN', desc: 'Special privileges assigned' },
+    { type: 'Failure Audit', date: 'Oct 14, 1996', time: '07:44:22 PM', source: 'Security', category: 'Logon/Logoff', event: 529, user: 'UNKNOWN', desc: 'Logon Failure: Bad password' },
+    { type: 'Success Audit', date: 'Oct 13, 1996', time: '06:22:10 PM', source: 'Security', category: 'Object Access', event: 560, user: 'THORNE', desc: 'Object Open: C:\\VESPERA\\SYSTEM\\KERNEL.SYS' },
+    { type: 'Success Audit', date: 'Oct 13, 1996', time: '02:11:05 AM', source: 'Security', category: 'Account Mgmt', event: 642, user: 'ADMIN', desc: 'User Account Changed: guest' },
+  ]);
+  const [selectedLogEntry, setSelectedLogEntry] = useState<number|null>(null);
+  const [permEntries] = useState([
+    { type: 'Allow', name: 'THORNE\\Administrator', permission: 'Full Control', scope: 'This folder, subfolders and files' },
+    { type: 'Allow', name: 'VESPERA\\Users', permission: 'Read & Execute', scope: 'This folder, subfolders and files' },
+    { type: 'Allow', name: 'SYSTEM', permission: 'Full Control', scope: 'This folder, subfolders and files' },
+    { type: 'Deny', name: 'Everyone', permission: 'Write', scope: 'This folder only' },
+  ]);
   const [hardwareStep, setHardwareStep] = useState(0);
   const [hardwareFound, setHardwareFound] = useState<any[]>([]);
 
@@ -377,8 +444,11 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
       setSelectedScreensaverType(vfs.displaySettings?.screensaverType || 'none');
       setSelectedScreensaverTimeout(vfs.displaySettings?.screensaverTimeout || 5);
       setTaskbarPosition(vfs.displaySettings?.taskbarPosition || 'bottom');
-      setTaskbarSize(vfs.displaySettings?.taskbarSize || 56);
+      setTaskbarSize(vfs.displaySettings?.taskbarSize || 40);
       setTaskbarSpanFull(vfs.displaySettings?.taskbarSpanFull === true);
+      setTaskbarClockPosition(vfs.displaySettings?.taskbarClockPosition || 'right');
+      setTaskbarTrayPosition(vfs.displaySettings?.taskbarTrayPosition || 'right');
+      setNotifSettings(vfs.displaySettings?.notificationSettings || { muted: false, hideMail: false, hideSystem: false, hideApps: false });
     }
   }, [activePanel, vfs.displaySettings]);
 
@@ -442,7 +512,9 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
     if (vfs.updatePlusTheme) vfs.updatePlusTheme(selectedPlusTheme);
     if (vfs.updateCursorStyle) vfs.updateCursorStyle(applyCursor);
     if (vfs.updateAgentVSettings) vfs.updateAgentVSettings(agentVEnabled, agentVSkin, agentVSpeak);
-    if (vfs.updateTaskbarLayout) vfs.updateTaskbarLayout(taskbarPosition, taskbarSize, taskbarSpanFull);
+    if (vfs.updateTaskbarLayout) {
+      vfs.updateTaskbarLayout(taskbarPosition, taskbarSize, taskbarSpanFull, taskbarClockPosition, taskbarTrayPosition);
+    }
     if (vfs.updateWaveBarSettings) {
       vfs.updateWaveBarSettings({
         waveBarEnabled,
@@ -465,6 +537,10 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
         screensaverType: selectedScreensaverType,
         screensaverTimeout: selectedScreensaverTimeout,
       });
+    }
+
+    if (vfs.updateNotificationSettings) {
+      vfs.updateNotificationSettings(notifSettings);
     }
 
     if (selectedRes !== (vfs.displaySettings?.resolution || '1024x768')) {
@@ -516,9 +592,12 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
     selectedScreensaverType !== (vfs.displaySettings?.screensaverType || 'none') ||
     selectedScreensaverTimeout !== (vfs.displaySettings?.screensaverTimeout || 5) ||
     taskbarPosition !== (vfs.displaySettings?.taskbarPosition || 'bottom') ||
-    taskbarSize !== (typeof vfs.displaySettings?.taskbarSize === 'number' ? vfs.displaySettings.taskbarSize : 56) ||
+    taskbarSize !== (typeof vfs.displaySettings?.taskbarSize === 'number' ? vfs.displaySettings.taskbarSize : 40) ||
     taskbarSpanFull !== (vfs.displaySettings?.taskbarSpanFull === true) ||
-    JSON.stringify(activeApplets) !== JSON.stringify(vfs.displaySettings?.activeApplets || {})
+    taskbarClockPosition !== (vfs.displaySettings?.taskbarClockPosition || 'right') ||
+    taskbarTrayPosition !== (vfs.displaySettings?.taskbarTrayPosition || 'right') ||
+    JSON.stringify(activeApplets) !== JSON.stringify(vfs.displaySettings?.activeApplets || {}) ||
+    JSON.stringify(notifSettings) !== JSON.stringify(vfs.displaySettings?.notificationSettings || { muted: false, hideMail: false, hideSystem: false, hideApps: false })
   ) && !confirming;
 
   // ── Hub view ─────────────────────────────────────────────────────────────────
@@ -975,7 +1054,6 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
 
   // ── Add/Remove Programs panel ──────────────────────────────────────────────
   const renderAddRemove = () => {
-    const installedApps = (vfs?.nodes || []).filter((n: any) => n.isApp && n.parentId === 'programs');
 
     return (
       <div className="flex flex-col h-full p-3 gap-3">
@@ -1057,6 +1135,9 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
     );
   };
 
+  // ── Installed apps (user-installed only — not built-in to DEFAULT_VFS) ───
+  const installedApps = (vfs?.nodes || []).filter((n: any) => n.isApp && !DEFAULT_VFS.find(d => d.id === n.id));
+
   // ── Task Menu panel ────────────────────────────────────────────────────────
   // Workspace menu editor state
   const DEFAULT_WS_MENU = DEFAULT_WORKSPACE_MENU;
@@ -1075,7 +1156,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
   
   // Sync editing menu when panel changes
   useEffect(() => {
-    if (taskbarTab === 'Workspace Menu') {
+    if (taskbarTab === 'Menu') {
       setEditingMenu(JSON.parse(JSON.stringify(vfs.displaySettings?.workspaceMenu || DEFAULT_WS_MENU)));
     }
   }, [taskbarTab]);
@@ -1359,8 +1440,18 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
               {isDynamic ? ' (auto)' : ''}
             </span>
           </div>
-          {isFolder && isExpanded && item.children && (
-            <div>{renderMenuTree(item.children, depth + 1)}</div>
+          {isFolder && isExpanded && (
+            <div>
+              {item.children && renderMenuTree(item.children, depth + 1)}
+              {item.id === 'installed' && installedApps.map((app: any) => (
+                <div key={`auto_${app.id}`} className="flex items-center gap-1 px-1 py-0.5 cursor-default text-xs select-none hover:bg-blue-50" style={{ paddingLeft: (depth + 1) * 16 + 4 }}>
+                  <span className="w-3 shrink-0" />
+                  <div className="w-4" />
+                  <Package size={12} className="text-gray-500" />
+                  <span className="truncate italic">{app.appDisplayName || app.name} (auto)</span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       );
@@ -1374,7 +1465,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
 
       {/* Tabs */}
       <div className="flex gap-1 border-b-2 border-white mt-1 relative z-10 px-1 overflow-x-auto scroller-hidden">
-        {(['Appearance', 'Position', 'Clock', 'Shortcuts', 'Workspace Menu', 'Wave bar', 'Active Applets'] as const).map(tab => (
+        {(['Appearance', 'Position', 'Shortcuts', 'Menu', 'Wave bar', 'Alerts'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setTaskbarTab(tab)}
@@ -1435,6 +1526,48 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
                 </div>
               </fieldset>
 
+              {/* Component Alignment Group */}
+              <fieldset className="border-2 border-t-white border-l-white border-b-gray-400 border-r-gray-400 p-3 pt-4 relative mt-1">
+                <legend className="absolute -top-2.5 left-2 bg-[#c0c0c0] px-1 text-xs text-black">Component Alignment</legend>
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs">Clock Position:</span>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer group" onClick={() => setTaskbarClockPosition('left')}>
+                        <div className={`w-3 h-3 rounded-full border border-gray-600 bg-white flex items-center justify-center group-active:bg-gray-300 ${taskbarClockPosition === 'left' ? '!bg-[#c0c0c0] shadow-[inset_1px_1px_0_0_gray]' : ''}`}>
+                          {taskbarClockPosition === 'left' && <div className="w-1.5 h-1.5 rounded-full bg-black"></div>}
+                        </div>
+                        <span className="text-xs capitalize">Left</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer group" onClick={() => setTaskbarClockPosition('right')}>
+                        <div className={`w-3 h-3 rounded-full border border-gray-600 bg-white flex items-center justify-center group-active:bg-gray-300 ${taskbarClockPosition === 'right' ? '!bg-[#c0c0c0] shadow-[inset_1px_1px_0_0_gray]' : ''}`}>
+                          {taskbarClockPosition === 'right' && <div className="w-1.5 h-1.5 rounded-full bg-black"></div>}
+                        </div>
+                        <span className="text-xs capitalize">Right</span>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs">System Tray (Icons):</span>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer group" onClick={() => setTaskbarTrayPosition('left')}>
+                        <div className={`w-3 h-3 rounded-full border border-gray-600 bg-white flex items-center justify-center group-active:bg-gray-300 ${taskbarTrayPosition === 'left' ? '!bg-[#c0c0c0] shadow-[inset_1px_1px_0_0_gray]' : ''}`}>
+                          {taskbarTrayPosition === 'left' && <div className="w-1.5 h-1.5 rounded-full bg-black"></div>}
+                        </div>
+                        <span className="text-xs capitalize">Left</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer group" onClick={() => setTaskbarTrayPosition('right')}>
+                        <div className={`w-3 h-3 rounded-full border border-gray-600 bg-white flex items-center justify-center group-active:bg-gray-300 ${taskbarTrayPosition === 'right' ? '!bg-[#c0c0c0] shadow-[inset_1px_1px_0_0_gray]' : ''}`}>
+                          {taskbarTrayPosition === 'right' && <div className="w-1.5 h-1.5 rounded-full bg-black"></div>}
+                        </div>
+                        <span className="text-xs capitalize">Right</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </fieldset>
+
               {/* Size Group */}
               <fieldset className="border-2 border-t-white border-l-white border-b-gray-400 border-r-gray-400 p-3 pt-4 relative mt-1">
                 <legend className="absolute -top-2.5 left-2 bg-[#c0c0c0] px-1 text-xs text-black">Thickness (Pixels)</legend>
@@ -1477,92 +1610,76 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
 
         {/* ── Appearance Tab ── */}
         {taskbarTab === 'Appearance' && (
-          <>
-            <div className="flex items-center gap-4 border-b pb-3 border-gray-400">
+          <div className="flex flex-col h-full gap-2">
+            <div className="flex items-center gap-4 border-b pb-2 border-gray-400 shrink-0">
               <Menu size={36} className="text-[#4a4a8a]" />
               <div>
                 <h2 className="font-bold text-sm leading-none tracking-wide">Task Menu Appearance</h2>
-                <p className="text-xs text-gray-700 mt-1">Select a color theme and style for the launcher dock.</p>
+                <p className="text-xs text-gray-700 mt-1">Customize the dock's color theme and clock display.</p>
               </div>
             </div>
 
-            <div className="flex-1 min-h-[12rem] border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-3 bg-white flex flex-col overflow-y-auto">
-              <p className="font-bold text-xs mb-2 text-[#000080]">Available Themes:</p>
-              <div className="flex flex-col gap-1">
-                {TASKBAR_THEMES.map(theme => (
-                  <label 
-                    key={theme.id}
-                    className={`flex items-center gap-3 px-2 py-2 cursor-pointer border ${selectedTaskbarTheme === theme.id ? 'bg-[#000080] text-white border-[#000080]' : 'hover:bg-gray-100 border-transparent text-black'}`}
-                    onClick={() => setSelectedTaskbarTheme(theme.id)}
-                  >
-                    <div className="w-4 h-4 rounded-full border-2 border-gray-400 flex items-center justify-center shrink-0" style={{ borderColor: selectedTaskbarTheme === theme.id ? 'white' : 'gray' }}>
-                       {selectedTaskbarTheme === theme.id && <div className="w-2 h-2 rounded-full bg-white shrink-0" />}
-                    </div>
-                    <div className="w-6 h-6 border border-gray-500 shrink-0" style={{ backgroundColor: theme.hex }} />
-                    <span className="text-xs font-bold tracking-wide select-none">{theme.name}</span>
-                  </label>
-                ))}
+            <div className="flex-1 flex flex-col gap-2 min-h-0">
+              <div className="flex-1 min-h-0 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-2 bg-white flex flex-col overflow-y-auto">
+                <p className="font-bold text-[10px] mb-1.5 text-[#000080] uppercase tracking-wider">Color Themes</p>
+                <div className="flex flex-col gap-1">
+                  {TASKBAR_THEMES.map(theme => (
+                    <label 
+                      key={theme.id}
+                      className={`flex items-center gap-3 px-2 py-1.5 cursor-pointer border ${selectedTaskbarTheme === theme.id ? 'bg-[#000080] text-white border-[#000080]' : 'hover:bg-gray-100 border-transparent text-black'}`}
+                      onClick={() => setSelectedTaskbarTheme(theme.id)}
+                    >
+                      <div className="w-3 h-3 rounded-full border-2 border-gray-400 flex items-center justify-center shrink-0" style={{ borderColor: selectedTaskbarTheme === theme.id ? 'white' : 'gray' }}>
+                         {selectedTaskbarTheme === theme.id && <div className="w-1.5 h-1.5 rounded-full bg-white shrink-0" />}
+                      </div>
+                      <div className="w-5 h-5 border border-gray-500 shrink-0" style={{ backgroundColor: theme.hex }} />
+                      <span className="text-xs font-bold tracking-wide select-none">{theme.name}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
-          </>
-        )}
 
-        {/* ── Clock Tab ── */}
-        {taskbarTab === 'Clock' && (
-          <>
-            <div className="flex items-center gap-4 border-b pb-3 border-gray-400">
-              <Menu size={36} className="text-[#4a4a8a]" />
-              <div>
-                <h2 className="font-bold text-sm leading-none tracking-wide">Clock Settings</h2>
-                <p className="text-xs text-gray-700 mt-1">Configure the taskbar clock display.</p>
+              <div className="shrink-0 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white p-2 bg-[#c0c0c0]">
+                <label 
+                  className="flex items-center gap-2 cursor-pointer w-max mb-1"
+                  onClick={() => setSelectedTaskbarShowClock(!selectedTaskbarShowClock)}
+                >
+                  <div className="w-3.5 h-3.5 bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white flex items-center justify-center shrink-0">
+                    {selectedTaskbarShowClock && <div className="w-1.5 h-1.5 bg-black" />}
+                  </div>
+                  <span className="font-bold text-[10px] uppercase tracking-wider text-[#000080]">Show Clock Display</span>
+                </label>
+                
+                {selectedTaskbarShowClock && (
+                  <div className="mt-1 grid grid-cols-[1fr_1fr] gap-x-3 gap-y-1 p-1.5 border border-gray-500 bg-white">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-bold w-[35px]">Bg:</span>
+                      <input type="color" className="w-4 h-4 p-0 border border-gray-400 cursor-pointer" value={clockBgColor.startsWith('bg-') || clockBgColor === '' ? defaultBg : clockBgColor} onChange={e => setClockBgColor(e.target.value)} />
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-bold w-[35px]">Text:</span>
+                      <input type="color" className="w-4 h-4 p-0 border border-gray-400 cursor-pointer" value={clockTextColor.startsWith('text-') || clockTextColor === '' ? defaultText : clockTextColor} onChange={e => setClockTextColor(e.target.value)} />
+                    </div>
+                    <div className="flex items-center gap-1.5 col-span-2">
+                      <span className="text-[9px] font-bold w-[35px]">Font:</span>
+                      <select className="text-[9px] border border-gray-400 p-0 outline-none flex-1" value={clockFont} onChange={e => setClockFont(e.target.value)}>
+                        <option value="font-mono">Monospace</option>
+                        <option value="font-sans">Sans-Serif</option>
+                        <option value="font-serif">Serif</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-1.5 col-span-2">
+                      <span className="text-[9px] font-bold w-[35px]">Fmt:</span>
+                      <select className="text-[9px] border border-gray-400 p-0 outline-none flex-1" value={clockFormat} onChange={e => setClockFormat(e.target.value)}>
+                        <option value="24h">24-Hour</option>
+                        <option value="12h">12-Hour</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="flex flex-col gap-2">
-              <label 
-                className="flex items-center gap-2 cursor-pointer w-max"
-                onClick={() => setSelectedTaskbarShowClock(!selectedTaskbarShowClock)}
-              >
-                <div className="w-4 h-4 bg-white border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white flex items-center justify-center shrink-0">
-                  {selectedTaskbarShowClock && <div className="w-2 h-2 bg-black" />}
-                </div>
-                <span className="text-sm tracking-wide">Show Clock in Task Menu</span>
-              </label>
-              
-              {selectedTaskbarShowClock && (
-                <div className="ml-6 flex flex-col gap-2 p-2 border border-gray-400 bg-white">
-                  <div className="grid grid-cols-[80px_1fr] items-center gap-2">
-                    <span className="text-xs">Background:</span>
-                    <div className="flex gap-2 items-center">
-                      <input type="color" className="w-8 h-6 p-0 border border-gray-400 cursor-pointer" value={clockBgColor.startsWith('bg-') || clockBgColor === '' ? defaultBg : clockBgColor} onChange={e => setClockBgColor(e.target.value)} />
-                      <span className="text-[10px] text-gray-500 font-mono">{clockBgColor.startsWith('bg-') || clockBgColor === ''  ? defaultBg : clockBgColor}</span>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-[80px_1fr] items-center gap-2">
-                    <span className="text-xs">Text Color:</span>
-                    <div className="flex gap-2 items-center">
-                      <input type="color" className="w-8 h-6 p-0 border border-gray-400 cursor-pointer" value={clockTextColor.startsWith('text-') || clockTextColor === '' ? defaultText : clockTextColor} onChange={e => setClockTextColor(e.target.value)} />
-                      <span className="text-[10px] text-gray-500 font-mono">{clockTextColor.startsWith('text-') || clockTextColor === '' ? defaultText : clockTextColor}</span>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-[80px_1fr] items-center gap-2">
-                    <span className="text-xs">Font:</span>
-                    <select className="text-xs border border-gray-400 p-0.5 outline-none" value={clockFont} onChange={e => setClockFont(e.target.value)}>
-                      <option value="font-mono">Monospace (Classic)</option>
-                      <option value="font-sans">Sans-Serif</option>
-                      <option value="font-serif">Serif (Times)</option>
-                    </select>
-                  </div>
-                  <div className="grid grid-cols-[80px_1fr] items-center gap-2">
-                    <span className="text-xs">Format:</span>
-                    <select className="text-xs border border-gray-400 p-0.5 outline-none" value={clockFormat} onChange={e => setClockFormat(e.target.value)}>
-                      <option value="24h">24-Hour (Military)</option>
-                      <option value="12h">12-Hour (AM/PM)</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-            </div>
-          </>
+          </div>
         )}
 
         {/* ── Shortcuts Tab ── */}
@@ -1617,7 +1734,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
         )}
 
         {/* ── Workspace Menu Tab ── */}
-        {taskbarTab === 'Workspace Menu' && (
+        {taskbarTab === 'Menu' && (
           <>
             <div className="flex items-center gap-4 border-b pb-3 border-gray-400">
               <FolderOpen size={36} className="text-[#4a4a8a]" />
@@ -1943,6 +2060,67 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
               </div>
             </div>
           </>
+        )}
+
+        {taskbarTab === 'Alerts' && (
+          <div className="flex flex-col gap-3 p-2 border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white flex-1 overflow-y-auto">
+            <div className="flex items-center gap-2 mb-2">
+              <MessageSquare size={24} className="text-[#000080]" />
+              <div>
+                <p className="font-bold text-sm">System Notifications</p>
+                <p className="text-xs text-gray-600">Customize how pop-up alerts behave.</p>
+              </div>
+            </div>
+            
+            <div className="border border-gray-400 p-2">
+              <label className="flex items-center gap-2 font-bold cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={notifSettings.muted} 
+                  onChange={(e) => setNotifSettings(prev => ({ ...prev, muted: e.target.checked }))}
+                />
+                Mute all notification sounds
+              </label>
+              <p className="text-[10px] text-gray-500 ml-5 mt-1">
+                When checked, pop-ups will appear silently.
+              </p>
+            </div>
+
+            <div className="border border-gray-400 p-2 flex flex-col gap-2">
+              <p className="font-bold text-xs mb-1 text-[#000080]">Hide Pop-up Alerts</p>
+              
+              <label className="flex items-center gap-2 cursor-pointer text-xs">
+                <input 
+                  type="checkbox" 
+                  checked={notifSettings.hideMail} 
+                  onChange={(e) => setNotifSettings(prev => ({ ...prev, hideMail: e.target.checked }))}
+                />
+                Hide new mail notifications
+              </label>
+              
+              <label className="flex items-center gap-2 cursor-pointer text-xs">
+                <input 
+                  type="checkbox" 
+                  checked={notifSettings.hideSystem} 
+                  onChange={(e) => setNotifSettings(prev => ({ ...prev, hideSystem: e.target.checked }))}
+                />
+                Hide system and hardware driver alerts
+              </label>
+              
+              <label className="flex items-center gap-2 cursor-pointer text-xs">
+                <input 
+                  type="checkbox" 
+                  checked={notifSettings.hideApps} 
+                  onChange={(e) => setNotifSettings(prev => ({ ...prev, hideApps: e.target.checked }))}
+                />
+                Hide third-party application notifications
+              </label>
+            </div>
+            
+            <p className="text-[10px] text-gray-500 italic mt-2">
+              Note: You can always view hidden notifications in the Notification History by clicking the Bell icon in the taskbar tray.
+            </p>
+          </div>
         )}
       </div>
 
@@ -2780,22 +2958,11 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
       <div className="flex-1 flex flex-col gap-4 mt-2">
         <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-3">
           <p className="text-[10px] font-bold mb-2 uppercase tracking-wide">Display</p>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input 
-              type="checkbox" 
-              checked={highContrast}
-              onChange={(e) => {
-                setHighContrast(e.target.checked);
-                if (e.target.checked) {
-                  document.body.classList.add('high-contrast');
-                } else {
-                  document.body.classList.remove('high-contrast');
-                }
-              }}
-            />
+          <label className="flex items-center gap-2 opacity-40 cursor-not-allowed select-none">
+            <input type="checkbox" disabled />
             <span className="text-xs font-bold">Use High Contrast</span>
           </label>
-          <p className="text-[9px] text-gray-600 mt-2 italic">Designed for users with vision impairments. Overrides all system colors with black and yellow.</p>
+          <p className="text-[9px] text-gray-500 mt-2 italic">High Contrast mode is not available in this version.</p>
         </div>
 
         <div className="border-2 border-t-gray-800 border-l-gray-800 border-b-white border-r-white bg-[#d9d9d9] p-3">
@@ -3566,7 +3733,7 @@ export const ControlPanel = ({ vfs, onClose, windows, onLaunchUninstall, screenM
     if (activePanel === 'hardware_wiz') return renderHardwareWizard();
     if (activePanel === 'network') return renderNetwork();
 
-    if (activePanel === 'system') return <SystemProperties onBack={() => setActivePanel(null)} vfs={vfs} currentUser={currentUser} neuralBridgeActive={neuralBridgeActive} />;
+    if (activePanel === 'system') return <SystemProperties onBack={() => { setActivePanel(null); setSystemTabOverride(null); setSystemDeviceOverride(null); }} vfs={vfs} currentUser={currentUser} neuralBridgeActive={neuralBridgeActive} initialTab={systemTabOverride} initialDevice={systemDeviceOverride} />;
     const item = PANEL_ITEMS.find(p => p.id === activePanel);
     return item ? renderStub(item) : renderHub();
   };

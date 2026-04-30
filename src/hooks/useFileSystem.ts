@@ -40,6 +40,7 @@ interface GuiNode {
   content?: string;
   customIcon?: string;
   isApp?: boolean;
+  targetId?: string;
 }
 
 /**
